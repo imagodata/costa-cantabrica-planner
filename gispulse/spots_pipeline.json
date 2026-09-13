@@ -1,0 +1,49 @@
+{
+  "version": 2,
+  "name": "costa_cantabrica_spots",
+  "description": "Plages et criques de la côte cantabrique : distance à la ligne de côte OSM, typologie playa/cala, province, puis exclusion des plages fluviales et de lac.",
+  "domain": "tourisme",
+  "author": "costa-cantabrica-planner",
+  "tags": ["osm", "plages", "asturias", "cantabria", "tourisme"],
+  "ref_layers": {
+    "coast": "data/raw/coastline_pts.geojson"
+  },
+  "inputs_notes": "Entrée = data/raw/beaches_osm.geojson (scripts/fetch_osm.py). La couche de référence coast = sommets amincis de natural=coastline (~200 m).",
+  "steps": [
+    {
+      "id": "dist_coast",
+      "type": "capability",
+      "capability": "nearest_neighbor",
+      "params": {
+        "ref_layer": "coast",
+        "k": 1,
+        "distance_col": "coast_m",
+        "columns": [],
+        "crs_meters": "EPSG:25830"
+      }
+    },
+    {
+      "id": "derive",
+      "type": "capability",
+      "capability": "calculate",
+      "input": "dist_coast",
+      "params": {
+        "expressions": {
+          "coast_km": "np.round(coast_m / 1000, 2)",
+          "is_cala": "np.maximum(np.maximum(name.str.lower().str.startswith('cala') * 1, name.str.lower().str.contains(' cala ') * 1), (size_m > 0) * (size_m < 220) * 1)",
+          "type": "np.where(is_cala > 0, 'cala', 'playa')",
+          "province": "np.where(lon < -4.515, 'Asturias', 'Cantabria')"
+        }
+      }
+    },
+    {
+      "id": "coastal_only",
+      "type": "capability",
+      "capability": "filter",
+      "input": "derive",
+      "params": {
+        "expression": "coast_m <= 2500"
+      }
+    }
+  ]
+}

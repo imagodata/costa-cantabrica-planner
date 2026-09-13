@@ -54,31 +54,65 @@ python3 -m http.server 8000
 
 (Un simple `file://` ne suffit pas : le GeoJSON est chargé par `fetch`.)
 
-## Régénérer les spots
+## Données : pipeline gispulse
+
+Les spots sont produits avec [gispulse](https://github.com/imagodata/gispulse), moteur de
+règles spatiales déclaratif (CLI + portail). Le traitement est décrit dans
+`gispulse/spots_pipeline.json` (pipeline v2) et exécuté par `gispulse run` :
 
 ```bash
-python3 scripts/build_spots.py            # réutilise data/overpass_raw.json
-python3 scripts/build_spots.py --refresh  # réinterroge Overpass
+pip install gispulse           # ou pipx install gispulse
+make spots                     # caches OSM → gispulse run → data/spots.geojson
+make refresh                   # idem en réinterrogeant Overpass
+GISPULSE=/chemin/venv/bin/gispulse make spots   # binaire précis
 ```
 
-Le script :
-1. interroge Overpass (`natural=beach` + `name`) sur la bbox `43.25,-7.05,43.75,-3.15` ;
-2. estime la taille de chaque plage (diagonale de sa bbox) → `cala` sous 220 m ou si le nom
-   commence par « Cala », sinon `playa` ;
-3. écarte les plages fluviales et de lac en ne gardant que les points à moins de 1,5 km de
-   la ligne de côte OSM (`natural=coastline`, mise en cache dans `data/coastline_raw.json`) ;
-4. écrit `data/spots.geojson`.
+Étapes :
+
+1. `scripts/fetch_osm.py` interroge Overpass (`natural=beach` + `name`, bbox
+   `43.25,-7.05,43.75,-3.15`) et la ligne de côte (`natural=coastline`), met les réponses
+   en cache dans `data/raw/` et écrit deux GeoJSON bruts : `beaches_osm.geojson` (centre de
+   chaque plage, tags utiles, `size_m` = diagonale de sa bbox) et `coastline_pts.geojson`
+   (sommets de côte amincis à ~200 m).
+2. `gispulse run data/raw/beaches_osm.geojson --rules gispulse/spots_pipeline.json` enchaîne
+   trois capabilities :
+   - `nearest_neighbor` (réf. `coast`, EPSG:25830) → `coast_m`, distance à la côte ;
+   - `calculate` → `coast_km`, `is_cala` (nom commençant par « Cala » ou taille < 220 m),
+     `type` (`cala`/`playa`), `province` (Asturies à l'ouest de -4,515°, ría de Tina Mayor) ;
+   - `filter` → `coast_m <= 2500`, ce qui écarte plages fluviales et de lac.
+3. `scripts/build_spots.py` orchestre le tout, dédoublonne (égalités de distance),
+   trie par nom et ne garde que les colonnes utiles → `data/spots.geojson`.
+
+Aperçu rapide des spots dans la visionneuse embarquée de gispulse : `make preview`
+(`gispulse serve data/spots.geojson`).
+
+### Carte sur un portail gispulse
+
+`gispulse/saved_map.json` décrit la composition (couches, styles, vue) d'une « carte
+sauvegardée » du portail. Pour la créer sur un portail en marche
+(`gispulse portal`, ou `docker compose up` dans le dépôt gispulse) :
+
+```bash
+GISPULSE_API=http://localhost:8001 make publish-map
+# → imprime l'URL /maps/<id> ; GISPULSE_MAP_ID=<id> pour mettre à jour ensuite
+```
 
 ## Structure
 
 ```
-index.html            page unique
-css/style.css         mobile-first, panneau glissant, mode sombre
-js/config.js          sources, profils, codes météo
-js/forecast.js        appels Open-Meteo, cache, score, marées
-js/app.js             carte Leaflet, liste, fiche, filtres, voyageurs, partage
-data/spots.geojson    spots (généré)
-scripts/build_spots.py
+index.html                    page unique
+css/style.css                 mobile-first, panneau glissant, mode sombre
+js/config.js                  sources, profils, codes météo
+js/forecast.js                appels Open-Meteo, cache, score, marées
+js/app.js                     carte Leaflet, liste, fiche, filtres, voyageurs, partage
+data/spots.geojson            spots (généré)
+data/raw/                     caches OSM + GeoJSON bruts (entrées du pipeline)
+gispulse/spots_pipeline.json  pipeline gispulse v2 (nearest_neighbor → calculate → filter)
+gispulse/saved_map.json       composition de carte pour le portail gispulse
+scripts/fetch_osm.py          extraction Overpass → data/raw/
+scripts/build_spots.py        orchestrateur : fetch → gispulse run → post-traitement
+scripts/publish_gispulse_map.py   POST/PUT de la carte sur un portail
+Makefile                      spots, refresh, serve, preview, publish-map
 ```
 
 ## Limites connues

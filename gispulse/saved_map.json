@@ -1,0 +1,34 @@
+{
+  "name": "Costa Cantábrica · plages & criques",
+  "description": "Plages et criques des Asturies et de Cantabrie (OpenStreetMap), typées playa/cala, avec distance à la côte. Produit par gispulse/spots_pipeline.json.",
+  "layers": [
+    {
+      "id": "spots",
+      "name": "Plages & criques",
+      "source": { "type": "geojson", "path": "data/spots.geojson" },
+      "geometry": "point",
+      "visible": true,
+      "popup": ["name", "type", "province", "surface", "size_m", "coast_km", "osm"]
+    },
+    {
+      "id": "coast",
+      "name": "Ligne de côte (sommets)",
+      "source": { "type": "geojson", "path": "data/raw/coastline_pts.geojson" },
+      "geometry": "point",
+      "visible": false
+    }
+  ],
+  "styles": {
+    "spots": {
+      "type": "circle",
+      "radius": 6,
+      "stroke": "#ffffff",
+      "categories": { "field": "type", "values": { "playa": "#0b6e99", "cala": "#e76f51" } }
+    },
+    "coast": { "type": "circle", "radius": 1.5, "color": "#7b2cbf", "opacity": 0.5 }
+  },
+  "filters": {},
+  "view": { "center": [-5.0, 43.45], "zoom": 8, "bearing": 0, "pitch": 0 },
+  "basemap": "cartodb",
+  "metadata": { "project": "costa-cantabrica-planner", "pipeline": "gispulse/spots_pipeline.json", "license": "ODbL (OSM)" }
+}

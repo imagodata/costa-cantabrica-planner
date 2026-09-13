@@ -35,7 +35,6 @@ a { color: var(--accent); }
 .who .chip.who-a .ini { background: var(--a); } .who .chip.who-b .ini { background: var(--b); }
 .who .chip .nm { max-width: 0; overflow: hidden; white-space: nowrap; }
 .who .chip.on .nm { max-width: 64px; text-overflow: ellipsis; }
-@media (max-width: 899px) { .brand small { display: none; } .topbar .iconbtn { width: 38px; height: 38px; } .who .chip { padding: 6px 8px; } }
 .brand { font-weight: 700; white-space: nowrap; font-size: 15px; }
 .brand small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); line-height: 1; }
 .days { order: 10; flex: 1 0 100%; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 6px; }
@@ -173,3 +172,6 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
   #toast { bottom: 24px; }
   .brand { font-size: 17px; }
 }
+
+/* ---------- ajustements mobile (après les règles de base pour les surcharger) ---------- */
+@media (max-width: 899px) { .brand small { display: none; } .topbar .iconbtn { width: 38px; height: 38px; } .who .chip { padding: 6px 8px; } }
