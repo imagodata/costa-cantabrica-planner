@@ -29,11 +29,12 @@ FINAL_COLS = ("id", "name", "kind", "sub", "beach_m", "coast_km", "osm", "cuisin
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true")
+    ap.add_argument("--region", default=str(fetch_osm.REGION_FILE))
     ap.add_argument("--gispulse", default=None)
     ap.add_argument("--engine", default="python", choices=("python", "duckdb"))
     args = ap.parse_args(argv)
 
-    fetch_osm.main(["--pois"] + (["--refresh"] if args.refresh else []))
+    fetch_osm.main(["--pois", "--region", args.region] + (["--refresh"] if args.refresh else []))
     gp = find_gispulse(args.gispulse)
     with tempfile.TemporaryDirectory() as tmp:
         tmp_out = Path(tmp) / "pois_gispulse.geojson"

@@ -101,6 +101,28 @@ svg.ic { flex: 0 0 auto; vertical-align: -3px; }
 .handle::before { content: ""; width: 42px; height: 5px; border-radius: 3px; background: var(--line); }
 .panel { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 
+/* ---------- accessibilité, mouvement, états ---------- */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+.skeleton { list-style: none; margin: 0; padding: 0 8px; }
+.skeleton li { display: grid; grid-template-columns: 44px 56px 1fr; gap: 10px; padding: 10px 6px; border-bottom: 1px solid var(--line); }
+.skeleton i { display: block; border-radius: 10px; background: linear-gradient(90deg, var(--line) 25%, var(--bg) 50%, var(--line) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+.skeleton .sq { width: 44px; height: 44px; } .skeleton .ph { width: 56px; height: 56px; }
+.skeleton .ln { height: 12px; margin: 6px 0; } .skeleton .ln.s { width: 60%; } .skeleton .ln.m { width: 85%; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.banner { position: fixed; left: 50%; transform: translateX(-50%); top: calc(var(--topbar) + 10px); z-index: 1200; background: var(--panel); color: var(--text); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 12px; padding: 10px 14px; font-size: 13px; display: flex; gap: 12px; align-items: center; max-width: min(92vw, 520px); }
+.banner .linkbtn { white-space: nowrap; }
+.intro { gap: 16px; }
+.intro-steps { display: flex; flex-direction: column; gap: 10px; }
+.intro-step { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+.intro-step .ic-box { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: var(--accent); }
+.intro-step h2 { font-size: 16px; margin: 0 0 2px; }
+.intro-step p { margin: 0; font-size: 13.5px; color: var(--muted); }
+.intro-dots { display: flex; gap: 5px; justify-content: center; }
+.intro-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); } .intro-dots i.on { background: var(--accent); }
+.item:hover { background: var(--bg); }
+
 /* ---------- onglets Explorer / Nos envies ---------- */
 .tabs { display: flex; gap: 4px; margin: 0 12px 8px; padding: 3px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); flex: 0 0 auto; }
 .tabs button { flex: 1; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
@@ -283,12 +305,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 
 /* ---------- desktop / tablette : panneau latéral ---------- */
 @media (min-width: 900px) {
-  #map { inset: var(--topbar) 0 0 400px; }
-  .sheet, .sheet.half, .sheet.full { top: var(--topbar); bottom: 0; left: 0; right: auto; width: 400px; height: auto; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); }
+  :root { --sidebar: 440px; }
+  #map { inset: var(--topbar) 0 0 var(--sidebar); }
+  .sheet, .sheet.half, .sheet.full { top: var(--topbar); bottom: 0; left: 0; right: auto; width: var(--sidebar); height: auto; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); }
+  .layer-chips { left: calc(var(--sidebar) + 10px); }
+  .tabs { position: sticky; top: 0; z-index: 2; background: var(--panel); margin: 0; padding: 8px 12px; border-radius: 0; border: 0; border-bottom: 1px solid var(--line); }
+  .tabs button { border: 1px solid transparent; } .tabs button.on { border-color: var(--line); }
   .handle { display: none; }
   .leaflet-bottom.leaflet-right { bottom: 0; }
   .leaflet-control-zoom { display: block; }
-  .legend { left: 410px; bottom: 24px; }
+  .legend { left: calc(var(--sidebar) + 10px); bottom: 24px; }
   #toast { bottom: 24px; }
   dialog.bottom { margin: auto; width: min(92vw, 440px); border-radius: var(--radius); }
   .days { padding-top: 10px; }

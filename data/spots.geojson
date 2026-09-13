@@ -3,6 +3,7 @@
  "meta": {
   "source": "OpenStreetMap contributors (ODbL)",
   "pipeline": "gispulse/spots_pipeline.json",
+  "region": "costa-cantabrica",
   "bbox": [
    43.25,
    -7.05,
@@ -5662,7 +5663,7 @@
     "id": "w651679116",
     "name": "Playa de la Arenas",
     "type": "cala",
-    "province": "Cantabria",
+    "province": "Asturias",
     "size_m": 151,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/651679116",
@@ -6925,7 +6926,7 @@
     "id": "w208836963",
     "name": "Playa del Pedreru",
     "type": "playa",
-    "province": "Cantabria",
+    "province": "Asturias",
     "size_m": 290,
     "coast_km": 0.36,
     "osm": "https://www.openstreetmap.org/way/208836963",

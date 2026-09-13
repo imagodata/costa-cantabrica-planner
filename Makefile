@@ -1,17 +1,18 @@
 # Cibles usuelles. GISPULSE peut pointer vers un binaire précis (ex. un venv).
 GISPULSE ?= gispulse
 PORT ?= 8000
+REGION ?= config/region.json
 
-.PHONY: spots pois refresh photos galleries pages serve preview publish-map bump
+.PHONY: spots pois refresh photos galleries openverse pages serve preview publish-map bump
 
 spots:            ## régénère data/spots.geojson (caches OSM, pipeline gispulse)
-	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py
+	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py --region $(REGION)
 
 refresh:          ## idem, en réinterrogeant Overpass
-	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py --refresh
+	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py --region $(REGION) --refresh
 
 pois:             ## régénère data/pois.geojson (restos, bars, cafés, sites) via gispulse
-	GISPULSE=$(GISPULSE) python3 scripts/build_pois.py
+	GISPULSE=$(GISPULSE) python3 scripts/build_pois.py --region $(REGION)
 
 photos:           ## complète data/photos.json (Wikimedia Commons)
 	python3 scripts/fetch_photos.py --retry-missing --workers 1
@@ -19,11 +20,15 @@ photos:           ## complète data/photos.json (Wikimedia Commons)
 galleries:        ## complète les galeries (plusieurs photos par spot)
 	python3 scripts/fetch_photos.py --gallery
 
+openverse:        ## repli Openverse (Flickr…) pour les spots sans photo
+	python3 scripts/fetch_photos.py --openverse
+
 pages:            ## régénère les pages de partage s/<slug>.html (aperçu WhatsApp, redirection vers la fiche)
 	python3 scripts/build_pages.py
 
 bump:             ## invalide le cache navigateur (versionne css/js/data dans index.html)
 	sed -i "s/?v=[0-9]*/?v=$$(date +%Y%m%d%H%M)/g" index.html
+	sed -i "s/const VERSION = 'v[0-9]*'/const VERSION = 'v$$(date +%Y%m%d%H%M)'/" sw.js
 
 serve:            ## sert l'application en local
 	python3 -m http.server $(PORT)

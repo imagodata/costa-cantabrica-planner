@@ -7,6 +7,7 @@
   const DEFAULT_NAMES = ['Simon', 'Marie'];
 
   const state = {
+    region: null,
     spots: [], photos: {}, pois: [], bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
     poiOn: { food: true, visit: true },
     view: 'explore', wishWho: 'all', wishSort: 'coast', plans: {},
@@ -293,6 +294,8 @@
   /* ------------------------------------------------------------------ en-tête, jours, profil */
   function renderChrome() {
     $('#brand-mark').innerHTML = I('wave', { size: 18 });
+    $('#brand-name').textContent = state.region.short || state.region.name;
+    $('#brand-sub').textContent = state.region.subtitle || 'plages & criques';
     $('#btn-filters').innerHTML = I('sliders', { size: 20 });
     $('#btn-settings').innerHTML = I('users', { size: 20 });
     $('#btn-locate').innerHTML = I('locate', { size: 20 });
@@ -332,8 +335,8 @@
   /* ------------------------------------------------------------------ onglets & vue Envies */
   function renderTabs() {
     const n = wishedIds().length;
-    $('#tabs').innerHTML = `<button type="button" data-v="explore" class="${state.view === 'explore' ? 'on' : ''}">${I('compass', { size: 16 })}Explorer</button>
-      <button type="button" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Nos envies${n ? `<b>${n}</b>` : ''}</button>`;
+    $('#tabs').innerHTML = `<button type="button" role="tab" aria-selected="${state.view === 'explore'}" data-v="explore" class="${state.view === 'explore' ? 'on' : ''}">${I('compass', { size: 16 })}Explorer</button>
+      <button type="button" role="tab" aria-selected="${state.view === 'wishes'}" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Nos envies${n ? `<b>${n}</b>` : ''}</button>`;
     $('#tabs').querySelectorAll('button').forEach((b) => b.onclick = () => setView(b.dataset.v));
   }
   function setView(v) {
@@ -462,7 +465,7 @@
   async function select(id, { pan = true } = {}) {
     const s = spotById(id); if (!s) return;
     state.selected = id; detailDay = state.day; detailData = null;
-    if (s.properties.slug) history.replaceState(null, '', location.pathname + location.search + '#' + s.properties.slug);
+    if (s.properties.slug && location.hash !== '#' + s.properties.slug) history.pushState({ spot: id }, '', location.pathname + location.search + '#' + s.properties.slug);
     paintMarkers();
     $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
     if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
@@ -472,9 +475,10 @@
     try { detailData = await F.loadDetail(s); renderDetailDay(detailDay); }
     catch (e) { renderDetailDay(detailDay, `Prévisions horaires indisponibles (${esc(e.message)}).`); }
   }
-  function closeDetail() {
+  function closeDetail(fromHistory = false) {
+    if (!fromHistory && history.state && history.state.spot) { history.back(); return; }
     state.selected = null; paintMarkers();
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (location.hash && !fromHistory) history.replaceState(null, '', location.pathname + location.search);
     $('#panel-detail').hidden = true;
     if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else { $('#panel-list').hidden = false; renderList(); }
   }
@@ -695,7 +699,9 @@
     let draft = null;
     const dotLbl = (k) => `<i style="width:10px;height:10px;border-radius:50%;background:var(--${k});display:inline-block"></i>${esc(state.users[k].name)}`;
     const renderFilters = () => {
-      seg($('#f-province'), [['all', 'Toutes'], ['Asturias', 'Asturies'], ['Cantabria', 'Cantabrie']], draft.province, (v) => draft.province = v);
+      const areas = (state.region.areas || []).map((z) => [z.name, z.label || z.name]);
+      $('#f-province').closest('.field').hidden = areas.length < 2;
+      seg($('#f-province'), [['all', 'Toutes'], ...areas], draft.province, (v) => draft.province = v);
       seg($('#f-type'), [['all', 'Tout'], ['playa', 'Plages'], ['cala', 'Criques']], draft.type, (v) => draft.type = v);
       seg($('#f-wish'), [['all', 'Tous'], ['a', dotLbl('a')], ['b', dotLbl('b')], ['both', 'Communes']], draft.wish, (v) => draft.wish = v, { a: 'a', b: 'b', both: 'both' });
       seg($('#f-sort'), [['score', 'Score'], ['dist', 'Distance'], ['name', 'Nom'], ['size', 'Taille']], draft.sort, (v) => draft.sort = v);
@@ -753,12 +759,40 @@
     }, () => toast('Position introuvable'), { enableHighAccuracy: true, timeout: 10000 });
   }
 
+  /* ------------------------------------------------------------------ premier lancement */
+  function showIntro() {
+    let seen = false; try { seen = localStorage.getItem('ccp:intro') === '1'; } catch (e) { }
+    if (seen || wishedIds().length) return;
+    const steps = [
+      { icon: 'compass', title: 'Explorer', text: `Choisissez le jour et votre profil (plage, famille, surf, balade) : chaque plage reçoit un score selon la météo, le vent et la houle. Touchez un point de la carte ou la liste pour la fiche complète : marées, heure par heure, photos, lieux à proximité.` },
+      { icon: 'heart', title: 'À deux', text: `${esc(state.users.a.name)} et ${esc(state.users.b.name)} marquent chacun leurs envies avec le cœur de leur couleur. L'onglet « Nos envies » réunit les listes, numérote les plages d'ouest en est et prépare l'itinéraire.` },
+      { icon: 'note', title: 'Programmer', text: `Dans une fiche, ajoutez un resto, un monument ou une activité au programme de la plage, avec une note pour l'autre. Le bouton partager envoie tout cela par lien, sans compte ni application.` },
+    ];
+    const dlg = $('#dlg-intro'); let i = 0;
+    const render = () => {
+      const st = steps[i];
+      $('#intro-steps').innerHTML = `<div class="intro-step"><span class="ic-box">${I(st.icon, { size: 22 })}</span><div><h2>${st.title}</h2><p>${st.text}</p></div></div>
+        <div class="intro-dots">${steps.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>`;
+      $('#intro-next').textContent = i === steps.length - 1 ? "C'est parti" : 'Suivant';
+    };
+    const done = () => { try { localStorage.setItem('ccp:intro', '1'); } catch (e) { } dlg.close(); };
+    $('#intro-next').onclick = () => { if (i < steps.length - 1) { i++; render(); } else done(); };
+    $('#intro-skip').onclick = done;
+    dlg.addEventListener('close', () => { try { localStorage.setItem('ccp:intro', '1'); } catch (e) { } }, { once: true });
+    render(); dlg.showModal();
+  }
+
   /* ------------------------------------------------------------------ chargement */
+  function showBanner(text, retry) {
+    const b = $('#banner'); $('#banner-text').textContent = text; b.hidden = false;
+    $('#banner-retry').hidden = !retry; $('#banner-retry').onclick = () => { b.hidden = true; retry && retry(); };
+  }
   async function loadForecast(force) {
     $('#summary').innerHTML = '<span>Chargement des prévisions…</span>';
-    try { state.bulk = await F.loadBulk(state.spots, { force }); scoreCache.clear(); }
-    catch (e) { console.error(e); toast('Prévisions indisponibles : ' + e.message); }
-    renderDays(); renderList(); paintMarkers();
+    if (!state.bulk) $('#list').innerHTML = `<ul class="skeleton">${'<li><i class="sq"></i><i class="ph"></i><div><i class="ln m"></i><i class="ln s"></i></div></li>'.repeat(6)}</ul>`;
+    try { state.bulk = await F.loadBulk(state.spots, { force }); scoreCache.clear(); $('#banner').hidden = true; }
+    catch (e) { console.error(e); showBanner(navigator.onLine === false ? 'Hors ligne : prévisions indisponibles, la liste reste consultable.' : 'Prévisions indisponibles pour le moment (' + e.message + ').', () => loadForecast(true)); }
+    renderDays(); if (state.view === 'wishes') renderWishes(); else renderList(); paintMarkers();
     if (state.selected) renderDetailDay(detailDay);
   }
   async function init() {
@@ -766,11 +800,16 @@
     const shared = applyShare();
     let routed = false;
     const ver = (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
-    const [fc, photos, pois] = await Promise.all([
+    const [fc, photos, pois, region] = await Promise.all([
       fetch('data/spots.geojson?v=' + ver).then((r) => r.json()),
       fetch('data/photos.json?v=' + ver).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
       fetch('data/pois.geojson?v=' + ver).then((r) => (r.ok ? r.json() : { features: [] })).catch(() => ({ features: [] })),
+      fetch('data/region.json?v=' + ver).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
+    state.region = region || { name: 'Plages', short: 'Plages', subtitle: '', areas: [] };
+    if (state.region.center) { C.center = state.region.center; C.zoom = state.region.zoom || C.zoom; }
+    if (state.region.timezone) C.timezone = state.region.timezone;
+    document.title = `${state.region.name} · plages & criques`;
     state.spots = fc.features; state.photos = photos || {};
     routed = !shared && applyRoute();
     state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
@@ -779,7 +818,18 @@
     $('#q').value = state.filters.q;
     await loadForecast(false);
     if ((shared || routed) && state.selected) select(state.selected, { pan: true }); else state.selected = null;
-    window.addEventListener('hashchange', () => { if (applyRoute()) select(state.selected, { pan: true }); });
+    window.addEventListener('popstate', () => {
+      if (applyRoute()) select(state.selected, { pan: true });
+      else if (state.selected && !$('#panel-detail').hidden) closeDetail(true);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (document.querySelector('dialog[open]')) return;
+      if (state.selected && !$('#panel-detail').hidden) closeDetail();
+    });
+    if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+    window.addEventListener('online', () => { if (!state.bulk) loadForecast(false); });
+    showIntro();
   }
   document.addEventListener('DOMContentLoaded', init);
 })();

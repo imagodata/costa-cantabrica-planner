@@ -43,6 +43,10 @@ deux listes sur l'autre téléphone.
 - **Liens courts par plage** : `index.html#<slug>` ouvre la fiche ; `s/<slug>.html` est une page
   de partage avec aperçu (titre, photo) qui redirige vers la fiche. Le bouton « partager » d'une
   fiche copie ce lien.
+- **Expérience** : premier lancement guidé en trois étapes, squelette de chargement, bandeau
+  d'erreur avec nouvel essai, bouton retour du navigateur qui ferme la fiche, touche Échap,
+  focus clavier visible, mouvements réduits respectés, service worker (coquille et données
+  disponibles hors ligne, tuiles en cache), thème sombre, panneau latéral sur grand écran.
 - Fonds de carte : plan OSM, satellite Esri, relief OpenTopoMap.
 
 ## Sources de données
@@ -73,6 +77,26 @@ python3 -m http.server 8000
 
 Après toute modification de `css/`, `js/` ou `data/`, lancer `make bump` avant de pousser :
 les ressources sont versionnées (`?v=…`) dans `index.html` pour invalider le cache du navigateur.
+
+## Adapter à une autre côte
+
+Tout ce qui est propre à la zone tient dans `config/region.json` : nom, sous-titre, bbox,
+centre et zoom de la carte, fuseau horaire, CRS métrique, URL de publication et **zones**
+(provinces, comarcas…) avec leur requête Nominatim. Les scripts et l'application lisent ce
+fichier ; rien n'est codé en dur.
+
+```bash
+cp config/region.json config/costa-vasca.json   # puis éditer : bbox, zones, base_url…
+make spots REGION=config/costa-vasca.json
+make pois  REGION=config/costa-vasca.json
+make photos && make galleries && make openverse
+make pages && make bump
+```
+
+Le pipeline attribue la zone de chaque plage par **jointure spatiale** (`spatial_join`) sur
+les polygones administratifs récupérés via Nominatim (`data/raw/areas.geojson`), les plages
+d'estran hors polygone héritant de la zone voisine la plus proche. L'application construit le
+filtre « Province » à partir de `data/region.json`, produit à la construction.
 
 ## Données : pipeline gispulse
 
@@ -124,6 +148,13 @@ GISPULSE_API=http://localhost:8001 make publish-map
 ```
 
 ## Structure
+
+```
+config/region.json            zone, bbox, fuseau, zones administratives (Nominatim)
+data/region.json              copie servie à l'application (générée)
+sw.js                         service worker (hors-ligne)
+```
+
 
 ```
 index.html                    page unique

@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import fetch_osm  # noqa: E402
 
 RAW = ROOT / "data" / "raw"
+REGION_OUT = ROOT / "data" / "region.json"
 PIPELINE = ROOT / "gispulse" / "spots_pipeline.json"
 OUT = ROOT / "data" / "spots.geojson"
 FINAL_COLS = ("id", "name", "slug", "type", "province", "size_m", "coast_km", "osm", "surface", "wikipedia", "wikidata",
@@ -68,11 +69,12 @@ def find_gispulse(explicit):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refresh", action="store_true", help="réinterroger Overpass")
+    ap.add_argument("--region", default=str(fetch_osm.REGION_FILE), help="configuration de la région")
     ap.add_argument("--gispulse", default=None, help="binaire gispulse")
     ap.add_argument("--engine", default="python", choices=("python", "duckdb"))
     args = ap.parse_args(argv)
 
-    fetch_osm.main(["--refresh"] if args.refresh else [])
+    fetch_osm.main(["--region", args.region] + (["--refresh"] if args.refresh else []))
     gp = find_gispulse(args.gispulse)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -92,19 +94,29 @@ def main(argv=None):
             continue
         seen.add(p["id"])
         props = {"id": p["id"], "name": p["name"], "type": p.get("type") or ("cala" if p.get("is_cala") else "playa"),
-                 "province": p["province"], "size_m": int(p.get("size_m") or 0), "coast_km": p.get("coast_km")}
+                 "province": p.get("province") or "", "size_m": int(p.get("size_m") or 0), "coast_km": p.get("coast_km")}
         for k in FINAL_COLS:
             if k not in props and p.get(k) not in (None, ""):
                 props[k] = p[k]
         lon, lat = f["geometry"]["coordinates"][:2]
         features.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
                          "properties": props})
+    # spots hors de tout polygone (estran, précision des limites) : zone du voisin le plus proche
+    known = [f for f in features if f["properties"]["province"]]
+    for f in features:
+        if not f["properties"]["province"] and known:
+            lon, lat = f["geometry"]["coordinates"]
+            nearest = min(known, key=lambda k: (k["geometry"]["coordinates"][0] - lon) ** 2 + (k["geometry"]["coordinates"][1] - lat) ** 2)
+            f["properties"]["province"] = nearest["properties"]["province"]
     assign_slugs(features)
     features.sort(key=lambda f: f["properties"]["name"])
+    region = fetch_osm.load_region(args.region)
+    REGION_OUT.write_text(json.dumps({k: region[k] for k in ("id", "name", "short", "subtitle", "description", "center", "zoom", "timezone", "areas", "base_url") if k in region},
+                                     ensure_ascii=False, indent=1), encoding="utf-8")
 
     out = {"type": "FeatureCollection",
            "meta": {"source": "OpenStreetMap contributors (ODbL)", "pipeline": "gispulse/spots_pipeline.json",
-                    "bbox": list(fetch_osm.DEFAULT_BBOX)},
+                    "region": region["id"], "bbox": region["bbox"]},
            "features": features}
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"Spots : {len(features)} conservés sur {raw_n} → {OUT.relative_to(ROOT)}", file=sys.stderr)

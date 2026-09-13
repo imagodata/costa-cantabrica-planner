@@ -7,7 +7,9 @@
   - data/raw/overpass_pois.json      réponse Overpass brute (restaurants, bars, cafés, sites), mise en cache
   - data/raw/pois_osm.geojson        points d'intérêt bruts, avec un « kind » de départ
 
-Usage : python3 scripts/fetch_osm.py [--refresh] [--bbox S,W,N,E]
+  - data/raw/areas.geojson           polygones des zones (provinces…) de la région, via Nominatim
+
+Usage : python3 scripts/fetch_osm.py [--region config/region.json] [--refresh] [--bbox S,W,N,E]
 Sans --refresh, les caches existants sont réutilisés (aucun appel réseau).
 """
 import argparse
@@ -15,13 +17,22 @@ import json
 import math
 import sys
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
-# Sud, Ouest, Nord, Est : de la ría de Ribadeo (limite Galice) à Ontón (limite Biscaye)
-DEFAULT_BBOX = (43.25, -7.05, 43.75, -3.15)
+REGION_FILE = ROOT / "config" / "region.json"
+NOMINATIM = "https://nominatim.openstreetmap.org/search"
+
+
+def load_region(path=None):
+    return json.loads(Path(path or REGION_FILE).read_text(encoding="utf-8"))
+
+
+# Sud, Ouest, Nord, Est (valeur de repli : de la ría de Ribadeo à Ontón)
+DEFAULT_BBOX = tuple(load_region()["bbox"]) if REGION_FILE.exists() else (43.25, -7.05, 43.75, -3.15)
 COAST_THIN = 6  # 1 sommet sur N (~200 m) : suffisant pour un seuil de distance kilométrique
 ENDPOINTS = ("https://overpass-api.de/api/interpreter",
              "https://overpass.private.coffee/api/interpreter",
@@ -115,6 +126,27 @@ def beaches_geojson(elements):
     return {"type": "FeatureCollection", "features": feats}
 
 
+def fetch_areas(region, refresh):
+    """Polygones des zones (provinces, comarcas…) déclarées dans la région, via Nominatim (1 req/s)."""
+    out = RAW / "areas.geojson"
+    if out.exists() and not refresh:
+        return json.loads(out.read_text(encoding="utf-8"))
+    feats = []
+    for area in region.get("areas", []):
+        q = urllib.parse.urlencode({"q": area["query"], "format": "geojson", "polygon_geojson": 1, "polygon_threshold": 0.002, "limit": 1})
+        req = urllib.request.Request(NOMINATIM + "?" + q, headers={"User-Agent": "costa-cantabrica-planner"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.load(r)
+        if not data.get("features"):
+            raise SystemExit(f"Nominatim : zone introuvable « {area['query']} »")
+        f = data["features"][0]
+        feats.append({"type": "Feature", "geometry": f["geometry"], "properties": {"province": area["name"]}})
+        time.sleep(1.1)
+    fc = {"type": "FeatureCollection", "features": feats}
+    out.write_text(json.dumps(fc, separators=(",", ":")), encoding="utf-8")
+    return fc
+
+
 def poi_kind(tags):
     """Classe de départ ; le pipeline gispulse promeut ensuite en « beach_bar » les bars/restos collés à une plage."""
     a = tags.get("amenity")
@@ -163,12 +195,16 @@ def fetch_pois(bbox, refresh):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--bbox", default=",".join(map(str, DEFAULT_BBOX)))
+    ap.add_argument("--region", default=str(REGION_FILE), help="fichier de configuration de la région")
+    ap.add_argument("--bbox", default=None, help="S,W,N,E (défaut : bbox de la région)")
     ap.add_argument("--refresh", action="store_true", help="réinterroger Overpass au lieu des caches")
     ap.add_argument("--pois", action="store_true", help="extraire aussi les points d'intérêt (restos, bars, sites)")
     args = ap.parse_args(argv)
-    bbox = tuple(float(x) for x in args.bbox.split(","))
+    region = load_region(args.region)
+    bbox = tuple(float(x) for x in args.bbox.split(",")) if args.bbox else tuple(region["bbox"])
     RAW.mkdir(parents=True, exist_ok=True)
+    areas = fetch_areas(region, args.refresh)
+    print(f"Zones : {len(areas['features'])}", file=sys.stderr)
 
     elements = fetch_beaches(bbox, args.refresh)
     fc = beaches_geojson(elements)

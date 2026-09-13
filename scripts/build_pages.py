@@ -12,7 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "s"
-DEFAULT_BASE = "https://imagodata.github.io/costa-cantabrica-planner/"
+REGION = ROOT / "data" / "region.json"
+DEFAULT_BASE = json.loads(REGION.read_text(encoding="utf-8")).get("base_url", "./") if REGION.exists() else "./"
 SURF = {"sand": "sable", "pebblestone": "galets", "gravel": "graviers", "fine_gravel": "gravier fin", "rocky": "rochers", "rock": "rochers", "stone": "pierres"}
 
 TEMPLATE = """<!doctype html>
@@ -23,7 +24,7 @@ TEMPLATE = """<!doctype html>
 <title>{title}</title>
 <meta name="description" content="{desc}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Costa Cantábrica · plages &amp; criques">
+<meta property="og:site_name" content="{site}">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="{page_url}">
@@ -48,6 +49,7 @@ def main():
     ap.add_argument("--base", default=DEFAULT_BASE)
     args = ap.parse_args()
     base = args.base.rstrip("/") + "/"
+    region = json.loads(REGION.read_text(encoding="utf-8")) if REGION.exists() else {"name": "Plages"}
     spots = json.loads((ROOT / "data" / "spots.geojson").read_text(encoding="utf-8"))["features"]
     photos = json.loads((ROOT / "data" / "photos.json").read_text(encoding="utf-8")) if (ROOT / "data" / "photos.json").exists() else {}
     if OUT.exists():
@@ -61,9 +63,9 @@ def main():
                 "surveillée" if p.get("lifeguard") == "yes" else None]
         desc = " · ".join(b for b in bits if b) + " · météo, houle et marées à 7 jours."
         ph = photos.get(p["id"]) or {}
-        title = f"{p['name']} · Costa Cantábrica"
+        title = f"{p['name']} · {region['name']}"
         app_url = f"{base}index.html#{slug}"
-        ctx = dict(title=html.escape(title), title_plain=html.escape(p["name"]), desc=html.escape(desc),
+        ctx = dict(site=html.escape(region["name"] + " · plages & criques"), title=html.escape(title), title_plain=html.escape(p["name"]), desc=html.escape(desc),
                    page_url=f"{base}s/{slug}.html", app_url=html.escape(app_url), app_url_js=json.dumps(app_url),
                    og_image=f'<meta property="og:image" content="{html.escape(ph["thumb"])}">' if ph.get("thumb") else "",
                    card="summary_large_image" if ph.get("thumb") else "summary",

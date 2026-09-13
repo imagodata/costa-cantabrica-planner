@@ -10,20 +10,20 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="css/style.css?v=202609132012">
+  <link rel="stylesheet" href="css/style.css?v=202609132021">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="mark" id="brand-mark"></span><span class="brand-text"><b>Costa</b><small>Asturias · Cantabria</small></span></div>
+    <div class="brand"><span class="mark" id="brand-mark"></span><span class="brand-text"><b id="brand-name">Costa</b><small id="brand-sub">plages &amp; criques</small></span></div>
     <div class="who" id="who" title="Qui marque ses envies ? (appui long : réglages)"></div>
-    <button class="iconbtn" id="btn-settings" title="Voyageurs, partage, export"></button>
-    <button class="iconbtn" id="btn-filters" title="Filtres & tri"></button>
+    <button class="iconbtn" id="btn-settings" title="Voyageurs, partage, export" aria-label="Voyageurs, partage, export"></button>
+    <button class="iconbtn" id="btn-filters" title="Filtres & tri" aria-label="Filtres et tri"></button>
   </header>
 
   <div id="map" role="application" aria-label="Carte des plages"></div>
   <div class="map-tools">
-    <button class="iconbtn float" id="btn-locate" title="Ma position"></button>
-    <button class="iconbtn float" id="btn-share" title="Partager la sélection"></button>
+    <button class="iconbtn float" id="btn-locate" title="Ma position" aria-label="Ma position"></button>
+    <button class="iconbtn float" id="btn-share" title="Partager la sélection" aria-label="Partager la sélection"></button>
   </div>
   <div class="layer-chips" id="layer-chips"></div>
   <div class="legend" id="legend"></div>
@@ -83,12 +83,21 @@
     </form>
   </dialog>
 
+  <div class="banner" id="banner" hidden><span id="banner-text"></span><button type="button" class="linkbtn" id="banner-retry">Réessayer</button></div>
+
+  <dialog id="dlg-intro">
+    <div class="dlg intro">
+      <div class="intro-steps" id="intro-steps"></div>
+      <div class="row"><button type="button" class="btn ghost" id="intro-skip">Passer</button><button type="button" class="btn primary" id="intro-next" style="flex:1">Suivant</button></div>
+    </div>
+  </dialog>
+
   <div id="toast" role="status"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="js/config.js?v=202609132012"></script>
-  <script src="js/icons.js?v=202609132012"></script>
-  <script src="js/forecast.js?v=202609132012"></script>
-  <script src="js/app.js?v=202609132012"></script>
+  <script src="js/config.js?v=202609132021"></script>
+  <script src="js/icons.js?v=202609132021"></script>
+  <script src="js/forecast.js?v=202609132021"></script>
+  <script src="js/app.js?v=202609132021"></script>
 </body>
 </html>

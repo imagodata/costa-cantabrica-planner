@@ -1,12 +1,13 @@
 {
   "version": 2,
   "name": "costa_cantabrica_spots",
-  "description": "Plages et criques de la côte cantabrique : distance à la ligne de côte OSM, typologie playa/cala, province, puis exclusion des plages fluviales et de lac.",
+  "description": "Plages et criques d'une côte : distance à la ligne de côte OSM, zone administrative par jointure spatiale (polygones Nominatim), typologie playa/cala, puis exclusion des plages fluviales et de lac.",
   "domain": "tourisme",
   "author": "costa-cantabrica-planner",
   "tags": ["osm", "plages", "asturias", "cantabria", "tourisme"],
   "ref_layers": {
-    "coast": "data/raw/coastline_pts.geojson"
+    "coast": "data/raw/coastline_pts.geojson",
+    "areas": "data/raw/areas.geojson"
   },
   "inputs_notes": "Entrée = data/raw/beaches_osm.geojson (scripts/fetch_osm.py). La couche de référence coast = sommets amincis de natural=coastline (~200 m).",
   "steps": [
@@ -23,16 +24,22 @@
       }
     },
     {
+      "id": "area",
+      "type": "capability",
+      "capability": "spatial_join",
+      "input": "dist_coast",
+      "params": { "ref_layer": "areas", "how": "left", "predicate": "within", "columns": ["province"] }
+    },
+    {
       "id": "derive",
       "type": "capability",
       "capability": "calculate",
-      "input": "dist_coast",
+      "input": "area",
       "params": {
         "expressions": {
           "coast_km": "np.round(coast_m / 1000, 2)",
           "is_cala": "np.maximum(np.maximum(name.str.lower().str.startswith('cala') * 1, name.str.lower().str.contains(' cala ') * 1), (size_m > 0) * (size_m < 220) * 1)",
-          "type": "np.where(is_cala > 0, 'cala', 'playa')",
-          "province": "np.where(lon < -4.515, 'Asturias', 'Cantabria')"
+          "type": "np.where(is_cala > 0, 'cala', 'playa')"
         }
       }
     },

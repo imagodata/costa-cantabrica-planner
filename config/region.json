@@ -1,0 +1,17 @@
+{
+  "id": "costa-cantabrica",
+  "name": "Costa Cantábrica",
+  "short": "Costa",
+  "subtitle": "Asturias · Cantabria",
+  "description": "Plages et criques des Asturies et de Cantabrie, avec prévisions météo, houle et marées.",
+  "bbox": [43.25, -7.05, 43.75, -3.15],
+  "center": [43.45, -5.0],
+  "zoom": 8,
+  "timezone": "Europe/Madrid",
+  "crs_meters": "EPSG:25830",
+  "base_url": "https://imagodata.github.io/costa-cantabrica-planner/",
+  "areas": [
+    { "name": "Asturias", "label": "Asturies", "query": "Principado de Asturias, España" },
+    { "name": "Cantabria", "label": "Cantabrie", "query": "Cantabria, España" }
+  ]
+}
