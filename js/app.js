@@ -1014,7 +1014,8 @@
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
     if (gal.length > 1) {
       const slides = $('#slides'), dots = $('#dots').children;
-      const go = (i) => slides.scrollTo({ left: i * slides.clientWidth, behavior: 'smooth' });
+      const sw = CCP.swipeable(slides);
+      const go = (i) => sw.go(i);
       const cur = () => Math.round(slides.scrollLeft / slides.clientWidth);
       slides.addEventListener('scroll', () => {
         const i = Math.max(0, Math.min(gal.length - 1, cur()));

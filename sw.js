@@ -1,9 +1,9 @@
 /* Service worker : coquille hors-ligne, données en cache (stale-while-revalidate, clés versionnées),
    tuiles OSM en cache avec expiration ; API météo et imagerie Esri toujours en réseau. */
-const VERSION = 'v202609132158';
+const VERSION = 'v202609132204';
 const SHELL = ['./', './index.html', './app.html', './login.html', './css/style.css', './css/site.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js',
-  './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
-  './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './img/cover.jpg', './css/site.css'];
+  './js/swipe.js', './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
+  './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './img/cover.jpg'];
 const TILE_MAX_AGE = 7 * 24 * 3600 * 1000, TILE_MAX = 600, PAGE_MAX = 80;
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION && k !== 'tiles').map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

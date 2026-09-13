@@ -14,7 +14,7 @@ a { color: var(--accent); }
 .brand b { font-size: 18px; } .brand small { display: block; font-size: 12px; color: var(--muted); line-height: 1.1; }
 .cover { margin: 20px 0 0; position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 16 / 9; max-width: 100%; background: #1b3a4b; outline: none; }
 .cover:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
-.cover .slides { position: absolute; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
+.cover .slides { position: absolute; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .cover .slides::-webkit-scrollbar { display: none; }
 .cover .slide { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; display: block; height: 100%; -webkit-user-drag: none; user-select: none; }
 .cover .slide img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }

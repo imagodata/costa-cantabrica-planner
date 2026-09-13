@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="css/site.css?v=202609132158">
+  <link rel="stylesheet" href="css/site.css?v=202609132204">
 </head>
 <body>
 <div class="wrap">
@@ -59,13 +59,15 @@
 
   <footer>Données © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · prévisions <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) · photos Wikimedia Commons, Flickr, Openverse · imagerie Esri · <a href="https://github.com/imagodata/costa-cantabrica-planner" target="_blank" rel="noopener">code source</a> (MIT).</footer>
 </div>
+<script src="js/swipe.js?v=202609132204"></script>
 <script>
 (function () {
   const box = document.getElementById('cover'), slides = document.getElementById('cover-slides'), items = [...slides.children];
+  const sw = CCP.swipeable(slides);
   const dots = document.getElementById('cover-dots'), name = document.getElementById('cover-name'), credit = document.getElementById('cover-credit'), hint = document.getElementById('cover-hint');
   dots.innerHTML = items.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('');
   const cur = () => Math.round(slides.scrollLeft / slides.clientWidth);
-  const go = (i) => slides.scrollTo({ left: Math.max(0, Math.min(items.length - 1, i)) * slides.clientWidth, behavior: 'smooth' });
+  const go = (i) => sw.go(i);
   let raf = null;
   slides.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = null; const i = cur(); [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
     const c = (items[i].dataset.credit || '').split(' · '); name.textContent = c.shift() || ''; credit.textContent = c.join(' · '); }); }, { passive: true });
@@ -75,7 +77,7 @@
      pour n'ouvrir la fiche qu'au tap ; le premier geste masque l'indication. */
   let x0 = null, y0 = null, moved = false;
   slides.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; moved = false; }, { passive: true });
-  slides.addEventListener('pointermove', (e) => { if (x0 != null && (Math.abs(e.clientX - x0) > 8 || Math.abs(e.clientY - y0) > 8)) { moved = true; hint.classList.add('off'); } }, { passive: true });
+  slides.addEventListener('pointermove', (e) => { if (x0 != null && (Math.abs(e.clientX - x0) > 8 || Math.abs(e.clientY - y0) > 8)) { moved = true; hint.classList.add('off'); } });
   slides.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; } }, true);
   box.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') go(cur() - 1); if (e.key === 'ArrowRight') go(cur() + 1); });
   box.tabIndex = 0;
