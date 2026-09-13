@@ -4,6 +4,8 @@
   - data/raw/overpass_beaches.json   réponse Overpass brute (natural=beach + name), mise en cache
   - data/raw/beaches_osm.geojson     points bruts (centre de chaque plage) avec tags utiles, lat/lon, size_m
   - data/raw/coastline_pts.geojson   sommets amincis de la ligne de côte (natural=coastline)
+  - data/raw/overpass_pois.json      réponse Overpass brute (restaurants, bars, cafés, sites), mise en cache
+  - data/raw/pois_osm.geojson        points d'intérêt bruts, avec un « kind » de départ
 
 Usage : python3 scripts/fetch_osm.py [--refresh] [--bbox S,W,N,E]
 Sans --refresh, les caches existants sont réutilisés (aucun appel réseau).
@@ -24,6 +26,17 @@ COAST_THIN = 6  # 1 sommet sur N (~200 m) : suffisant pour un seuil de distance 
 ENDPOINTS = ("https://overpass-api.de/api/interpreter",
              "https://overpass.private.coffee/api/interpreter",
              "https://overpass.kumi.systems/api/interpreter")
+POI_QUERY = """[out:json][timeout:240];
+(
+  nwr["amenity"~"^(restaurant|bar|cafe|pub|ice_cream|biergarten|food_court)$"]["name"]({b});
+  nwr["tourism"~"^(attraction|museum|viewpoint|gallery|artwork|aquarium|zoo|theme_park)$"]["name"]({b});
+  nwr["historic"~"^(castle|monument|memorial|archaeological_site|ruins|fort|palace|tower|city_gate|church|monastery|manor)$"]["name"]({b});
+  nwr["man_made"="lighthouse"]["name"]({b});
+  nwr["natural"="cave_entrance"]["name"]["tourism"]({b});
+);
+out center tags;"""
+POI_TAGS = ("cuisine", "website", "contact:website", "phone", "contact:phone", "opening_hours", "wikidata", "wikipedia",
+            "description", "outdoor_seating", "wheelchair", "addr:city", "addr:street", "historic", "tourism", "amenity", "man_made")
 KEEP_TAGS = ("surface", "wikipedia", "wikidata", "lifeguard", "nudism", "dog", "access", "description",
              "tidal", "wheelchair", "website", "alt_name", "name:es", "name:ast", "supervised")
 
@@ -102,10 +115,57 @@ def beaches_geojson(elements):
     return {"type": "FeatureCollection", "features": feats}
 
 
+def poi_kind(tags):
+    """Classe de départ ; le pipeline gispulse promeut ensuite en « beach_bar » les bars/restos collés à une plage."""
+    a = tags.get("amenity")
+    if a in ("restaurant", "food_court"):
+        return "restaurant"
+    if a in ("bar", "pub", "biergarten"):
+        return "bar"
+    if a in ("cafe", "ice_cream"):
+        return "cafe"
+    if tags.get("tourism") in ("museum", "gallery", "artwork") or tags.get("historic"):
+        return "culture"
+    return "tourism"
+
+
+def fetch_pois(bbox, refresh):
+    cache = RAW / "overpass_pois.json"
+    if cache.exists() and not refresh:
+        elements = json.loads(cache.read_text(encoding="utf-8"))["elements"]
+    else:
+        s, w, n, e = bbox
+        data = overpass(POI_QUERY.format(b=f"{s},{w},{n},{e}"))
+        elements = data["elements"]
+        cache.write_text(json.dumps({"elements": elements}, ensure_ascii=False), encoding="utf-8")
+    feats = []
+    for el in elements:
+        tags = el.get("tags", {})
+        c = el.get("center")
+        lat, lon = (el["lat"], el["lon"]) if el["type"] == "node" else ((c["lat"], c["lon"]) if c else (None, None))
+        if lat is None:
+            continue
+        name = tags.get("name")
+        lname = name.lower()
+        kind = poi_kind(tags)
+        if kind in ("bar", "restaurant", "cafe") and ("chiringuito" in lname or "xiringuitu" in lname or "beach bar" in lname or tags.get("beach_bar") == "yes"):
+            kind = "beach_bar"
+        props = {"id": f"{el['type'][0]}{el['id']}", "name": name, "kind": kind, "lat": round(lat, 5), "lon": round(lon, 5),
+                 "osm": f"https://www.openstreetmap.org/{el['type']}/{el['id']}"}
+        for k in POI_TAGS:
+            if k in tags:
+                props[k.replace(":", "_")] = tags[k]
+        feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]}, "properties": props})
+    fc = {"type": "FeatureCollection", "features": feats}
+    (RAW / "pois_osm.geojson").write_text(json.dumps(fc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    return fc
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--bbox", default=",".join(map(str, DEFAULT_BBOX)))
     ap.add_argument("--refresh", action="store_true", help="réinterroger Overpass au lieu des caches")
+    ap.add_argument("--pois", action="store_true", help="extraire aussi les points d'intérêt (restos, bars, sites)")
     args = ap.parse_args(argv)
     bbox = tuple(float(x) for x in args.bbox.split(","))
     RAW.mkdir(parents=True, exist_ok=True)
@@ -115,6 +175,9 @@ def main(argv=None):
     (RAW / "beaches_osm.geojson").write_text(json.dumps(fc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     coast = fetch_coast(bbox, args.refresh)
     print(f"Plages OSM : {len(fc['features'])} · sommets de côte : {len(coast['features'])}", file=sys.stderr)
+    if args.pois:
+        pois = fetch_pois(bbox, args.refresh)
+        print(f"Points d'intérêt OSM : {len(pois['features'])}", file=sys.stderr)
 
 
 if __name__ == "__main__":

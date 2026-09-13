@@ -7,7 +7,8 @@
   const DEFAULT_NAMES = ['Simon', 'Marie'];
 
   const state = {
-    spots: [], photos: {}, bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
+    spots: [], photos: {}, pois: [], bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
+    poiOn: { food: true, visit: true },
     filters: { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' },
     sort: 'score',
     users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } },
@@ -15,6 +16,7 @@
   };
   const scoreCache = new Map();
   let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0;
+  let poiLayer = null, poiMarkers = new Map();
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   /* ------------------------------------------------------------------ utilitaires */
@@ -55,6 +57,7 @@
       if (j.profile && C.profiles[j.profile]) state.profile = j.profile;
       if (j.filters) Object.assign(state.filters, j.filters);
       if (j.sort) state.sort = j.sort;
+      if (j.poiOn) Object.assign(state.poiOn, j.poiOn);
     } catch (e) { }
   }
 
@@ -148,6 +151,73 @@
     fitAll();
     $('#legend').innerHTML = C.scoreClasses.map((c) => `<span><i style="background:var(--${c.key})"></i>${c.label}</span>`).join('');
   }
+  /* ------------------------------------------------------------------ points d'intérêt */
+  const poiGroupOf = (kind) => C.poiGroups.food.includes(kind) ? 'food' : 'visit';
+  const osmUrl = (id) => `https://www.openstreetmap.org/${{ n: 'node', w: 'way', r: 'relation' }[id[0]]}/${id.slice(1)}`;
+  function poiPopup(x) {
+    const p = x.p, k = C.poiKinds[p.kind] || C.poiKinds.tourism;
+    const meta = [p.cuisine ? p.cuisine.split(';').join(', ') : null, p.sub && p.kind !== p.sub ? p.sub.replace(/_/g, ' ') : null,
+      p.beach_m && p.beach_m < 400 ? `plage à ${p.beach_m} m` : null, p.addr_city].filter(Boolean).join(' · ');
+    return `<div class="poi-pop"><b>${esc(p.name)}</b><span class="k" style="color:${k.color}">${I(k.icon, { size: 13 })}${esc(k.label)}</span>
+      ${meta ? `<div class="m">${esc(meta)}</div>` : ''}${p.opening_hours ? `<div class="m">${I('clock', { size: 12 })} ${esc(p.opening_hours)}</div>` : ''}
+      <div class="l"><a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" rel="noopener">${I('navigation', { size: 12 })}Itinéraire</a>
+      ${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener">${I('link', { size: 12 })}Site</a>` : ''}
+      ${p.phone ? `<a href="tel:${esc(p.phone.replace(/\s/g, ''))}">${esc(p.phone)}</a>` : ''}
+      <a href="${osmUrl(p.id)}" target="_blank" rel="noopener">${I('map', { size: 12 })}OSM</a></div></div>`;
+  }
+  function poiMarker(x, small) {
+    const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism;
+    const icon = L.divIcon({ className: '', html: `<div class="poi-pin ${small ? 'small' : ''}" style="background:${k.color}">${I(k.icon, { size: 13 })}</div>`, iconSize: small ? [12, 12] : [24, 24], iconAnchor: small ? [6, 6] : [12, 12], popupAnchor: [0, small ? -6 : -12] });
+    return L.marker([x.lat, x.lon], { icon, title: x.p.name }).bindPopup(() => poiPopup(x), { maxWidth: 280 });
+  }
+  function renderPois() {
+    if (!poiLayer) return;
+    renderLayerChips();
+    const z = map.getZoom(), on = state.poiOn;
+    const anyOn = on.food || on.visit;
+    if (z < C.poiMinZoom || !anyOn) { poiLayer.clearLayers(); poiMarkers.clear(); return; }
+    const b = map.getBounds().pad(0.2), small = z < C.poiMinZoom + 1, keep = new Set();
+    let n = 0;
+    for (const x of state.pois) {
+      if (!on[poiGroupOf(x.p.kind)] || !b.contains([x.lat, x.lon])) continue;
+      if (++n > 900) break;
+      keep.add(x.id);
+      const m = poiMarkers.get(x.id);
+      if (m && m._small === small) continue;
+      if (m) poiLayer.removeLayer(m);
+      const nm = poiMarker(x, small); nm._small = small; nm.addTo(poiLayer); poiMarkers.set(x.id, nm);
+    }
+    for (const [id, m] of poiMarkers) if (!keep.has(id)) { poiLayer.removeLayer(m); poiMarkers.delete(id); }
+  }
+  function renderLayerChips() {
+    const z = map.getZoom(), zoomHint = z < C.poiMinZoom;
+    const chip = (g, label, colors) => `<button type="button" data-g="${g}" class="${state.poiOn[g] ? 'on' : ''}" title="${zoomHint ? 'Zoomez pour voir les lieux' : ''}">${colors.map((c) => `<i class="sw" style="background:${c}"></i>`).join('')}${label}${state.poiOn[g] && zoomHint ? ' · zoomez' : ''}</button>`;
+    $('#layer-chips').innerHTML = chip('food', 'Restos & bars', [C.poiKinds.restaurant.color, C.poiKinds.beach_bar.color]) + chip('visit', 'Visites', [C.poiKinds.culture.color, C.poiKinds.tourism.color]);
+    $('#layer-chips').querySelectorAll('button').forEach((b) => b.onclick = () => { state.poiOn[b.dataset.g] = !state.poiOn[b.dataset.g]; save(); renderPois(); });
+  }
+  function initPois() {
+    poiLayer = L.layerGroup().addTo(map);
+    map.on('moveend zoomend', renderPois);
+    renderPois();
+  }
+  function showPoi(x) {
+    state.poiOn[poiGroupOf(x.p.kind)] = true;
+    const z = Math.max(map.getZoom(), C.poiMinZoom + 2), mobile = window.innerWidth < 900, p = map.project([x.lat, x.lon], z);
+    if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
+    map.setView(map.unproject(p, z), z, { animate: false });
+    renderPois();
+    const m = poiMarkers.get(x.id) || poiMarker(x, false).addTo(poiLayer);
+    if (!poiMarkers.has(x.id)) poiMarkers.set(x.id, m);
+    m.openPopup();
+    if (mobile && sheet.classList.contains('full')) setSheet('half');
+  }
+  function nearbyOf(s, km = C.nearbyKm) {
+    const c = latlng(s), sname = s.properties.name.toLowerCase();
+    return state.pois.map((x) => ({ x, d: distKm(c, [x.lat, x.lon]) }))
+      .filter((o) => o.d <= km && !(o.d < 0.12 && poiGroupOf(o.x.p.kind) === 'visit' && (sname.includes(o.x.p.name.toLowerCase()) || o.x.p.name.toLowerCase().includes(sname))))
+      .sort((a, b) => a.d - b.d);
+  }
+
   function fitAll() {
     if (!state.spots.length) return;
     const b = L.latLngBounds(state.spots.map(latlng)), mobile = window.innerWidth < 900;
@@ -168,7 +238,7 @@
     }
   }
   function panTo(s) {
-    const z = Math.max(map.getZoom(), 12), mobile = window.innerWidth < 900, p = map.project(latlng(s), z);
+    const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = window.innerWidth < 900, p = map.project(latlng(s), z);
     if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
     map.setView(map.unproject(p, z), z, { animate: true });
   }
@@ -274,16 +344,20 @@
       p.tidal === 'yes' ? 'dépend de la marée' : null, p.access && p.access !== 'yes' ? `accès : ${p.access}` : null].filter(Boolean);
     const wiki = p.wikipedia ? `https://${p.wikipedia.split(':')[0]}.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':').slice(1).join(':'))}` : null;
     const commons = `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(p.name)}&ns6=1`;
+    const gal = ph && ph.gallery && ph.gallery.length > 1 ? ph.gallery : null;
     $('#detail-head').innerHTML = `
       <div class="hero ${ph ? '' : 'nophoto'}">
-        ${ph ? `<img src="${esc(ph.thumb)}" alt="${esc(p.name)}" decoding="async" onerror="this.remove();this.closest('.hero')?.classList.add('nophoto')">` : ''}
+        ${gal ? `<div class="slides" id="slides">${gal.map((g, i) => `<img src="${esc(g.thumb)}" alt="${esc(p.name)} (${i + 1})" ${i ? 'loading="lazy"' : ''} decoding="async" onerror="this.style.visibility='hidden'">`).join('')}</div>`
+          : ph ? `<img src="${esc(ph.thumb)}" alt="${esc(p.name)}" decoding="async" onerror="this.remove();this.closest('.hero')?.classList.add('nophoto')">` : ''}
         <div class="shade"></div>
+        ${gal ? `<div class="dots" id="dots">${gal.map((g, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div><span class="count" id="gcount">1 / ${gal.length}</span>
+          <button type="button" class="nav l" id="gprev" aria-label="Photo précédente">${I('chevronL', { size: 24 })}</button><button type="button" class="nav r" id="gnext" aria-label="Photo suivante">${I('chevronR', { size: 24 })}</button>` : ''}
         <div class="tl"><button type="button" class="iconbtn" id="btn-close" aria-label="Retour à la liste">${I('back', { size: 20 })}</button></div>
         <div class="tr"><button type="button" class="iconbtn" id="btn-share-spot" aria-label="Partager ce spot">${I('share', { size: 20 })}</button></div>
         <div class="cap">
           <div class="row"><h2>${esc(p.name)}</h2>${r ? `<div class="score c-${r.cls}"><b>${r.score ?? '—'}</b><small>${esc(r.label)}</small></div>` : ''}</div>
           <span class="sub">${esc(tags.join(' · '))}</span>
-          ${ph ? `<span class="credit">${esc(ph.credit)}${ph.license ? ' · ' + esc(ph.license) : ''} · <a href="${esc(ph.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>${ph.source === 'geosearch' ? ' · photo prise à proximité' : ''}</span>` : ''}
+          ${ph ? `<span class="credit" id="gcredit">${esc(ph.credit)}${ph.license ? ' · ' + esc(ph.license) : ''} · <a href="${esc(ph.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>${ph.source === 'geosearch' ? ' · photo prise à proximité' : ''}</span>` : ''}
         </div>
       </div>
       <div class="dbody" id="dhead-body">
@@ -304,6 +378,19 @@
       </div>`;
     $('#btn-close').onclick = closeDetail;
     $('#btn-share-spot').onclick = share;
+    if (gal) {
+      const slides = $('#slides'), dots = $('#dots').children;
+      const go = (i) => slides.scrollTo({ left: i * slides.clientWidth, behavior: 'smooth' });
+      const cur = () => Math.round(slides.scrollLeft / slides.clientWidth);
+      slides.addEventListener('scroll', () => {
+        const i = Math.max(0, Math.min(gal.length - 1, cur()));
+        [...dots].forEach((d, k) => d.classList.toggle('on', k === i));
+        $('#gcount').textContent = `${i + 1} / ${gal.length}`;
+        const g = gal[i]; $('#gcredit').innerHTML = `${esc(g.credit)}${g.license ? ' · ' + esc(g.license) : ''} · <a href="${esc(g.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>`;
+      }, { passive: true });
+      $('#gprev').onclick = () => go(Math.max(0, cur() - 1));
+      $('#gnext').onclick = () => go(Math.min(gal.length - 1, cur() + 1));
+    }
     $('#detail-head').querySelectorAll('.pill[data-who]').forEach((h) => h.onclick = () => toggleWish(p.id, h.dataset.who));
   }
   function renderDetailDay(i, hourlyError = null) {
@@ -325,15 +412,17 @@
         <div><b>UV max</b><span>${I('sun', { size: 15, cls: 'sun' })}${n1(d.uv)}</span></div>
         <div><b>Vent</b><span class="mu">${I('wind', { size: 15 })}${n0(d.wind, ' km/h')} ${arrow(d.wdir)}${compass(d.wdir)}</span></div>
         <div><b>Houle</b><span class="sea">${I('wave', { size: 15 })}${n1(d.wave, ' m')} · ${n0(d.period, ' s')} ${arrow(d.wavedir)}</span></div>
-        <div><b>Température</b><span>${I('thermo', { size: 15 })}${n0(d.tmax, '°')} / ${n0(d.tmin, '°')} · ressenti ${n0(d.tapp, '°')}</span></div>
+        <div><b>Température</b><span>${I('thermo', { size: 15 })}${n0(d.tmax, '°')} / ${n0(d.tmin, '°')}</span></div>
         <div><b>Rafales</b><span class="mu">${I('wind', { size: 15 })}${n0(d.gust, ' km/h')}</span></div>
         <div><b>Swell</b><span class="sea">${I('wave', { size: 15 })}${n1(d.swell, ' m')} · ${n0(d.swellPeriod, ' s')}</span></div>
         <div><b>Soleil</b><span>${I('sunrise', { size: 15, cls: 'sun' })}${d.sun != null ? (d.sun / 3600).toFixed(1) + ' h' : '—'}</span></div>
       </div>`;
     body += renderTides(d, p, hourlyError);
+    body += renderNearby(s);
     if (detailData) body += renderHourly(d.date);
     body += '</div>';
     $('#detail-body').innerHTML = body;
+    bindNearby(s);
     $('#detail-body').querySelectorAll('.daycard').forEach((b) => b.onclick = () => renderDetailDay(+b.dataset.i));
     $('#detail-body').querySelector('.daycard.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
     const hd = $('#detail-head .score'); if (hd) { hd.className = `score c-${r.cls}`; hd.innerHTML = `<b>${r.score ?? '—'}</b><small>${esc(r.label)}</small>`; }
@@ -356,6 +445,24 @@
       html += `<div class="advice">${I('clock', { size: 16 })}<span><b>Ce spot dépend de la marée haute</b> : viser ${win.join(' ou ')}.</span></div>`;
     }
     return html + '</div>';
+  }
+  let nearbyTab = 'all';
+  function renderNearby(s) {
+    const all = nearbyOf(s);
+    if (!all.length) return '';
+    const tabs = [['all', 'Tous', null], ['restaurant', 'Restos', 'fork'], ['bar', 'Bars', 'glass'], ['beach_bar', 'Plage', 'umbrella'], ['cafe', 'Cafés', 'cup'], ['visit', 'Visites', 'landmark']];
+    const count = (k) => k === 'all' ? all.length : k === 'visit' ? all.filter((o) => poiGroupOf(o.x.p.kind) === 'visit').length : all.filter((o) => o.x.p.kind === k).length;
+    const list = (nearbyTab === 'all' ? all : nearbyTab === 'visit' ? all.filter((o) => poiGroupOf(o.x.p.kind) === 'visit') : all.filter((o) => o.x.p.kind === nearbyTab)).slice(0, 15);
+    return `<div class="sect"><div class="h"><h3>À proximité</h3><span>${all.length} lieu${all.length > 1 ? 'x' : ''} à moins de ${C.nearbyKm.toLocaleString('fr-FR')} km</span></div>
+      <div class="nearby-tabs">${tabs.filter((t) => count(t[0]) > 0).map((t) => `<button type="button" data-t="${t[0]}" class="${nearbyTab === t[0] ? 'on' : ''}">${t[2] ? I(t[2], { size: 12 }) : ''}${t[1]} ${count(t[0])}</button>`).join('')}</div>
+      <ul class="nearby">${list.map((o) => { const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism, p = o.x.p;
+        const meta = [k.label, p.cuisine ? p.cuisine.split(';')[0] : null, p.sub && p.kind !== p.sub && poiGroupOf(p.kind) === 'visit' ? p.sub.replace(/_/g, ' ') : null].filter(Boolean).join(' · ');
+        return `<li data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color}">${I(k.icon, { size: 13 })}</span><div><div class="name">${esc(p.name)}</div><div class="m">${esc(meta)}</div></div><span class="d">${o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km'}</span></li>`; }).join('')}</ul>
+      ${list.length < count(nearbyTab) ? `<span class="hint">… et ${count(nearbyTab) - list.length} autres sur la carte.</span>` : ''}</div>`;
+  }
+  function bindNearby(s) {
+    $('#detail-body').querySelectorAll('.nearby-tabs button').forEach((b) => b.onclick = () => { nearbyTab = b.dataset.t; renderDetailDay(detailDay); $('#detail-body .nearby-tabs')?.scrollIntoView({ block: 'nearest' }); });
+    $('#detail-body').querySelectorAll('.nearby li').forEach((li) => li.onclick = () => { const x = state.pois.find((o) => o.id === li.dataset.id); if (x) showPoi(x); });
   }
   function renderHourly(date) {
     const H = detailData.hourly, M = detailData.marine;
@@ -478,12 +585,14 @@
     restore();
     const shared = applyShare();
     const ver = (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
-    const [fc, photos] = await Promise.all([
+    const [fc, photos, pois] = await Promise.all([
       fetch('data/spots.geojson?v=' + ver).then((r) => r.json()),
       fetch('data/photos.json?v=' + ver).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+      fetch('data/pois.geojson?v=' + ver).then((r) => (r.ok ? r.json() : { features: [] })).catch(() => ({ features: [] })),
     ]);
     state.spots = fc.features; state.photos = photos || {};
-    renderChrome(); initSheet(); initMap(); initDialogs(); renderWho(); renderProfiles(); renderDays(); renderList();
+    state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
+    renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderDays(); renderList();
     $('#q').value = state.filters.q;
     await loadForecast(false);
     if (shared && state.selected) select(state.selected, { pan: true }); else state.selected = null;

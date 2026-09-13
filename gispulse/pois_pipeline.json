@@ -1,0 +1,50 @@
+{
+  "version": 2,
+  "name": "costa_cantabrica_pois",
+  "description": "Restaurants, bars, cafés et sites culturels/touristiques de la côte cantabrique : distance à la côte et à la plage la plus proche, promotion en « bar de plage », puis filtre de distance à la côte (3 km pour la restauration, 10 km pour les sites).",
+  "domain": "tourisme",
+  "author": "costa-cantabrica-planner",
+  "tags": ["osm", "restaurants", "bars", "culture", "asturias", "cantabria"],
+  "ref_layers": {
+    "coast": "data/raw/coastline_pts.geojson",
+    "spots": "data/spots.geojson"
+  },
+  "inputs_notes": "Entrée = data/raw/pois_osm.geojson (scripts/fetch_osm.py --pois). kind ∈ restaurant, bar, cafe, beach_bar, culture, tourism.",
+  "steps": [
+    {
+      "id": "dist_coast",
+      "type": "capability",
+      "capability": "nearest_neighbor",
+      "params": { "ref_layer": "coast", "k": 1, "distance_col": "coast_m", "columns": [], "crs_meters": "EPSG:25830" }
+    },
+    {
+      "id": "dist_beach",
+      "type": "capability",
+      "capability": "nearest_neighbor",
+      "input": "dist_coast",
+      "params": { "ref_layer": "spots", "k": 1, "distance_col": "beach_m", "columns": [], "crs_meters": "EPSG:25830" }
+    },
+    {
+      "id": "derive",
+      "type": "capability",
+      "capability": "calculate",
+      "input": "dist_beach",
+      "params": {
+        "expressions": {
+          "food": "np.maximum(np.maximum((kind == 'restaurant') * 1, (kind == 'bar') * 1), (kind == 'cafe') * 1)",
+          "kind": "np.where(food * (beach_m < 150) > 0, 'beach_bar', kind)",
+          "max_m": "np.where((kind == 'culture') + (kind == 'tourism') > 0, 10000, 3000)",
+          "coast_km": "np.round(coast_m / 1000, 2)",
+          "beach_m": "np.round(beach_m)"
+        }
+      }
+    },
+    {
+      "id": "coastal_only",
+      "type": "capability",
+      "capability": "filter",
+      "input": "derive",
+      "params": { "expression": "coast_m <= max_m" }
+    }
+  ]
+}

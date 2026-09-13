@@ -27,8 +27,13 @@ deux listes sur l'autre téléphone.
   export GeoJSON des envies.
 - **Mobile** : panneau glissant (3 hauteurs), gros boutons tactiles, géolocalisation et tri
   par distance, installable sur l'écran d'accueil (manifest PWA), thème sombre automatique.
-- **Photos** : une image Wikimedia Commons par spot quand elle existe (261 sur 362), avec
-  crédit et licence, en vignette dans la liste et en tête de fiche.
+- **Photos** : galerie Wikimedia Commons par spot (jusqu'à 10 images : catégorie Commons,
+  Wikidata, photos géolocalisées), avec crédit et licence, en carrousel en tête de fiche et en
+  vignette dans la liste.
+- **Restaurants, bars, bars de plage, cafés, sites culturels et à visiter** (~4 400 lieux OSM
+  dans la bande côtière) : couche carte activable (visible à partir du zoom 13), fiche popup
+  (cuisine, horaires, site, téléphone, itinéraire) et rubrique « À proximité » dans chaque fiche
+  de plage (lieux à moins de 1,5 km, par catégorie).
 - Fonds de carte : plan OSM, satellite Esri, relief OpenTopoMap.
 
 ## Sources de données
@@ -89,6 +94,12 @@ GISPULSE=/chemin/venv/bin/gispulse make spots   # binaire précis
 3. `scripts/build_spots.py` orchestre le tout, dédoublonne (égalités de distance),
    trie par nom et ne garde que les colonnes utiles → `data/spots.geojson`.
 
+Les lieux (`make pois`, `gispulse/pois_pipeline.json`) suivent le même schéma :
+`scripts/fetch_osm.py --pois` extrait restaurants, bars, cafés, sites (`amenity`, `tourism`,
+`historic`, phares), puis `nearest_neighbor` vers la côte et vers les plages, `calculate`
+promeut en `beach_bar` tout bar/resto/café à moins de 150 m d'une plage et fixe un rayon
+(3 km restauration, 10 km sites), `filter` applique ce rayon → `data/pois.geojson`.
+
 Aperçu rapide des spots dans la visionneuse embarquée de gispulse : `make preview`
 (`gispulse serve data/spots.geojson`).
 
@@ -117,6 +128,9 @@ gispulse/spots_pipeline.json  pipeline gispulse v2 (nearest_neighbor → calcula
 gispulse/saved_map.json       composition de carte pour le portail gispulse
 scripts/fetch_osm.py          extraction Overpass → data/raw/
 scripts/build_spots.py        orchestrateur : fetch → gispulse run → post-traitement
+scripts/build_pois.py         idem pour les lieux (restos, bars, sites) → data/pois.geojson
+gispulse/pois_pipeline.json   pipeline gispulse des lieux (côte, plage la plus proche, bar de plage)
+data/pois.geojson             lieux (généré)
 scripts/publish_gispulse_map.py   POST/PUT de la carte sur un portail
 scripts/fetch_photos.py       photos Commons → data/photos.json (reprise, --retry-missing)
 Makefile                      spots, refresh, serve, preview, publish-map

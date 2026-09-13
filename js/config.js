@@ -28,7 +28,7 @@ CCP.CONFIG = {
   ],
 
   weatherCodes: {
-    0: ['sun', 'Ciel dégagé'], 1: ['sun-cloud', 'Plutôt dégagé'], 2: ['sun-cloud', 'Partiellement nuageux'],
+    0: ['sun', 'Ciel dégagé'], 1: ['sun-cloud', 'Plutôt dégagé'], 2: ['sun-cloud', 'Éclaircies'],
     3: ['cloud', 'Couvert'], 45: ['fog', 'Brouillard'], 48: ['fog', 'Brouillard givrant'],
     51: ['drizzle', 'Bruine légère'], 53: ['drizzle', 'Bruine'], 55: ['rain', 'Bruine dense'],
     56: ['rain', 'Bruine verglaçante'], 57: ['rain', 'Bruine verglaçante'],
@@ -39,6 +39,18 @@ CCP.CONFIG = {
     85: ['snow', 'Averses de neige'], 86: ['snow', 'Averses de neige'],
     95: ['storm', 'Orage'], 96: ['storm', 'Orage avec grêle'], 99: ['storm', 'Orage avec grêle'],
   },
+
+  poiKinds: {
+    restaurant: { icon: 'fork',       label: 'Restaurant',    color: '#c2410c' },
+    bar:        { icon: 'glass',      label: 'Bar',           color: '#7c3aed' },
+    beach_bar:  { icon: 'umbrella',   label: 'Bar de plage',  color: '#0a9396' },
+    cafe:       { icon: 'cup',        label: 'Café',          color: '#92400e' },
+    culture:    { icon: 'landmark',   label: 'Site culturel', color: '#b45309' },
+    tourism:    { icon: 'binoculars', label: 'À visiter',     color: '#0369a1' },
+  },
+  poiGroups: { food: ['restaurant', 'bar', 'beach_bar', 'cafe'], visit: ['culture', 'tourism'] },
+  poiMinZoom: 13,
+  nearbyKm: 1.5,
 
   surfaces: { sand: 'sable', pebblestone: 'galets', gravel: 'graviers', fine_gravel: 'gravier fin',
               rocky: 'rochers', rock: 'rochers', stone: 'pierres', paved: 'aménagée' },
