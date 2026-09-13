@@ -14,13 +14,27 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="css/site.css?v=202609132130">
+  <link rel="stylesheet" href="css/site.css?v=202609132134">
 </head>
 <body>
 <div class="wrap">
   <a class="brand" href="./"><span class="mark"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;stroke-width:2"><path d="M2 12c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 17c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg></span><span><b>Costa Cantábrica</b><small>plages &amp; criques · Asturias · Cantabria</small></span></a>
 
-  <figure class="cover"><img src="img/cover.jpg" alt="Playa de Gulpiyuri, crique intérieure des Asturies" width="1000" height="600"><figcaption>Playa de Gulpiyuri · Ramon Diaz · domaine public · Wikimedia Commons</figcaption></figure>
+  <div class="cover" id="cover" aria-roledescription="carrousel" aria-label="Plages emblématiques">
+    <div class="slides" id="cover-slides">
+      <a class="slide" href="app.html#playa-de-gulpiyuri" data-credit="Playa de Gulpiyuri · Ramon Diaz · domaine public · Wikimedia Commons"><img src="img/cover.jpg" alt="Playa de Gulpiyuri, crique intérieure des Asturies" width="1000" height="600" fetchpriority="high"></a>
+      <a class="slide" href="app.html#playa-de-toro" data-credit="Playa de Toró · Rodelar · CC BY-SA 4.0 · Wikimedia Commons"><img src="img/cover-toro.jpg" alt="Playa de Toró, Llanes" loading="lazy" decoding="async"></a>
+      <a class="slide" href="app.html#playa-de-langre" data-credit="Playa de Langre · Anual · CC BY-SA 4.0 · Wikimedia Commons"><img src="img/cover-langre.jpg" alt="Playa de Langre, Cantabrie" loading="lazy" decoding="async"></a>
+      <a class="slide" href="app.html#playa-de-berria" data-credit="Playa de Berria · Nicolás Pérez · CC BY-SA 3.0 · Wikimedia Commons"><img src="img/cover-berria.jpg" alt="Playa de Berria, Santoña" loading="lazy" decoding="async"></a>
+      <a class="slide" href="app.html#playa-de-san-lorenzo" data-credit="Playa de San Lorenzo · Wikimedia Commons · CC BY-SA 3.0"><img src="img/cover-san-lorenzo.jpg" alt="Playa de San Lorenzo, Gijón" loading="lazy" decoding="async"></a>
+      <a class="slide" href="app.html#playa-de-ballota" data-credit="Playa de Ballota · José Antonio Gil Martínez · CC BY 2.0 · Wikimedia Commons"><img src="img/cover-ballota.jpg" alt="Playa de Ballota, Cudillero" loading="lazy" decoding="async"></a>
+    </div>
+    <div class="cover-cap"><span class="cover-name" id="cover-name">Playa de Gulpiyuri</span><span class="cover-credit" id="cover-credit">Ramon Diaz · domaine public · Wikimedia Commons</span></div>
+    <div class="cover-dots" id="cover-dots"></div>
+    <button type="button" class="cover-nav l" id="cover-prev" aria-label="Photo précédente"><svg class="i" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button type="button" class="cover-nav r" id="cover-next" aria-label="Photo suivante"><svg class="i" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M9 6l6 6-6 6"/></svg></button>
+    <span class="cover-hint" id="cover-hint">Faites glisser · touchez pour ouvrir la fiche</span>
+  </div>
   <section class="hero">
     <span class="badge"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Version de test publique</span>
     <h1>La bonne plage, le bon jour.</h1>
@@ -45,5 +59,32 @@
 
   <footer>Données © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · prévisions <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) · photos Wikimedia Commons, Flickr, Openverse · imagerie Esri · <a href="https://github.com/imagodata/costa-cantabrica-planner" target="_blank" rel="noopener">code source</a> (MIT).</footer>
 </div>
+<script>
+(function () {
+  const box = document.getElementById('cover'), slides = document.getElementById('cover-slides'), items = [...slides.children];
+  const dots = document.getElementById('cover-dots'), name = document.getElementById('cover-name'), credit = document.getElementById('cover-credit'), hint = document.getElementById('cover-hint');
+  dots.innerHTML = items.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('');
+  const cur = () => Math.round(slides.scrollLeft / slides.clientWidth);
+  const go = (i) => slides.scrollTo({ left: Math.max(0, Math.min(items.length - 1, i)) * slides.clientWidth, behavior: 'smooth' });
+  let raf = null;
+  slides.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = null; const i = cur(); [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+    const c = (items[i].dataset.credit || '').split(' · '); name.textContent = c.shift() || ''; credit.textContent = c.join(' · '); }); }, { passive: true });
+  document.getElementById('cover-prev').onclick = () => go(cur() - 1);
+  document.getElementById('cover-next').onclick = () => go(cur() + 1);
+  /* Tactile : le glissement est natif (scroll-snap). On distingue un vrai toucher d'un glissé
+     pour n'ouvrir la fiche qu'au tap ; le premier geste masque l'indication. */
+  let x0 = null, y0 = null, moved = false;
+  slides.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; moved = false; }, { passive: true });
+  slides.addEventListener('pointermove', (e) => { if (x0 != null && (Math.abs(e.clientX - x0) > 8 || Math.abs(e.clientY - y0) > 8)) { moved = true; hint.classList.add('off'); } }, { passive: true });
+  slides.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; } }, true);
+  box.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') go(cur() - 1); if (e.key === 'ArrowRight') go(cur() + 1); });
+  box.tabIndex = 0;
+  // défilement doux automatique, interrompu au premier contact
+  let auto = setInterval(() => { if (document.hidden) return; go((cur() + 1) % items.length); }, 6000);
+  const stop = () => { clearInterval(auto); auto = null; hint.classList.add('off'); };
+  slides.addEventListener('pointerdown', stop, { once: true, passive: true }); box.addEventListener('keydown', stop, { once: true });
+  setTimeout(() => hint.classList.add('off'), 7000);
+})();
+</script>
 </body>
 </html>
