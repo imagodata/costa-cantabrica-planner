@@ -57,6 +57,9 @@ python3 -m http.server 8000
 
 (Un simple `file://` ne suffit pas : le GeoJSON est chargé par `fetch`.)
 
+Après toute modification de `css/`, `js/` ou `data/`, lancer `make bump` avant de pousser :
+les ressources sont versionnées (`?v=…`) dans `index.html` pour invalider le cache du navigateur.
+
 ## Données : pipeline gispulse
 
 Les spots sont produits avec [gispulse](https://github.com/imagodata/gispulse), moteur de

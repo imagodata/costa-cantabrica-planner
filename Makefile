@@ -2,7 +2,7 @@
 GISPULSE ?= gispulse
 PORT ?= 8000
 
-.PHONY: spots refresh photos serve preview publish-map
+.PHONY: spots refresh photos serve preview publish-map bump
 
 spots:            ## régénère data/spots.geojson (caches OSM, pipeline gispulse)
 	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py
@@ -12,6 +12,9 @@ refresh:          ## idem, en réinterrogeant Overpass
 
 photos:           ## complète data/photos.json (Wikimedia Commons)
 	python3 scripts/fetch_photos.py --retry-missing --workers 1
+
+bump:             ## invalide le cache navigateur (versionne css/js/data dans index.html)
+	sed -i "s/?v=[0-9]*/?v=$$(date +%Y%m%d%H%M)/g" index.html
 
 serve:            ## sert l'application en local
 	python3 -m http.server $(PORT)

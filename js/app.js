@@ -477,9 +477,10 @@
   async function init() {
     restore();
     const shared = applyShare();
+    const ver = (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
     const [fc, photos] = await Promise.all([
-      fetch('data/spots.geojson').then((r) => r.json()),
-      fetch('data/photos.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+      fetch('data/spots.geojson?v=' + ver).then((r) => r.json()),
+      fetch('data/photos.json?v=' + ver).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
     ]);
     state.spots = fc.features; state.photos = photos || {};
     renderChrome(); initSheet(); initMap(); initDialogs(); renderWho(); renderProfiles(); renderDays(); renderList();
