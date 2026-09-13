@@ -2,13 +2,16 @@
 GISPULSE ?= gispulse
 PORT ?= 8000
 
-.PHONY: spots refresh serve preview publish-map
+.PHONY: spots refresh photos serve preview publish-map
 
 spots:            ## régénère data/spots.geojson (caches OSM, pipeline gispulse)
 	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py
 
 refresh:          ## idem, en réinterrogeant Overpass
 	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py --refresh
+
+photos:           ## complète data/photos.json (Wikimedia Commons)
+	python3 scripts/fetch_photos.py --retry-missing --workers 1
 
 serve:            ## sert l'application en local
 	python3 -m http.server $(PORT)

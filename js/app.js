@@ -6,7 +6,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const state = {
-    spots: [], bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
+    spots: [], photos: {}, bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
     filters: { province: 'all', type: 'all', surface: 'all', minScore: 0, wish: 'all', q: '' },
     sort: 'score',
     users: { a: { name: 'Voyageur 1', wish: [] }, b: { name: 'Voyageur 2', wish: [] } },
@@ -37,6 +37,9 @@
     return 2 * R * Math.asin(Math.sqrt(h));
   }
   const latlng = (s) => [s.geometry.coordinates[1], s.geometry.coordinates[0]];
+  const photoOf = (id) => state.photos[id] || null;
+  /* Vignette Commons : largeur réduite en réécrivant « /800px- » (une URL sans /thumb/ est déjà l'original, petit). */
+  const thumbAt = (ph, w) => ph.thumb.includes('/thumb/') ? ph.thumb.replace(/\/\d+px-/, `/${w}px-`) : ph.thumb;
   let toastT;
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
@@ -215,12 +218,14 @@
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null;
       const w = wishOf(p.id);
       const li = document.createElement('li');
-      li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
+      li.className = 'item' + (state.selected === p.id ? ' sel' : '') + (photoOf(p.id) ? ' has-photo' : ''); li.dataset.id = p.id;
+      const ph = photoOf(p.id);
       const meta = [p.province, p.surface ? C.surfaces[p.surface] || p.surface : null, p.size_m ? `~${p.size_m} m` : null,
         state.userPos ? `${distKm(state.userPos, latlng(s)).toFixed(0)} km` : null].filter(Boolean).join(' · ');
       const cond = d && d.tmax != null ? `${wc(d.code)[0]} ${n0(d.tmax, '°')} · ☔ ${n0(d.pprob, ' %')} · 💨 ${n0(d.wind)} ${compass(d.wdir)} · 🌊 ${n1(d.wave, ' m')}` : '';
       li.innerHTML = `
         <div class="score c-${r ? r.cls : 'none'}">${r && r.score != null ? r.score : '—'}<small>${r ? esc(r.label) : ''}</small></div>
+        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async">` : ''}
         <div class="body">
           <div class="name">${esc(p.name)} <span class="tag">${p.type}</span>${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}</div>
           <div class="meta">${esc(meta)}</div>
@@ -265,8 +270,13 @@
       p.nudism === 'yes' ? 'naturiste' : null, p.lifeguard === 'yes' ? 'surveillée' : null, p.dog === 'yes' ? 'chiens OK' : p.dog === 'no' ? 'chiens interdits' : null,
       p.tidal === 'yes' ? 'dépend de la marée' : null, p.access && p.access !== 'yes' ? `accès : ${p.access}` : null].filter(Boolean);
     const wiki = p.wikipedia ? `https://${p.wikipedia.split(':')[0]}.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':').slice(1).join(':'))}` : null;
+    const ph = photoOf(p.id);
+    const commonsSearch = `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(p.name)}&ns6=1`;
+    const hero = ph ? `<figure class="hero"><a href="${esc(ph.page)}" target="_blank" rel="noopener"><img src="${esc(ph.thumb)}" alt="${esc(p.name)}" loading="lazy" decoding="async"></a>
+        <figcaption>📷 ${esc(ph.credit)}${ph.license ? ' · ' + esc(ph.license) : ''} · Wikimedia Commons${ph.source === 'geosearch' ? ' · photo prise à proximité' : ''}</figcaption></figure>` : '';
     $('#detail-head').innerHTML = `
       <div class="head"><h2>${esc(p.name)}</h2><button class="iconbtn" id="btn-close" aria-label="Retour à la liste">✕</button></div>
+      ${hero}
       <div class="sub">${esc(tags.join(' · '))}${p.alt_name ? ` · <i>${esc(p.alt_name)}</i>` : ''}</div>
       ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ''}
       <div class="hearts-row">
@@ -278,6 +288,7 @@
         <a href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(p.name)})">📍 GPS</a>
         ${wiki ? `<a href="${wiki}" target="_blank" rel="noopener">📖 Wikipédia</a>` : ''}
         <a href="${esc(p.osm)}" target="_blank" rel="noopener">🗺️ OSM</a>
+        <a href="${commonsSearch}" target="_blank" rel="noopener">📷 Photos</a>
         ${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener">🔗 Site</a>` : ''}
       </div>`;
     $('#btn-close').onclick = closeDetail;
@@ -437,8 +448,11 @@
   async function init() {
     restore();
     const shared = applyShare();
-    const fc = await (await fetch('data/spots.geojson')).json();
-    state.spots = fc.features;
+    const [fc, photos] = await Promise.all([
+      fetch('data/spots.geojson').then((r) => r.json()),
+      fetch('data/photos.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+    ]);
+    state.spots = fc.features; state.photos = photos || {};
     initSheet(); initMap(); initDialogs(); renderWho(); renderDays(); renderList();
     $('#q').value = state.filters.q;
     await loadForecast(false);

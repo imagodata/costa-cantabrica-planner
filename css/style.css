@@ -90,6 +90,8 @@ a { color: var(--accent); }
   padding: 8px 6px; border-radius: 12px; cursor: pointer; border-bottom: 1px solid var(--line);
 }
 .item:active, .item.sel { background: var(--bg); }
+.item.has-photo { grid-template-columns: 46px 56px 1fr auto; }
+.item .thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--line); }
 .score {
   width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
   color: #fff; font-weight: 800; font-size: 18px; background: var(--none);
@@ -112,6 +114,10 @@ a { color: var(--accent); }
 .detail .head { display: flex; align-items: flex-start; gap: 8px; }
 .detail h2 { margin: 0; font-size: 19px; line-height: 1.2; flex: 1; }
 .detail .sub { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
+.hero { margin: 8px -12px 6px; position: relative; }
+.hero img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--line); }
+.hero figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 12px 6px; font-size: 11px; color: #fff;
+  background: linear-gradient(transparent, rgba(0,0,0,.65)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .links { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
 .links a, .links button { font-size: 13px; padding: 7px 10px; border-radius: 9px; background: var(--bg); border: 1px solid var(--line); text-decoration: none; color: var(--text); }
 .hearts-row { display: flex; gap: 8px; }

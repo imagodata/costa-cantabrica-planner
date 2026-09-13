@@ -27,6 +27,8 @@ deux listes sur l'autre téléphone.
   export GeoJSON des envies.
 - **Mobile** : panneau glissant (3 hauteurs), gros boutons tactiles, géolocalisation et tri
   par distance, installable sur l'écran d'accueil (manifest PWA), thème sombre automatique.
+- **Photos** : une image Wikimedia Commons par spot quand elle existe (261 sur 362), avec
+  crédit et licence, en vignette dans la liste et en tête de fiche.
 - Fonds de carte : plan OSM, satellite Esri, relief OpenTopoMap.
 
 ## Sources de données
@@ -37,6 +39,7 @@ deux listes sur l'autre téléphone.
 | Météo | [Open-Meteo](https://open-meteo.com) `forecast` | gratuit, sans clé, usage non commercial |
 | Houle, niveau de la mer, T° eau | Open-Meteo `marine` (`cell_selection=sea`) | grille marine grossière près des côtes (~10–20 km) : la houle est celle du large, pas celle de la plage abritée |
 | Marées | dérivées du `sea_level_height_msl` horaire d'Open-Meteo | approximation (±20 min) ; pour une sortie qui dépend de la marée (Gulpiyuri, grottes…), vérifier avec les tables officielles |
+| Photos | [Wikimedia Commons](https://commons.wikimedia.org) via Wikidata (P18), Wikipédia ou recherche géographique | licences libres, crédit affiché ; `python3 scripts/fetch_photos.py` → `data/photos.json` |
 
 Les prévisions sont mises en cache dans le navigateur pendant 60 min.
 
@@ -112,6 +115,7 @@ gispulse/saved_map.json       composition de carte pour le portail gispulse
 scripts/fetch_osm.py          extraction Overpass → data/raw/
 scripts/build_spots.py        orchestrateur : fetch → gispulse run → post-traitement
 scripts/publish_gispulse_map.py   POST/PUT de la carte sur un portail
+scripts/fetch_photos.py       photos Commons → data/photos.json (reprise, --retry-missing)
 Makefile                      spots, refresh, serve, preview, publish-map
 ```
 
