@@ -56,7 +56,11 @@ def aerial_tile(lat, lon, z=15):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=DEFAULT_BASE)
+    ap.add_argument("--out", default=None, help="dossier de sortie (défaut : s/ à la racine)")
     args = ap.parse_args()
+    global OUT
+    if args.out:
+        OUT = Path(args.out)
     base = args.base.rstrip("/") + "/"
     region = json.loads(REGION.read_text(encoding="utf-8")) if REGION.exists() else {"name": "Plages"}
     spots = json.loads((ROOT / "data" / "spots.geojson").read_text(encoding="utf-8"))["features"]
@@ -85,7 +89,7 @@ def main():
                    card="summary_large_image" if ph.get("thumb") else "summary",
                    img_html=f'<img src="{html.escape(ph["thumb"])}" alt="">' if ph.get("thumb") else "")
         (OUT / f"{slug}.html").write_text(TEMPLATE.format(**ctx), encoding="utf-8")
-    print(f"{len(spots)} pages → {OUT.relative_to(ROOT)}/")
+    print(f"{len(spots)} pages → {OUT}/")
 
 
 if __name__ == "__main__":

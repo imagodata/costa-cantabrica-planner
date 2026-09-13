@@ -105,6 +105,21 @@ python3 -m http.server 8000
 Après toute modification de `css/`, `js/` ou `data/`, lancer `make bump` avant de pousser :
 les ressources sont versionnées (`?v=…`) dans `index.html` pour invalider le cache du navigateur.
 
+## Version protégée sur le VPS
+
+`make deploy` (ou `scripts/deploy_vps.sh`) publie l'application sur le serveur derrière une
+authentification par mot de passe (Caddy `basic_auth`, TLS Let's Encrypt), à l'adresse
+`https://costa.188-245-235-42.sslip.io/` (nom automatique pointant sur l'IP ; pour un vrai nom,
+créer un enregistrement A `costa.gispulse.dev → 188.245.235.42` chez Infomaniak puis relancer
+avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
+
+- Premier déploiement : `scripts/deploy_vps.sh --init <utilisateur> <motdepasse>` ajoute le
+  bloc Caddy (sauvegarde du Caddyfile, validation, rechargement) puis synchronise.
+- Déploiements suivants : `make deploy` (rsync des fichiers suivis par git, sans sources ni
+  données brutes, et pages de partage régénérées avec l'URL du serveur).
+- Changer le mot de passe : relancer `--init` avec le nouveau, puis supprimer l'ancien bloc
+  dans `/etc/caddy/Caddyfile`.
+
 ## Adapter à une autre côte
 
 Tout ce qui est propre à la zone tient dans `config/region.json` : nom, sous-titre, bbox,
