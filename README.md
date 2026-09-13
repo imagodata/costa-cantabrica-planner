@@ -123,6 +123,13 @@ avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
   données brutes, et pages de partage régénérées avec l'URL du serveur).
 - Changer un mot de passe : relancer `--init` avec tous les comptes ; l'ancien bloc est
   remplacé automatiquement.
+- **Écriture en tant que profil connecté** : `server/costa_sync.py` (service systemd
+  `costa-sync`, bibliothèque standard, port local 8095, données dans `/opt/costa-data/state.json`)
+  reçoit l'utilisateur authentifié de Caddy (`X-User`) sur `/api/state`. Chaque voyageur ne peut
+  écrire que sa propre liste d'envies ; programmes et séjour sont partagés (dernier écrivain
+  gagnant, version vérifiée par `If-Match`, 409 sinon). L'application connectée charge l'état au
+  démarrage, pousse chaque modification, se resynchronise toutes les 20 s et au retour au premier
+  plan ; les cœurs, notes et compléments de l'autre voyageur sont en lecture seule.
 
 ## Adapter à une autre côte
 

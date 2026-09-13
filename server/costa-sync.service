@@ -1,0 +1,20 @@
+[Unit]
+Description=Costa Cantábrica – synchronisation des voyageurs
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/costa-sync/costa_sync.py
+Environment=COSTA_DATA=/opt/costa-data/state.json
+Environment=COSTA_USERS=simon:a,marie:b
+Environment=COSTA_PORT=8095
+User=costa
+Group=costa
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/costa-data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

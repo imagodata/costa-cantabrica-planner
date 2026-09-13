@@ -290,6 +290,9 @@ button:focus:not(:focus-visible) { outline: none; }
 .heart { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; background: none; }
 .heart.a { color: var(--a); } .heart.b { color: var(--b); }
 .heart.on { border-color: transparent; color: #fff; }
+.heart.ro, .pill.ro { opacity: .55; cursor: default; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ideal); margin-right: 2px; box-shadow: 0 0 0 2px var(--panel); }
+.sync-dot.err { background: var(--bad); }
 .heart.a.on { background: var(--a); } .heart.b.on { background: var(--b); }
 
 /* ---------- détail ---------- */

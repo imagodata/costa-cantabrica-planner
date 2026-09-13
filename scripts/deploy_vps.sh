@@ -30,6 +30,11 @@ $HOST {
 	basic_auth {
 $USERS	}
 	respond /whoami \"{http.auth.user.id}\" 200
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8095 {
+			header_up X-User {http.auth.user.id}
+		}
+	}
 	root * $DIR
 	file_server
 	header Cache-Control \"no-cache\"
@@ -44,12 +49,19 @@ CADDY
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy && echo 'Caddy rechargé'"
 fi
 
+# Service de synchronisation (identité transmise par Caddy) : installation / mise à jour
+rsync -az server/costa_sync.py server/costa-sync.service "$VPS:/tmp/costa-sync/"
+ssh "$VPS" "id -u costa >/dev/null 2>&1 || useradd --system --home /opt/costa-data --shell /usr/sbin/nologin costa; \
+  mkdir -p /opt/costa-sync /opt/costa-data && install -m 644 /tmp/costa-sync/costa_sync.py /opt/costa-sync/costa_sync.py \
+  && chown -R costa:costa /opt/costa-data && install -m 644 /tmp/costa-sync/costa-sync.service /etc/systemd/system/costa-sync.service \
+  && systemctl daemon-reload && systemctl enable --now costa-sync >/dev/null && systemctl restart costa-sync && sleep 1 && systemctl is-active costa-sync"
+
 # Pages de partage avec l'URL du VPS, puis rsync des fichiers suivis + pages
 TMP=$(mktemp -d)
 python3 scripts/build_pages.py --base "https://$HOST/" --out "$TMP/s" >/dev/null
 git ls-files > "$TMP/files.txt"
 rsync -az --delete --files-from="$TMP/files.txt" --relative . "$VPS:$DIR/" \
-  --exclude 'data/raw/' --exclude 'scripts/' --exclude 'gispulse/' --exclude 'config/' --exclude '*.md' --exclude 'Makefile' --exclude '.gitignore' --exclude 'LICENSE'
+  --exclude 'data/raw/' --exclude 'scripts/' --exclude 'server/' --exclude 'gispulse/' --exclude 'config/' --exclude '*.md' --exclude 'Makefile' --exclude '.gitignore' --exclude 'LICENSE'
 rsync -az --delete "$TMP/s/" "$VPS:$DIR/s/"
 ssh "$VPS" "chmod -R a+rX $DIR"
 rm -rf "$TMP"

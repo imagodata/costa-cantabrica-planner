@@ -80,6 +80,7 @@
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
   function save() {
+    syncPush();
     try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort,
       poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort, prefs: state.prefs })); } catch (e) { }
   }
@@ -126,6 +127,57 @@
     const s = spotBySlug(m[1]); if (!s) return false;
     state.selected = s.properties.id; return true;
   }
+  /* ------------------------------------------------------------------ synchronisation serveur (version connectée)
+     Chaque écriture part au nom du profil authentifié : le serveur ne remplace que la liste de ce
+     voyageur ; programmes et séjour sont partagés (dernier écrivain gagnant, versionné). */
+  const sync = { on: false, version: null, timer: null, pushing: false, dirty: false, poll: null };
+  const syncApply = (st) => {
+    const other = state.me === 'a' ? 'b' : 'a';
+    state.users[other] = { name: String(st.users[other].name || state.users[other].name).slice(0, 14), wish: (st.users[other].wish || []).filter((x) => typeof x === 'string') };
+    state.users[state.me] = { name: String(st.users[state.me].name || state.users[state.me].name).slice(0, 14), wish: (st.users[state.me].wish || []).filter((x) => typeof x === 'string') };
+    if (st.plans && typeof st.plans === 'object') state.plans = st.plans;
+    if (st.trip && Array.isArray(st.trip.days)) state.trip = { auto: false, ...st.trip };
+    sync.version = st.version;
+  };
+  async function syncLoad() {
+    try {
+      const r = await fetch('api/state', { cache: 'no-store' }); if (!r.ok) return false;
+      const st = await r.json(); if (!st || typeof st.version !== 'number') return false;
+      syncApply(st); sync.on = true; return true;
+    } catch (e) { return false; }
+  }
+  function syncPush() {
+    if (!sync.on) return;
+    sync.dirty = true; clearTimeout(sync.timer); sync.timer = setTimeout(syncFlush, 700);
+  }
+  async function syncFlush() {
+    if (!sync.on || sync.pushing) return;
+    sync.pushing = true; sync.dirty = false;
+    try {
+      const body = { users: { a: { name: state.users.a.name, wish: state.users.a.wish }, b: { name: state.users.b.name, wish: state.users.b.wish } }, plans: state.plans, trip: state.trip };
+      const r = await fetch('api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': String(sync.version) }, body: JSON.stringify(body) });
+      if (r.status === 409) { const st = await r.json(); const mine = state.users[state.me]; syncApply(st); state.users[state.me] = mine; sync.pushing = false; syncPush(); rerenderAll(); return; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const st = await r.json(); sync.version = st.version; $('#sync-dot')?.classList.remove('err');
+    } catch (e) { $('#sync-dot')?.classList.add('err'); toast('Synchronisation impossible pour le moment'); }
+    sync.pushing = false;
+    if (sync.dirty) syncPush();
+  }
+  async function syncPoll() {
+    if (!sync.on || document.hidden || sync.pushing || sync.dirty) return;
+    try {
+      const r = await fetch('api/state', { cache: 'no-store' }); if (!r.ok) return;
+      const st = await r.json();
+      if (st.version !== sync.version) { syncApply(st); try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort, poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort, prefs: state.prefs })); } catch (e) { } rerenderAll(); toast(`Mis à jour par ${esc(st.by === state.serverUser ? 'vous' : (st.by || 'l\'autre voyageur'))}`); }
+    } catch (e) { }
+  }
+  function rerenderAll() {
+    renderTabs(); renderWho();
+    if (state.selected && !$('#panel-detail').hidden) { renderDetailHead(); renderDetailDay(detailDay); }
+    else if (state.view === 'wishes') renderWishes(); else if (state.view === 'trip') renderTrip(); else if (state.view === 'config') renderConfig(); else renderList();
+    paintMarkers();
+  }
+  const canEdit = (who) => !sync.on || who === state.me;
   /* Version protégée (VPS) : l'utilisateur authentifié (/whoami) devient le voyageur actif. */
   async function applyServerIdentity() {
     try {
@@ -135,8 +187,10 @@
       if (!id || id.includes('<')) return;
       const k = id === state.users.b.name.toLowerCase() ? 'b' : id === state.users.a.name.toLowerCase() ? 'a' : (id === 'marie' ? 'b' : id === 'simon' ? 'a' : null);
       if (!k) return;
-      if (state.me !== k) { state.me = k; save(); }
+      if (state.me !== k) { state.me = k; }
       state.serverUser = id;
+      await syncLoad();
+      if (sync.on) { sync.poll = setInterval(syncPoll, 20000); document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPoll(); }); }
     } catch (e) { /* version publique : pas de serveur */ }
   }
   /* #view=explore|wishes|trip|config ouvre directement une vue (combinable : #share=…&view=explore). */
@@ -209,6 +263,7 @@
   const poiById = (id) => state.pois.find((x) => x.id === id);
   const buzz = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { } };
   function toggleWish(id, who) {
+    if (!canEdit(who)) { toast(`Seul·e ${state.users[who].name} peut modifier ses envies`); return; }
     buzz();
     const list = state.users[who].wish, i = list.indexOf(id);
     if (i >= 0) list.splice(i, 1); else list.push(id);
@@ -409,8 +464,8 @@
     $('.close', $('#dlg-pick')).innerHTML = I('x', { size: 18 });
   }
   function renderWho() {
-    $('#who').innerHTML = ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(String(state.users[k].name || '?')[0].toUpperCase())}</span></button>`).join('');
-    $('#who').querySelectorAll('button').forEach((b) => { b.onclick = () => { state.me = b.dataset.k; save(); renderWho(); if (state.selected) renderPlanCard(state.selected); toast(`Envies et notes de ${state.users[state.me].name}`); }; });
+    $('#who').innerHTML = (sync.on ? `<span class="sync-dot" id="sync-dot" title="Synchronisé avec le serveur"></span>` : '') + ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(String(state.users[k].name || '?')[0].toUpperCase())}</span></button>`).join('');
+    $('#who').querySelectorAll('button').forEach((b) => { b.onclick = () => { if (sync.on) { toast(`Connecté·e en tant que ${state.users[state.me].name}`); return; } state.me = b.dataset.k; save(); renderWho(); if (state.selected) renderPlanCard(state.selected); toast(`Envies et notes de ${state.users[state.me].name}`); }; });
   }
   function bestDot(i) {
     if (!state.bulk) return 'none';
@@ -497,8 +552,8 @@
           ${hasPlan(p.id) ? `<div class="plan">${I('note', { size: 13 })}${esc(planSummary(p.id))}</div>` : `<div class="cond">${cond}</div>`}
         </div>
         <div class="hearts">
-          <button type="button" class="heart a ${w.a ? 'on' : ''}" data-who="a">${I('heart', { size: 15, fill: w.a })}</button>
-          <button type="button" class="heart b ${w.b ? 'on' : ''}" data-who="b">${I('heart', { size: 15, fill: w.b })}</button>
+          <button type="button" class="heart a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a">${I('heart', { size: 15, fill: w.a })}</button>
+          <button type="button" class="heart b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b">${I('heart', { size: 15, fill: w.b })}</button>
         </div>`;
       li.querySelectorAll('.heart').forEach((h) => h.onclick = (e) => { e.stopPropagation(); toggleWish(p.id, h.dataset.who); });
       li.onclick = () => select(p.id, { pan: true });
@@ -790,7 +845,7 @@
     const commit = () => { save(); renderTabs(); renderWho(); };
     $('#c-a').onchange = (e) => { state.users.a.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[0]; commit(); renderConfig(); };
     $('#c-b').onchange = (e) => { state.users.b.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[1]; commit(); renderConfig(); };
-    seg($('#c-me'), [['a', esc(state.users.a.name)], ['b', esc(state.users.b.name)]], state.me, (v) => { state.me = v; commit(); }, { a: 'a', b: 'b' });
+    seg($('#c-me'), [['a', esc(state.users.a.name)], ['b', esc(state.users.b.name)]], state.me, (v) => { if (sync.on) { toast('Identité fixée par la connexion au serveur'); renderConfig(); return; } state.me = v; commit(); }, { a: 'a', b: 'b' });
     seg($('#c-profile'), Object.entries(C.profiles).map(([k, p]) => [k, esc(p.short)]), state.profile, (v) => { state.profile = v; save(); renderProfiles(); renderDays(); });
     const setBase = (b) => { t.base = b; state.pickBase = false; save(); renderConfig(); paintMarkers(); };
     const q = $('#c-base-q');
@@ -852,8 +907,8 @@
           <div class="cond">${cond}</div>
         </div>
         <div class="hearts">
-          <button type="button" class="heart a ${w.a ? 'on' : ''}" data-who="a" aria-label="Envie de ${esc(state.users.a.name)}">${I('heart', { size: 15, fill: w.a })}</button>
-          <button type="button" class="heart b ${w.b ? 'on' : ''}" data-who="b" aria-label="Envie de ${esc(state.users.b.name)}">${I('heart', { size: 15, fill: w.b })}</button>
+          <button type="button" class="heart a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a" aria-label="Envie de ${esc(state.users.a.name)}">${I('heart', { size: 15, fill: w.a })}</button>
+          <button type="button" class="heart b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b" aria-label="Envie de ${esc(state.users.b.name)}">${I('heart', { size: 15, fill: w.b })}</button>
         </div>`;
       li.querySelectorAll('.heart').forEach((h) => h.onclick = (e) => { e.stopPropagation(); toggleWish(p.id, h.dataset.who); });
       li.onclick = () => select(p.id, { pan: true });
@@ -938,8 +993,8 @@
       <div class="dbody" id="dhead-body">
         ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ''}
         <div class="actions">
-          <button type="button" class="pill a ${w.a ? 'on' : ''}" data-who="a">${I('heart', { size: 15, fill: w.a })}${esc(state.users.a.name)}</button>
-          <button type="button" class="pill b ${w.b ? 'on' : ''}" data-who="b">${I('heart', { size: 15, fill: w.b })}${esc(state.users.b.name)}</button>
+          <button type="button" class="pill a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a">${I('heart', { size: 15, fill: w.a })}${esc(state.users.a.name)}</button>
+          <button type="button" class="pill b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b">${I('heart', { size: 15, fill: w.b })}${esc(state.users.b.name)}</button>
           <span class="spacer"></span>
           <button type="button" class="pill ${tripHasSpot(p.id) ? 'primary' : ''}" id="btn-trip-add" title="Ajouter à un jour du séjour">${I('calendar', { size: 15 })}${tripHasSpot(p.id) ? 'Au séjour' : 'Séjour'}</button>
           <a class="pill primary" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving" target="_blank" rel="noopener">${I('navigation', { size: 16 })}Itinéraire</a>
@@ -991,7 +1046,7 @@
         <textarea id="plan-note" maxlength="500" placeholder="Ex. : y aller à marée haute, pique-nique, parking étroit…">${esc(pn ? pn.notes[me] : '')}</textarea></div>
       ${pn && pn.notes[other] ? `<div class="plan-note"><label><span style="width:18px;height:18px;border-radius:50%;background:var(--${other});color:#fff;font-size:10px;display:grid;place-items:center">${esc(state.users[other].name[0].toUpperCase())}</span>Note de ${esc(state.users[other].name)}</label><div class="ro">${esc(pn.notes[other])}</div></div>` : ''}
     </div>`;
-    slot.querySelectorAll('.rm').forEach((b) => b.onclick = () => { planRemove(spotId, +b.dataset.k); renderPlanCard(spotId); renderDetailDay(detailDay); renderTabs(); paintMarkers(); });
+    slot.querySelectorAll('.rm').forEach((b) => b.onclick = () => { const it = planOf(spotId).items[+b.dataset.k]; if (it && !canEdit(it.by)) { toast(`Ajouté par ${state.users[it.by === 'b' ? 'b' : 'a'].name} : seul·e cette personne peut le retirer`); return; } planRemove(spotId, +b.dataset.k); renderPlanCard(spotId); renderDetailDay(detailDay); renderTabs(); paintMarkers(); });
     const addText = () => { const v = $('#plan-text').value.trim(); if (!v) return; if (planAdd(spotId, { text: v })) { renderPlanCard(spotId); renderTabs(); paintMarkers(); toast('Ajouté au programme'); } };
     $('#plan-add-btn').onclick = addText;
     $('#plan-text').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addText(); } });
