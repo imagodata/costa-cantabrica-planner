@@ -108,7 +108,7 @@ svg.ic { flex: 0 0 auto; vertical-align: -3px; }
 .handle { flex: 0 0 auto; padding: 10px 0 6px; display: grid; place-items: center; touch-action: none; cursor: grab; }
 .handle::before { content: ""; width: 42px; height: 5px; border-radius: 3px; background: var(--line); }
 .tabs { touch-action: none; }
-.panel { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.panel { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .more { display: block; width: calc(100% - 16px); margin: 8px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); font-weight: 600; }
 
 /* ---------- accessibilité, mouvement, états ---------- */
@@ -299,9 +299,11 @@ button:focus:not(:focus-visible) { outline: none; }
 .detail { padding-bottom: 16px; }
 .hero { position: relative; height: 250px; overflow: hidden; background: linear-gradient(160deg, #cfe3ee, #e7e3d3); }
 .hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hero .slides { position: absolute; inset: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.hero .slides { position: absolute; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-x pan-y; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 .hero .slides::-webkit-scrollbar { display: none; }
-.hero .slides img { flex: 0 0 100%; scroll-snap-align: start; }
+.hero .slides img { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; -webkit-user-drag: none; user-select: none; }
+.hero .slides .aerial.slide { scroll-snap-stop: always; }
+.hero .slides, .hero .slides * { -webkit-touch-callout: none; }
 .hero .dots { position: absolute; left: 0; right: 0; top: 60px; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
 .hero .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.55); }
 .hero .dots i.on { background: #fff; }
