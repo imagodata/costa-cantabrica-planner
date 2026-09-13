@@ -44,6 +44,15 @@ TEMPLATE = """<!doctype html>
 """
 
 
+def aerial_tile(lat, lon, z=15):
+    import math
+    n = 2 ** z
+    x = int((lon + 180) / 360 * n)
+    lat_r = math.radians(lat)
+    y = int((1 - math.log(math.tan(lat_r) + 1 / math.cos(lat_r)) / math.pi) / 2 * n)
+    return f"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=DEFAULT_BASE)
@@ -63,6 +72,9 @@ def main():
                 "surveillée" if p.get("lifeguard") == "yes" else None]
         desc = " · ".join(b for b in bits if b) + " · météo, houle et marées à 7 jours."
         ph = photos.get(p["id"]) or {}
+        lon, lat = f["geometry"]["coordinates"]
+        if not ph.get("thumb"):
+            ph = {"thumb": aerial_tile(lat, lon)}
         title = f"{p['name']} · {region['name']}"
         app_url = f"{base}index.html#{slug}"
         ctx = dict(site=html.escape(region["name"] + " · plages & criques"), title=html.escape(title), title_plain=html.escape(p["name"]), desc=html.escape(desc),

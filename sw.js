@@ -1,5 +1,5 @@
 /* Service worker : coquille hors-ligne + données en cache (stale-while-revalidate), API réseau seulement. */
-const VERSION = 'v202609132021';
+const VERSION = 'v202609132043';
 const SHELL = ['./', './index.html', './css/style.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js', './manifest.webmanifest', './icon.svg'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

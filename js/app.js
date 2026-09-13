@@ -45,6 +45,25 @@
   const photoOf = (id) => state.photos[id] || null;
   const thumbAt = (ph, w) => ph.thumb.includes('/thumb/') ? ph.thumb.replace(/\/\d+px-/, `/${w}px-`) : ph.thumb;
   const surfaceLbl = (p) => p.surface ? (C.surfaces[p.surface] || p.surface) : null;
+  /* Vue aérienne : mosaïque de tuiles satellite centrée sur le point (aucune bibliothèque). */
+  const AERIAL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
+  const AERIAL_CREDIT = 'Vue aérienne · Imagerie © Esri, Maxar, Earthstar Geographics';
+  function tilePx(lat, lon, z) {
+    const n = 2 ** z, x = (lon + 180) / 360 * n, latR = lat * Math.PI / 180;
+    const y = (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n;
+    return { tx: Math.floor(x), ty: Math.floor(y), px: (x - Math.floor(x)) * 256, py: (y - Math.floor(y)) * 256 };
+  }
+  function aerialHtml(lat, lon, z, w, h, cls = '', extra = '') {
+    const t = tilePx(lat, lon, z), cx = w / 2 - t.px, cy = h / 2 - t.py;
+    const r = Math.ceil(Math.max(w, h) / 256) + 1;
+    let imgs = '';
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const left = cx + dx * 256, top = cy + dy * 256;
+      if (left > w || top > h || left + 256 < 0 || top + 256 < 0) continue;
+      imgs += `<img src="${AERIAL}/${z}/${t.ty + dy}/${t.tx + dx}" alt="" loading="lazy" decoding="async" style="left:${Math.round(left)}px;top:${Math.round(top)}px">`;
+    }
+    return `<div class="aerial ${cls}" style="width:${w}px;height:${h}px" ${extra}>${imgs}<i class="pinpt"></i></div>`;
+  }
   let toastT;
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
@@ -381,7 +400,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="num c-${r ? r.cls : 'none'}">${i + 1}<small style="background:var(--${who})">${who === 'both' ? '2' : esc(state.users[who].name[0].toUpperCase())}</small></div>
-        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : `<div class="thumb empty">${I('wave', { size: 20 })}</div>`}
+        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], 16, 56, 56, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span></div>
           <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
@@ -442,7 +461,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="mu">${I('wind', { size: 14 })}${n0(d.wind)} ${compass(d.wdir)}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="score c-${r ? r.cls : 'none'}"><b>${r && r.score != null ? r.score : '—'}</b><small>${r ? esc(r.label) : ''}</small></div>
-        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>${I('wave', { size: 20 }).replace(/"/g, '&quot;')}</div>'">` : `<div class="thumb empty">${I('wave', { size: 20 })}</div>`}
+        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>${I('wave', { size: 20 }).replace(/"/g, '&quot;')}</div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], 16, 56, 56, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}</div>
           <div class="meta">${esc(meta)}</div>
@@ -482,6 +501,12 @@
     $('#panel-detail').hidden = true;
     if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else { $('#panel-list').hidden = false; renderList(); }
   }
+  function creditHtml(g, ph) {
+    if (!g) return '';
+    if (g.aerial) return esc(g.credit);
+    const src = ph && String(ph.source || '').startsWith('openverse') ? (ph.source.split(':')[1] === 'flickr' ? 'Flickr' : 'Openverse') : 'Wikimedia Commons';
+    return `${esc(g.credit)}${g.license ? ' · ' + esc(g.license) : ''}${g.page ? ` · <a href="${esc(g.page)}" target="_blank" rel="noopener">${src}</a>` : ''}${ph && ph.source === 'geosearch' && g === (ph.gallery || [])[0] ? ' · photo prise à proximité' : ''}`;
+  }
   function renderDetailHead() {
     const s = spotById(state.selected), p = s.properties, w = wishOf(p.id), ph = photoOf(p.id), [lat, lon] = latlng(s);
     const r = state.bulk ? scoreOf(s, detailDay) : null;
@@ -490,20 +515,23 @@
       p.tidal === 'yes' ? 'dépend de la marée' : null, p.access && p.access !== 'yes' ? `accès : ${p.access}` : null].filter(Boolean);
     const wiki = p.wikipedia ? `https://${p.wikipedia.split(':')[0]}.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':').slice(1).join(':'))}` : null;
     const commons = `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(p.name)}&ns6=1`;
-    const gal = ph && ph.gallery && ph.gallery.length > 1 ? ph.gallery : null;
+    const photosList = ph ? (ph.gallery && ph.gallery.length ? ph.gallery : [{ thumb: ph.thumb, page: ph.page, credit: ph.credit, license: ph.license }]) : [];
+    const gal = [...photosList, { aerial: true, credit: AERIAL_CREDIT, license: '', page: '' }];
+    const heroW = Math.min(window.innerWidth, 900) >= 900 ? 440 : window.innerWidth;
     $('#detail-head').innerHTML = `
       <div class="hero ${ph ? '' : 'nophoto'}">
-        ${gal ? `<div class="slides" id="slides">${gal.map((g, i) => `<img src="${esc(g.thumb)}" alt="${esc(p.name)} (${i + 1})" ${i ? 'loading="lazy"' : ''} decoding="async" onerror="this.style.visibility='hidden'">`).join('')}</div>`
-          : ph ? `<img src="${esc(ph.thumb)}" alt="${esc(p.name)}" decoding="async" onerror="this.remove();this.closest('.hero')?.classList.add('nophoto')">` : ''}
+        <div class="slides" id="slides">${gal.map((g, i) => g.aerial
+          ? aerialHtml(lat, lon, 17, heroW, 250, 'slide')
+          : `<img src="${esc(g.thumb)}" alt="${esc(p.name)} (${i + 1})" ${i ? 'loading="lazy"' : ''} decoding="async" onerror="this.style.visibility='hidden'">`).join('')}</div>
         <div class="shade"></div>
-        ${gal ? `<div class="dots" id="dots">${gal.map((g, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div><span class="count" id="gcount">1 / ${gal.length}</span>
+        ${gal.length > 1 ? `<div class="dots" id="dots">${gal.map((g, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div><span class="count" id="gcount">1 / ${gal.length}</span>
           <button type="button" class="nav l" id="gprev" aria-label="Photo précédente">${I('chevronL', { size: 24 })}</button><button type="button" class="nav r" id="gnext" aria-label="Photo suivante">${I('chevronR', { size: 24 })}</button>` : ''}
         <div class="tl"><button type="button" class="iconbtn" id="btn-close" aria-label="Retour à la liste">${I('back', { size: 20 })}</button></div>
         <div class="tr"><button type="button" class="iconbtn" id="btn-share-spot" aria-label="Partager ce spot">${I('share', { size: 20 })}</button></div>
         <div class="cap">
           <div class="row"><h2>${esc(p.name)}</h2>${r ? `<div class="score c-${r.cls}"><b>${r.score ?? '—'}</b><small>${esc(r.label)}</small></div>` : ''}</div>
           <span class="sub">${esc(tags.join(' · '))}</span>
-          ${ph ? `<span class="credit" id="gcredit">${esc(ph.credit)}${ph.license ? ' · ' + esc(ph.license) : ''} · <a href="${esc(ph.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>${ph.source === 'geosearch' ? ' · photo prise à proximité' : ''}</span>` : ''}
+          <span class="credit" id="gcredit">${creditHtml(gal[0], ph)}</span>
         </div>
       </div>
       <div class="dbody" id="dhead-body">
@@ -526,7 +554,7 @@
       </div>`;
     $('#btn-close').onclick = closeDetail;
     $('#btn-share-spot').onclick = () => shareSpot(s);
-    if (gal) {
+    if (gal.length > 1) {
       const slides = $('#slides'), dots = $('#dots').children;
       const go = (i) => slides.scrollTo({ left: i * slides.clientWidth, behavior: 'smooth' });
       const cur = () => Math.round(slides.scrollLeft / slides.clientWidth);
@@ -534,7 +562,7 @@
         const i = Math.max(0, Math.min(gal.length - 1, cur()));
         [...dots].forEach((d, k) => d.classList.toggle('on', k === i));
         $('#gcount').textContent = `${i + 1} / ${gal.length}`;
-        const g = gal[i]; $('#gcredit').innerHTML = `${esc(g.credit)}${g.license ? ' · ' + esc(g.license) : ''} · <a href="${esc(g.page)}" target="_blank" rel="noopener">Wikimedia Commons</a>`;
+        $('#gcredit').innerHTML = creditHtml(gal[i], ph);
       }, { passive: true });
       $('#gprev').onclick = () => go(Math.max(0, cur() - 1));
       $('#gnext').onclick = () => go(Math.min(gal.length - 1, cur() + 1));
@@ -829,7 +857,7 @@
     });
     if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
     window.addEventListener('online', () => { if (!state.bulk) loadForecast(false); });
-    showIntro();
+    if (!shared && !routed) showIntro();
   }
   document.addEventListener('DOMContentLoaded', init);
 })();

@@ -28,8 +28,10 @@ deux listes sur l'autre téléphone.
 - **Mobile** : panneau glissant (3 hauteurs), gros boutons tactiles, géolocalisation et tri
   par distance, installable sur l'écran d'accueil (manifest PWA), thème sombre automatique.
 - **Photos** : galerie Wikimedia Commons par spot (jusqu'à 10 images : catégorie Commons,
-  Wikidata, photos géolocalisées), avec crédit et licence, en carrousel en tête de fiche et en
-  vignette dans la liste.
+  Wikidata, photos géolocalisées), repli Openverse, avec crédit et licence, en carrousel en tête
+  de fiche et en vignette dans la liste. Chaque galerie se termine par une **vue aérienne**
+  zoomée (tuiles satellite Esri) ; c'est l'image des plages sans photo, dans la liste, la fiche
+  et l'aperçu des pages de partage.
 - **Restaurants, bars, bars de plage, cafés, sites culturels et à visiter** (~4 400 lieux OSM
   dans la bande côtière) : couche carte activable (visible à partir du zoom 13), fiche popup
   (cuisine, horaires, site, téléphone, itinéraire) et rubrique « À proximité » dans chaque fiche

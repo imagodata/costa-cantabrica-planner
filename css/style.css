@@ -203,6 +203,12 @@ button:focus:not(:focus-visible) { outline: none; }
 .c-ideal { background: var(--ideal); } .c-good { background: var(--good); } .c-mid { background: var(--mid); }
 .c-bad { background: var(--bad); } .c-none { background: var(--none); }
 .thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--line); display: block; }
+.aerial { position: relative; overflow: hidden; background: #1b3a4b; flex: 0 0 auto; }
+.aerial img { position: absolute; width: 256px; height: 256px; max-width: none; display: block; }
+.aerial .pinpt { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(0,0,0,.45), 0 0 0 6px rgba(255,255,255,.35); }
+.aerial.thumb .pinpt { width: 6px; height: 6px; margin: -3px 0 0 -3px; box-shadow: 0 0 0 1.5px rgba(0,0,0,.45); }
+.aerial.slide { flex: 0 0 100%; scroll-snap-align: start; height: 100%; }
+.hero .slides .aerial.slide { width: 100% !important; }
 .thumb.empty { background: linear-gradient(160deg, #cfe3ee, #e7e3d3); display: grid; place-items: center; color: #9fb7c4; }
 .item .body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .item .name { display: flex; align-items: center; gap: 6px; min-width: 0; }
