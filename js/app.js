@@ -9,6 +9,7 @@
   const state = {
     spots: [], photos: {}, pois: [], bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
     poiOn: { food: true, visit: true },
+    view: 'explore', wishWho: 'all', wishSort: 'coast', plans: {},
     filters: { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' },
     sort: 'score',
     users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } },
@@ -16,7 +17,7 @@
   };
   const scoreCache = new Map();
   let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0;
-  let poiLayer = null, poiMarkers = new Map();
+  let poiLayer = null, poiMarkers = new Map(), wishLayer = null;
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   /* ------------------------------------------------------------------ utilitaires */
@@ -58,6 +59,9 @@
       if (j.filters) Object.assign(state.filters, j.filters);
       if (j.sort) state.sort = j.sort;
       if (j.poiOn) Object.assign(state.poiOn, j.poiOn);
+      if (j.plans) state.plans = j.plans;
+      if (j.wishWho) state.wishWho = j.wishWho;
+      if (j.wishSort) state.wishSort = j.wishSort;
     } catch (e) { }
   }
 
@@ -65,8 +69,24 @@
   const b64e = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const b64d = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
   function shareUrl() {
-    const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, d: state.day, p: state.profile, s: state.selected };
+    const pl = {};
+    for (const [id, pn] of Object.entries(state.plans)) if (pn.items.length || pn.notes.a || pn.notes.b) pl[id] = { n: pn.notes, i: pn.items.map((it) => [it.poi || ('t:' + it.text), it.by]) };
+    const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, d: state.day, p: state.profile, s: state.selected, pl };
     return location.origin + location.pathname + '#share=' + b64e(JSON.stringify(p));
+  }
+  const spotBySlug = (slug) => state.spots.find((s) => s.properties.slug === slug);
+  const spotUrl = (s) => location.origin + location.pathname.replace(/index\.html$/, '') + 's/' + s.properties.slug + '.html';
+  async function shareSpot(s) {
+    const url = spotUrl(s), p = s.properties, r = state.bulk ? scoreOf(s) : null;
+    const text = `${p.name} (${p.type === 'cala' ? 'crique' : 'plage'}, ${p.province})${r && r.score != null ? ` · ${r.score}/100 ${r.label} ${fmtDay(state.bulk.dates[state.day], state.day).lbl.toLowerCase()}` : ''}`;
+    try { if (navigator.share) { await navigator.share({ title: p.name, text, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(url); toast('Lien de la plage copié'); } catch (e) { prompt('Copiez ce lien :', url); }
+  }
+  function applyRoute() {
+    const m = location.hash.match(/^#([a-z0-9-]+)$/);
+    if (!m) return false;
+    const s = spotBySlug(m[1]); if (!s) return false;
+    state.selected = s.properties.id; return true;
   }
   function applyShare() {
     const m = location.hash.match(/#share=([A-Za-z0-9_-]+)/); if (!m) return false;
@@ -79,6 +99,15 @@
       if (Number.isInteger(p.d)) state.day = Math.max(0, Math.min(C.forecastDays - 1, p.d));
       if (p.p && C.profiles[p.p]) state.profile = p.p;
       if (p.s) state.selected = p.s;
+      for (const [id, v] of Object.entries(p.pl || {})) {
+        const pn = planOf(id);
+        for (const k of ['a', 'b']) if (v.n && v.n[k] && !pn.notes[k]) pn.notes[k] = String(v.n[k]).slice(0, 500);
+        for (const [ref, by] of v.i || []) {
+          const it = String(ref).startsWith('t:') ? { text: String(ref).slice(2, 82), by } : { poi: String(ref), by };
+          if (!pn.items.some((x) => (x.poi && x.poi === it.poi) || (x.text && x.text === it.text))) pn.items.push(it);
+        }
+      }
+      if ((p.a && p.a.length) || (p.b && p.b.length)) state.view = 'wishes';
       history.replaceState(null, '', location.pathname + location.search);
       save(); toast('Sélection partagée importée'); return true;
     } catch (e) { return false; }
@@ -97,10 +126,22 @@
     return r;
   }
   const wishOf = (id) => ({ a: state.users.a.wish.includes(id), b: state.users.b.wish.includes(id) });
+  const wishedIds = () => [...new Set([...state.users.a.wish, ...state.users.b.wish])].filter(spotById);
+  function planOf(id) { return state.plans[id] || (state.plans[id] = { notes: { a: '', b: '' }, items: [] }); }
+  const hasPlan = (id) => { const pn = state.plans[id]; return !!(pn && (pn.items.length || pn.notes.a || pn.notes.b)); };
+  function planAdd(spotId, item) {
+    const pn = planOf(spotId);
+    if (pn.items.some((x) => (item.poi && x.poi === item.poi) || (item.text && x.text === item.text))) return false;
+    pn.items.push({ ...item, by: state.me });
+    if (!state.users[state.me].wish.includes(spotId)) state.users[state.me].wish.push(spotId);
+    save(); return true;
+  }
+  function planRemove(spotId, idx) { const pn = planOf(spotId); pn.items.splice(idx, 1); save(); }
+  const poiById = (id) => state.pois.find((x) => x.id === id);
   function toggleWish(id, who) {
     const list = state.users[who].wish, i = list.indexOf(id);
     if (i >= 0) list.splice(i, 1); else list.push(id);
-    save(); renderList(); paintMarkers();
+    save(); renderTabs(); if (state.view === 'wishes') renderWishes(); else renderList(); paintMarkers();
     if (state.selected === id) renderDetailHead();
   }
   function filtered({ ignoreScore = false } = {}) {
@@ -191,7 +232,7 @@
   }
   function renderLayerChips() {
     const z = map.getZoom(), zoomHint = z < C.poiMinZoom;
-    const chip = (g, label, colors) => `<button type="button" data-g="${g}" class="${state.poiOn[g] ? 'on' : ''}" title="${zoomHint ? 'Zoomez pour voir les lieux' : ''}">${colors.map((c) => `<i class="sw" style="background:${c}"></i>`).join('')}${label}${state.poiOn[g] && zoomHint ? ' · zoomez' : ''}</button>`;
+    const chip = (g, label, colors) => `<button type="button" data-g="${g}" class="${state.poiOn[g] ? 'on' : ''}" title="${zoomHint ? 'Zoomez pour voir les lieux' : ''}">${colors.map((c) => `<i class="sw" style="background:${c}"></i>`).join('')}${label}</button>`;
     $('#layer-chips').innerHTML = chip('food', 'Restos & bars', [C.poiKinds.restaurant.color, C.poiKinds.beach_bar.color]) + chip('visit', 'Visites', [C.poiKinds.culture.color, C.poiKinds.tourism.color]);
     $('#layer-chips').querySelectorAll('button').forEach((b) => b.onclick = () => { state.poiOn[b.dataset.g] = !state.poiOn[b.dataset.g]; save(); renderPois(); });
   }
@@ -232,10 +273,16 @@
       if (!vis.has(id)) { if (map.hasLayer(m)) map.removeLayer(m); continue; }
       if (!map.hasLayer(m)) m.addTo(map);
       const r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(id), sel = state.selected === id;
-      m.setStyle({ fillColor: cssVar('--' + r.cls), radius: sel ? 11 : (w.a || w.b ? 9 : 7),
+      if (state.view === 'wishes') {
+        if (w.a || w.b) { map.removeLayer(m); continue; }
+        m.setStyle({ fillColor: cssVar('--' + r.cls), radius: 4, color: '#fff', weight: 1, fillOpacity: .45 });
+        continue;
+      }
+      m.setStyle({ fillColor: cssVar('--' + r.cls), radius: sel ? 11 : (w.a || w.b ? 9 : 7), fillOpacity: .95,
         color: sel ? '#111' : w.a && w.b ? colBoth : w.a ? colA : w.b ? colB : '#fff', weight: sel ? 3 : (w.a || w.b ? 3 : 2) });
       if (sel) m.bringToFront();
     }
+    paintWishLayer();
   }
   function panTo(s) {
     const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = window.innerWidth < 900, p = map.project(latlng(s), z);
@@ -255,7 +302,7 @@
   }
   function renderWho() {
     $('#who').innerHTML = ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(state.users[k].name[0].toUpperCase())}</span></button>`).join('');
-    $('#who').querySelectorAll('button').forEach((b) => { b.onclick = () => { state.me = b.dataset.k; save(); renderWho(); toast(`Envies marquées pour ${state.users[state.me].name}`); }; });
+    $('#who').querySelectorAll('button').forEach((b) => { b.onclick = () => { state.me = b.dataset.k; save(); renderWho(); if (state.selected) renderPlanCard(state.selected); toast(`Envies et notes de ${state.users[state.me].name}`); }; });
   }
   function bestDot(i) {
     if (!state.bulk) return 'none';
@@ -274,11 +321,104 @@
       b.onclick = () => { state.day = i; renderDays(); renderList(); paintMarkers(); if (state.selected) renderDetailDay(i); };
       el.appendChild(b);
     });
-    el.children[state.day]?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    const onDay = el.children[state.day];
+    if (onDay) el.scrollLeft = onDay.offsetLeft - (el.clientWidth - onDay.clientWidth) / 2;
   }
   function renderProfiles() {
     $('#profile-seg').innerHTML = Object.entries(C.profiles).map(([k, p]) => `<button type="button" role="tab" data-k="${k}" class="${k === state.profile ? 'on' : ''}" title="${esc(p.label)}">${k === state.profile ? I(p.icon, { size: 15 }) : ''}${esc(p.short)}</button>`).join('');
     $('#profile-seg').querySelectorAll('button').forEach((b) => b.onclick = () => { state.profile = b.dataset.k; save(); renderProfiles(); renderDays(); renderList(); paintMarkers(); if (state.selected) renderDetailDay(detailDay); });
+  }
+
+  /* ------------------------------------------------------------------ onglets & vue Envies */
+  function renderTabs() {
+    const n = wishedIds().length;
+    $('#tabs').innerHTML = `<button type="button" data-v="explore" class="${state.view === 'explore' ? 'on' : ''}">${I('compass', { size: 16 })}Explorer</button>
+      <button type="button" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Nos envies${n ? `<b>${n}</b>` : ''}</button>`;
+    $('#tabs').querySelectorAll('button').forEach((b) => b.onclick = () => setView(b.dataset.v));
+  }
+  function setView(v) {
+    state.view = v;
+    if (state.selected && !$('#panel-detail').hidden) closeDetail();
+    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes';
+    renderTabs(); paintMarkers();
+    if (v === 'wishes') { renderWishes(); fitWishes(); } else { renderList(); }
+  }
+  function wishList() {
+    const who = state.wishWho;
+    let ids = wishedIds().filter((id) => { const w = wishOf(id); return who === 'all' ? true : who === 'both' ? w.a && w.b : w[who]; });
+    let arr = ids.map(spotById);
+    if (state.wishSort === 'score' && state.bulk) arr.sort((a, b) => (scoreOf(b).score ?? -1) - (scoreOf(a).score ?? -1));
+    else arr.sort((a, b) => a.geometry.coordinates[0] - b.geometry.coordinates[0]);
+    return arr;
+  }
+  function planSummary(id) {
+    const pn = state.plans[id]; if (!pn) return '';
+    const parts = [];
+    if (pn.items.length) parts.push(pn.items.map((it) => it.text || (poiById(it.poi)?.p.name ?? '…')).slice(0, 3).join(', ') + (pn.items.length > 3 ? ` +${pn.items.length - 3}` : ''));
+    const note = pn.notes.a || pn.notes.b; if (note) parts.push('« ' + note.slice(0, 40) + (note.length > 40 ? '…' : '') + ' »');
+    return parts.join(' · ');
+  }
+  function renderWishes() {
+    const dot = (k) => `<i style="width:10px;height:10px;border-radius:50%;background:var(--${k});display:inline-block"></i>`;
+    seg($('#w-who'), [['all', 'Tous'], ['a', dot('a') + esc(state.users.a.name)], ['b', dot('b') + esc(state.users.b.name)], ['both', 'Communes']], state.wishWho, (v) => { state.wishWho = v; save(); renderWishes(); paintMarkers(); fitWishes(); }, { a: 'a', b: 'b', both: 'both' });
+    seg($('#w-sort'), [['coast', "D'ouest en est"], ['score', 'Meilleur score']], state.wishSort, (v) => { state.wishSort = v; save(); renderWishes(); paintMarkers(); });
+    const list = wishList(), ul = $('#w-list');
+    const wa = state.users.a.wish.length, wb = state.users.b.wish.length, both = state.users.a.wish.filter((id) => state.users.b.wish.includes(id)).length;
+    $('#w-summary').innerHTML = `<span>${dot('a')} ${wa} · ${dot('b')} ${wb} · ${dot('both')} ${both} commune${both > 1 ? 's' : ''}</span><span>${list.length} plage${list.length > 1 ? 's' : ''}</span>`;
+    if (!list.length) {
+      ul.innerHTML = `<li class="empty-state"><span>Aucune envie pour l'instant.</span><span>Marquez des plages avec ${I('heart', { size: 14 })} dans l'onglet Explorer, chacun avec son prénom. Les envies communes ressortent ici.</span></li>`;
+      $('#w-foot').innerHTML = ''; return;
+    }
+    const frag = document.createDocumentFragment();
+    list.forEach((s, i) => {
+      const p = s.properties, r = state.bulk ? scoreOf(s) : null, w = wishOf(p.id), ph = photoOf(p.id), d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null;
+      const who = w.a && w.b ? 'both' : w.a ? 'a' : 'b';
+      const li = document.createElement('li'); li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
+      li.style.gridTemplateColumns = '44px 56px minmax(0, 1fr) 36px';
+      const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
+      li.innerHTML = `
+        <div class="num c-${r ? r.cls : 'none'}">${i + 1}<small style="background:var(--${who})">${who === 'both' ? '2' : esc(state.users[who].name[0].toUpperCase())}</small></div>
+        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : `<div class="thumb empty">${I('wave', { size: 20 })}</div>`}
+        <div class="body">
+          <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span></div>
+          <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
+          ${hasPlan(p.id) ? `<div class="plan">${I('note', { size: 13 })}${esc(planSummary(p.id))}</div>` : `<div class="cond">${cond}</div>`}
+        </div>
+        <div class="hearts">
+          <button type="button" class="heart a ${w.a ? 'on' : ''}" data-who="a">${I('heart', { size: 15, fill: w.a })}</button>
+          <button type="button" class="heart b ${w.b ? 'on' : ''}" data-who="b">${I('heart', { size: 15, fill: w.b })}</button>
+        </div>`;
+      li.querySelectorAll('.heart').forEach((h) => h.onclick = (e) => { e.stopPropagation(); toggleWish(p.id, h.dataset.who); });
+      li.onclick = () => select(p.id, { pan: true });
+      frag.appendChild(li);
+    });
+    ul.innerHTML = ''; ul.appendChild(frag);
+    const pts = list.map(latlng);
+    let gmaps = null;
+    if (pts.length === 1) gmaps = `https://www.google.com/maps/dir/?api=1&destination=${pts[0].join(',')}`;
+    else if (pts.length > 1) { const mid = pts.slice(1, -1).slice(0, 9); gmaps = `https://www.google.com/maps/dir/?api=1&origin=${pts[0].join(',')}&destination=${pts[pts.length - 1].join(',')}${mid.length ? '&waypoints=' + mid.map((x) => x.join(',')).join('|') : ''}`; }
+    $('#w-foot').innerHTML = `<a class="btn primary big" style="display:flex;align-items:center;justify-content:center;gap:8px" href="${gmaps}" target="_blank" rel="noopener">${I('route', { size: 18 })}Itinéraire Google Maps · ${Math.min(pts.length, 11)} étape${pts.length > 1 ? 's' : ''}</a>
+      ${pts.length > 11 ? '<span class="hint">Google Maps accepte 11 étapes au plus : les premières d\'ouest en est sont retenues.</span>' : ''}
+      <div class="row"><button type="button" class="btn ghost" id="w-share" style="flex:1">Partager le lien</button><button type="button" class="btn ghost" id="w-export" style="flex:1">Exporter (GeoJSON)</button></div>`;
+    $('#w-share').onclick = share; $('#w-export').onclick = exportSelection;
+  }
+  function fitWishes() {
+    const list = wishList(); if (!list.length) return;
+    const b = L.latLngBounds(list.map(latlng)), mobile = window.innerWidth < 900, bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
+    map.fitBounds(b.pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 });
+  }
+  function paintWishLayer() {
+    if (!wishLayer) wishLayer = L.layerGroup().addTo(map);
+    wishLayer.clearLayers();
+    if (state.view !== 'wishes') return;
+    const list = wishList();
+    if (list.length > 1) L.polyline(list.map(latlng), { color: cssVar('--both'), weight: 2, dashArray: '4 6', opacity: .7 }).addTo(wishLayer);
+    list.forEach((s, i) => {
+      const p = s.properties, r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : 'b';
+      const icon = L.divIcon({ className: '', html: `<div class="num-pin ${who}" style="background:var(--${r.cls})">${i + 1}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+      L.marker(latlng(s), { icon, title: p.name, zIndexOffset: 1000 }).on('click', () => select(p.id, { pan: false })).addTo(wishLayer);
+      for (const it of (state.plans[p.id]?.items || [])) { const x = it.poi && poiById(it.poi); if (x) poiMarker(x, false).addTo(wishLayer); }
+    });
   }
 
   /* ------------------------------------------------------------------ liste */
@@ -322,8 +462,9 @@
   async function select(id, { pan = true } = {}) {
     const s = spotById(id); if (!s) return;
     state.selected = id; detailDay = state.day; detailData = null;
+    if (s.properties.slug) history.replaceState(null, '', location.pathname + location.search + '#' + s.properties.slug);
     paintMarkers();
-    $('#panel-list').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
+    $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
     if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
     renderDetailHead();
     $('#detail-body').innerHTML = '<div class="loading">Chargement des prévisions horaires…</div>';
@@ -333,8 +474,9 @@
   }
   function closeDetail() {
     state.selected = null; paintMarkers();
-    $('#panel-detail').hidden = true; $('#panel-list').hidden = false;
-    renderList();
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    $('#panel-detail').hidden = true;
+    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else { $('#panel-list').hidden = false; renderList(); }
   }
   function renderDetailHead() {
     const s = spotById(state.selected), p = s.properties, w = wishOf(p.id), ph = photoOf(p.id), [lat, lon] = latlng(s);
@@ -368,16 +510,18 @@
           <span class="spacer"></span>
           <a class="pill primary" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving" target="_blank" rel="noopener">${I('navigation', { size: 16 })}Itinéraire</a>
         </div>
+        <div id="plan-slot"></div>
         <div class="links">
           <a href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(p.name)})">${I('pin', { size: 14 })}GPS</a>
           ${wiki ? `<a href="${wiki}" target="_blank" rel="noopener">${I('book', { size: 14 })}Wikipédia</a>` : ''}
           <a href="${commons}" target="_blank" rel="noopener">${I('camera', { size: 14 })}Photos</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + p.province)}" target="_blank" rel="noopener">${I('pin', { size: 14 })}Google Maps</a>
           <a href="${esc(p.osm)}" target="_blank" rel="noopener">${I('map', { size: 14 })}OSM</a>
           ${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener">${I('link', { size: 14 })}Site</a>` : ''}
         </div>
       </div>`;
     $('#btn-close').onclick = closeDetail;
-    $('#btn-share-spot').onclick = share;
+    $('#btn-share-spot').onclick = () => shareSpot(s);
     if (gal) {
       const slides = $('#slides'), dots = $('#dots').children;
       const go = (i) => slides.scrollTo({ left: i * slides.clientWidth, behavior: 'smooth' });
@@ -392,6 +536,31 @@
       $('#gnext').onclick = () => go(Math.min(gal.length - 1, cur() + 1));
     }
     $('#detail-head').querySelectorAll('.pill[data-who]').forEach((h) => h.onclick = () => toggleWish(p.id, h.dataset.who));
+    renderPlanCard(p.id);
+  }
+  let noteTimer = null;
+  function renderPlanCard(spotId) {
+    const slot = $('#plan-slot'); if (!slot) return;
+    const pn = state.plans[spotId], me = state.me, other = me === 'a' ? 'b' : 'a';
+    const items = pn ? pn.items : [];
+    slot.innerHTML = `<div class="plan-card">
+      <div class="h"><h3>${I('note', { size: 13 })} Programme autour de cette plage</h3></div>
+      ${items.length ? `<ul class="plan-items">${items.map((it, k) => { const x = it.poi && poiById(it.poi); const kd = x ? (C.poiKinds[x.p.kind] || C.poiKinds.tourism) : null;
+        return `<li>${kd ? `<span class="poi-pin" style="background:${kd.color}">${I(kd.icon, { size: 12 })}</span>` : `<span class="poi-pin" style="background:var(--accent)">${I('compass', { size: 12 })}</span>`}
+          <span class="t">${esc(x ? x.p.name : it.text)}${x ? ` <small>· ${esc(kd.label)}${x.p.cuisine ? ', ' + esc(x.p.cuisine.split(';')[0]) : ''}</small>` : ' <small>· activité</small>'}</span>
+          <span class="who ${it.by}" title="${esc(state.users[it.by]?.name || '')}">${esc((state.users[it.by]?.name || '?')[0].toUpperCase())}</span>
+          <button type="button" class="rm" data-k="${k}" aria-label="Retirer">${I('trash', { size: 15 })}</button></li>`; }).join('')}</ul>`
+        : `<span class="hint">Ajoutez un resto, un monument ou une activité : bouton ${I('plus', { size: 12 })} dans « À proximité » ci-dessous, ou une activité libre ici.</span>`}
+      <div class="plan-add"><input type="text" id="plan-text" maxlength="80" placeholder="Activité libre : surf, kayak, coucher de soleil…"><button type="button" id="plan-add-btn" aria-label="Ajouter">${I('plus', { size: 18 })}</button></div>
+      <div class="plan-note"><label><span class="who ${me}" style="width:18px;height:18px;border-radius:50%;background:var(--${me});color:#fff;font-size:10px;display:grid;place-items:center">${esc(state.users[me].name[0].toUpperCase())}</span>Note de ${esc(state.users[me].name)}</label>
+        <textarea id="plan-note" maxlength="500" placeholder="Ex. : y aller à marée haute, pique-nique, parking étroit…">${esc(pn ? pn.notes[me] : '')}</textarea></div>
+      ${pn && pn.notes[other] ? `<div class="plan-note"><label><span style="width:18px;height:18px;border-radius:50%;background:var(--${other});color:#fff;font-size:10px;display:grid;place-items:center">${esc(state.users[other].name[0].toUpperCase())}</span>Note de ${esc(state.users[other].name)}</label><div class="ro">${esc(pn.notes[other])}</div></div>` : ''}
+    </div>`;
+    slot.querySelectorAll('.rm').forEach((b) => b.onclick = () => { planRemove(spotId, +b.dataset.k); renderPlanCard(spotId); renderDetailDay(detailDay); renderTabs(); paintMarkers(); });
+    const addText = () => { const v = $('#plan-text').value.trim(); if (!v) return; if (planAdd(spotId, { text: v })) { renderPlanCard(spotId); renderTabs(); paintMarkers(); toast('Ajouté au programme'); } };
+    $('#plan-add-btn').onclick = addText;
+    $('#plan-text').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addText(); } });
+    $('#plan-note').addEventListener('input', (e) => { planOf(spotId).notes[me] = e.target.value; clearTimeout(noteTimer); noteTimer = setTimeout(() => { save(); renderTabs(); }, 400); });
   }
   function renderDetailDay(i, hourlyError = null) {
     detailDay = i;
@@ -424,7 +593,8 @@
     $('#detail-body').innerHTML = body;
     bindNearby(s);
     $('#detail-body').querySelectorAll('.daycard').forEach((b) => b.onclick = () => renderDetailDay(+b.dataset.i));
-    $('#detail-body').querySelector('.daycard.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    const on = $('#detail-body').querySelector('.daycard.on');
+    if (on) { const c = on.parentElement; c.scrollLeft = on.offsetLeft - (c.clientWidth - on.clientWidth) / 2; }
     const hd = $('#detail-head .score'); if (hd) { hd.className = `score c-${r.cls}`; hd.innerHTML = `<b>${r.score ?? '—'}</b><small>${esc(r.label)}</small>`; }
   }
   function renderTides(d, p, hourlyError) {
@@ -457,12 +627,20 @@
       <div class="nearby-tabs">${tabs.filter((t) => count(t[0]) > 0).map((t) => `<button type="button" data-t="${t[0]}" class="${nearbyTab === t[0] ? 'on' : ''}">${t[2] ? I(t[2], { size: 12 }) : ''}${t[1]} ${count(t[0])}</button>`).join('')}</div>
       <ul class="nearby">${list.map((o) => { const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism, p = o.x.p;
         const meta = [k.label, p.cuisine ? p.cuisine.split(';')[0] : null, p.sub && p.kind !== p.sub && poiGroupOf(p.kind) === 'visit' ? p.sub.replace(/_/g, ' ') : null].filter(Boolean).join(' · ');
-        return `<li data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color}">${I(k.icon, { size: 13 })}</span><div><div class="name">${esc(p.name)}</div><div class="m">${esc(meta)}</div></div><span class="d">${o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km'}</span></li>`; }).join('')}</ul>
+        const inPlan = (state.plans[s.properties.id]?.items || []).some((it) => it.poi === o.x.id);
+        return `<li data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color}">${I(k.icon, { size: 13 })}</span><div><div class="name">${esc(p.name)}</div><div class="m">${esc(meta)}</div></div><span class="d">${o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km'}</span><button type="button" class="add ${inPlan ? 'on' : ''}" data-id="${esc(o.x.id)}" aria-label="${inPlan ? 'Retirer du programme' : 'Ajouter au programme'}">${I(inPlan ? 'check' : 'plus', { size: 16 })}</button></li>`; }).join('')}</ul>
       ${list.length < count(nearbyTab) ? `<span class="hint">… et ${count(nearbyTab) - list.length} autres sur la carte.</span>` : ''}</div>`;
   }
   function bindNearby(s) {
     $('#detail-body').querySelectorAll('.nearby-tabs button').forEach((b) => b.onclick = () => { nearbyTab = b.dataset.t; renderDetailDay(detailDay); $('#detail-body .nearby-tabs')?.scrollIntoView({ block: 'nearest' }); });
     $('#detail-body').querySelectorAll('.nearby li').forEach((li) => li.onclick = () => { const x = state.pois.find((o) => o.id === li.dataset.id); if (x) showPoi(x); });
+    $('#detail-body').querySelectorAll('.nearby .add').forEach((b) => b.onclick = (e) => {
+      e.stopPropagation();
+      const sid = s.properties.id, pn = planOf(sid), k = pn.items.findIndex((it) => it.poi === b.dataset.id);
+      if (k >= 0) { planRemove(sid, k); toast('Retiré du programme'); } else { planAdd(sid, { poi: b.dataset.id }); toast(`Ajouté au programme (${state.users[state.me].name})`); }
+      renderPlanCard(sid); renderDetailDay(detailDay); renderTabs(); paintMarkers();
+      $('#detail-body .nearby-tabs')?.scrollIntoView({ block: 'nearest' });
+    });
   }
   function renderHourly(date) {
     const H = detailData.hourly, M = detailData.marine;
@@ -556,7 +734,9 @@
   }
   function exportSelection() {
     const feats = state.spots.filter((s) => { const w = wishOf(s.properties.id); return w.a || w.b; })
-      .map((s) => { const w = wishOf(s.properties.id); return { ...s, properties: { ...s.properties, [state.users.a.name]: w.a, [state.users.b.name]: w.b } }; });
+      .map((s) => { const w = wishOf(s.properties.id), pn = state.plans[s.properties.id];
+        const plan = pn ? { notes: pn.notes, items: pn.items.map((it) => ({ by: state.users[it.by]?.name, name: it.text || poiById(it.poi)?.p.name, kind: it.poi ? poiById(it.poi)?.p.kind : 'activity', osm: it.poi ? osmUrl(it.poi) : undefined })) } : undefined;
+        return { ...s, properties: { ...s.properties, [state.users.a.name]: w.a, [state.users.b.name]: w.b, plan } }; });
     if (!feats.length) return toast('Aucune envie marquée');
     const blob = new Blob([JSON.stringify({ type: 'FeatureCollection', features: feats }, null, 1)], { type: 'application/geo+json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'envies-costa-cantabrica.geojson'; a.click();
@@ -584,6 +764,7 @@
   async function init() {
     restore();
     const shared = applyShare();
+    let routed = false;
     const ver = (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
     const [fc, photos, pois] = await Promise.all([
       fetch('data/spots.geojson?v=' + ver).then((r) => r.json()),
@@ -591,11 +772,14 @@
       fetch('data/pois.geojson?v=' + ver).then((r) => (r.ok ? r.json() : { features: [] })).catch(() => ({ features: [] })),
     ]);
     state.spots = fc.features; state.photos = photos || {};
+    routed = !shared && applyRoute();
     state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
-    renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderDays(); renderList();
+    renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
+    if (state.view === 'wishes') setView('wishes');
     $('#q').value = state.filters.q;
     await loadForecast(false);
-    if (shared && state.selected) select(state.selected, { pan: true }); else state.selected = null;
+    if ((shared || routed) && state.selected) select(state.selected, { pan: true }); else state.selected = null;
+    window.addEventListener('hashchange', () => { if (applyRoute()) select(state.selected, { pan: true }); });
   }
   document.addEventListener('DOMContentLoaded', init);
 })();

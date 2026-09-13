@@ -34,6 +34,15 @@ deux listes sur l'autre téléphone.
   dans la bande côtière) : couche carte activable (visible à partir du zoom 13), fiche popup
   (cuisine, horaires, site, téléphone, itinéraire) et rubrique « À proximité » dans chaque fiche
   de plage (lieux à moins de 1,5 km, par catégorie).
+- **Listes par voyageur** : onglet « Nos envies » (filtre Simon / Marie / communes, tri d'ouest en
+  est ou par score), repères numérotés sur la carte avec la couleur du score et l'anneau du
+  voyageur, autres plages estompées, tracé de l'ordre de visite, itinéraire Google Maps
+  multi-étapes, partage et export.
+- **Programme par plage** : note de chaque voyageur, compléments ajoutés depuis « À proximité »
+  (resto, monument…) ou activités libres, visibles sur la carte et dans le lien partagé.
+- **Liens courts par plage** : `index.html#<slug>` ouvre la fiche ; `s/<slug>.html` est une page
+  de partage avec aperçu (titre, photo) qui redirige vers la fiche. Le bouton « partager » d'une
+  fiche copie ce lien.
 - Fonds de carte : plan OSM, satellite Esri, relief OpenTopoMap.
 
 ## Sources de données
@@ -44,7 +53,7 @@ deux listes sur l'autre téléphone.
 | Météo | [Open-Meteo](https://open-meteo.com) `forecast` | gratuit, sans clé, usage non commercial |
 | Houle, niveau de la mer, T° eau | Open-Meteo `marine` (`cell_selection=sea`) | grille marine grossière près des côtes (~10–20 km) : la houle est celle du large, pas celle de la plage abritée |
 | Marées | dérivées du `sea_level_height_msl` horaire d'Open-Meteo | approximation (±20 min) ; pour une sortie qui dépend de la marée (Gulpiyuri, grottes…), vérifier avec les tables officielles |
-| Photos | [Wikimedia Commons](https://commons.wikimedia.org) via Wikidata (P18), Wikipédia ou recherche géographique | licences libres, crédit affiché ; `python3 scripts/fetch_photos.py` → `data/photos.json` |
+| Photos | [Wikimedia Commons](https://commons.wikimedia.org) via Wikidata (P18), Wikipédia ou recherche géographique ; repli [Openverse](https://openverse.org) (Flickr…) | licences libres, crédit affiché ; `python3 scripts/fetch_photos.py` → `data/photos.json` |
 
 Les prévisions sont mises en cache dans le navigateur pendant 60 min.
 
@@ -132,7 +141,9 @@ scripts/build_pois.py         idem pour les lieux (restos, bars, sites) → data
 gispulse/pois_pipeline.json   pipeline gispulse des lieux (côte, plage la plus proche, bar de plage)
 data/pois.geojson             lieux (généré)
 scripts/publish_gispulse_map.py   POST/PUT de la carte sur un portail
-scripts/fetch_photos.py       photos Commons → data/photos.json (reprise, --retry-missing)
+scripts/fetch_photos.py       photos Commons → data/photos.json (--gallery, --openverse, --retry-missing)
+scripts/build_pages.py        pages de partage s/<slug>.html (OpenGraph + redirection)
+s/                            pages de partage (générées)
 Makefile                      spots, refresh, serve, preview, publish-map
 ```
 

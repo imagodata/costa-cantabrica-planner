@@ -25,9 +25,37 @@ import fetch_osm  # noqa: E402
 RAW = ROOT / "data" / "raw"
 PIPELINE = ROOT / "gispulse" / "spots_pipeline.json"
 OUT = ROOT / "data" / "spots.geojson"
-FINAL_COLS = ("id", "name", "type", "province", "size_m", "coast_km", "osm", "surface", "wikipedia", "wikidata",
+FINAL_COLS = ("id", "name", "slug", "type", "province", "size_m", "coast_km", "osm", "surface", "wikipedia", "wikidata",
               "lifeguard", "nudism", "dog", "access", "description", "tidal", "wheelchair", "website",
               "alt_name", "name_es", "name_ast", "supervised")
+
+
+def slugify(text):
+    import re
+    import unicodedata
+    t = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
+    t = re.sub(r"[^a-z0-9]+", "-", t).strip("-")
+    return t or "plage"
+
+
+def assign_slugs(features):
+    """Slug lisible et unique par spot : nom, puis -province, puis -2, -3… (ordre stable par id)."""
+    by_slug = {}
+    for f in sorted(features, key=lambda f: f["properties"]["id"]):
+        by_slug.setdefault(slugify(f["properties"]["name"]), []).append(f)
+    for base, group in by_slug.items():
+        if len(group) == 1:
+            group[0]["properties"]["slug"] = base
+            continue
+        seen = set()
+        for f in group:
+            cand = f"{base}-{f['properties']['province'].lower()}"
+            n = 2
+            while cand in seen:
+                cand = f"{base}-{f['properties']['province'].lower()}-{n}"
+                n += 1
+            seen.add(cand)
+            f["properties"]["slug"] = cand
 
 
 def find_gispulse(explicit):
@@ -71,6 +99,7 @@ def main(argv=None):
         lon, lat = f["geometry"]["coordinates"][:2]
         features.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
                          "properties": props})
+    assign_slugs(features)
     features.sort(key=lambda f: f["properties"]["name"])
 
     out = {"type": "FeatureCollection",

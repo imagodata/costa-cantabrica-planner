@@ -2,7 +2,7 @@
 GISPULSE ?= gispulse
 PORT ?= 8000
 
-.PHONY: spots pois refresh photos galleries serve preview publish-map bump
+.PHONY: spots pois refresh photos galleries pages serve preview publish-map bump
 
 spots:            ## régénère data/spots.geojson (caches OSM, pipeline gispulse)
 	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py
@@ -18,6 +18,9 @@ photos:           ## complète data/photos.json (Wikimedia Commons)
 
 galleries:        ## complète les galeries (plusieurs photos par spot)
 	python3 scripts/fetch_photos.py --gallery
+
+pages:            ## régénère les pages de partage s/<slug>.html (aperçu WhatsApp, redirection vers la fiche)
+	python3 scripts/build_pages.py
 
 bump:             ## invalide le cache navigateur (versionne css/js/data dans index.html)
 	sed -i "s/?v=[0-9]*/?v=$$(date +%Y%m%d%H%M)/g" index.html

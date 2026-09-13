@@ -31,6 +31,8 @@ UA = "costa-cantabrica-planner/1.0 (https://github.com/imagodata/costa-cantabric
 COMMONS = "https://commons.wikimedia.org/w/api.php"
 IMG_EXT = (".jpg", ".jpeg", ".png", ".webp")
 GALLERY_MAX = 10
+OPENVERSE = "https://api.openverse.org/v1/images/"   # repli : images sous licence libre (Flickr, etc.), 200 req/jour sans clé
+STOP = {"playa", "de", "del", "la", "el", "los", "las", "praia", "sablera", "cala", "playina", "y", "o", "d", "l", "a"}
 GALLERY_RADIUS = 300
 
 
@@ -233,12 +235,16 @@ def main():
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--retry-missing", action="store_true", help="retenter les spots sans photo")
     ap.add_argument("--gallery", action="store_true", help="compléter les galeries (plusieurs photos par spot)")
+    ap.add_argument("--openverse", action="store_true", help="repli Openverse (Flickr…) pour les spots sans photo Commons")
     args = ap.parse_args()
 
     feats = json.loads(SPOTS.read_text(encoding="utf-8"))["features"]
     photos = {} if args.force or not OUT.exists() else json.loads(OUT.read_text(encoding="utf-8"))
     if args.gallery:
         run_gallery(feats, photos, args)
+        return
+    if args.openverse:
+        run_openverse(feats, photos, args)
         return
     todo = [f for f in feats if f["properties"]["id"] not in photos
             or (args.retry_missing and not photos[f["properties"]["id"]])]
@@ -261,6 +267,60 @@ def main():
         if v:
             by_src[v["source"]] = by_src.get(v["source"], 0) + 1
     print(f"Photos : {found}/{len(photos)} → {OUT.relative_to(ROOT)} {by_src}", file=sys.stderr)
+
+
+def name_tokens(name):
+    import re, unicodedata
+    n = unicodedata.normalize("NFKD", name.lower()).encode("ascii", "ignore").decode()
+    return [t for t in re.split(r"[^a-z0-9]+", n) if t and t not in STOP and len(t) > 2]
+
+
+def from_openverse(feature):
+    """Recherche par nom ; on ne retient qu'une image dont le titre ou les tags reprennent le nom de la plage."""
+    p = feature["properties"]
+    toks = name_tokens(p["name"])
+    if not toks:
+        return None
+    q = f"playa {' '.join(toks)} {p.get('province', '')}"
+    r = get_json(OPENVERSE + "?" + urllib.parse.urlencode({"q": q, "page_size": 20, "mature": "false"}))
+    for res in (r or {}).get("results", []):
+        hay = (res.get("title") or "").lower() + " " + " ".join(t.get("name", "") for t in res.get("tags") or [])
+        hay = unicodedata_fold(hay)
+        if not all(t in hay for t in toks):
+            continue
+        if "beach" not in hay and "playa" not in hay and "praia" not in hay and "cala" not in hay and "costa" not in hay and "mar" not in hay:
+            continue
+        lic = (res.get("license") or "").upper()
+        return {"thumb": res.get("url"), "url": res.get("url"), "page": res.get("foreign_landing_url"),
+                "credit": (res.get("creator") or "auteur inconnu")[:80],
+                "license": ("CC " + lic + " " + (res.get("license_version") or "")).strip() if lic != "PDM" else "Domaine public",
+                "source": "openverse:" + (res.get("source") or ""), "gallery": []}
+    return None
+
+
+def unicodedata_fold(s):
+    import unicodedata
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+
+
+def run_openverse(feats, photos, args):
+    todo = [f for f in feats if not photos.get(f["properties"]["id"])]
+    print(f"Openverse : {len(todo)} spots sans photo", file=sys.stderr)
+    found = 0
+    for f in todo:
+        try:
+            info = from_openverse(f)
+        except NetworkError as exc:
+            print(f"  ! {f['properties']['name']} : {exc}", file=sys.stderr)
+            break  # quota probablement atteint : on garde ce qu'on a
+        if info:
+            info["gallery"] = [{k: info[k] for k in ("thumb", "page", "credit", "license")}]
+            photos[f["properties"]["id"]] = info
+            found += 1
+            print(f"  + {f['properties']['name']} ← {info['source']} ({info['credit']}, {info['license']})", file=sys.stderr)
+        time.sleep(3.2)  # 20 requêtes/min en anonyme
+    OUT.write_text(json.dumps(photos, ensure_ascii=False, indent=0), encoding="utf-8")
+    print(f"Openverse : {found} photos trouvées sur {len(todo)}", file=sys.stderr)
 
 
 def run_gallery(feats, photos, args):

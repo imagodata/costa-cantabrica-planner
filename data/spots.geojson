@@ -27,7 +27,8 @@
     "province": "Asturias",
     "size_m": 223,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/93411419"
+    "osm": "https://www.openstreetmap.org/way/93411419",
+    "slug": "1a-playa-de-luarca"
    }
   },
   {
@@ -46,7 +47,8 @@
     "province": "Asturias",
     "size_m": 237,
     "coast_km": 0.11,
-    "osm": "https://www.openstreetmap.org/way/738465184"
+    "osm": "https://www.openstreetmap.org/way/738465184",
+    "slug": "2a-playa-de-luarca"
    }
   },
   {
@@ -65,7 +67,8 @@
     "province": "Asturias",
     "size_m": 158,
     "coast_km": 0.01,
-    "osm": "https://www.openstreetmap.org/way/261559844"
+    "osm": "https://www.openstreetmap.org/way/261559844",
+    "slug": "abono"
    }
   },
   {
@@ -84,7 +87,8 @@
     "province": "Asturias",
     "size_m": 115,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/relation/11632813"
+    "osm": "https://www.openstreetmap.org/relation/11632813",
+    "slug": "amenada"
    }
   },
   {
@@ -103,7 +107,8 @@
     "province": "Cantabria",
     "size_m": 24,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/426374173"
+    "osm": "https://www.openstreetmap.org/way/426374173",
+    "slug": "arenal"
    }
   },
   {
@@ -122,7 +127,8 @@
     "province": "Cantabria",
     "size_m": 55,
     "coast_km": 0.08,
-    "osm": "https://www.openstreetmap.org/way/454307313"
+    "osm": "https://www.openstreetmap.org/way/454307313",
+    "slug": "cala-el-pedregal"
    }
   },
   {
@@ -141,7 +147,8 @@
     "province": "Asturias",
     "size_m": 46,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/594184761"
+    "osm": "https://www.openstreetmap.org/way/594184761",
+    "slug": "cala-la-huelga-o-el-portiello"
    }
   },
   {
@@ -160,7 +167,8 @@
     "province": "Cantabria",
     "size_m": 98,
     "coast_km": 0.24,
-    "osm": "https://www.openstreetmap.org/way/700899005"
+    "osm": "https://www.openstreetmap.org/way/700899005",
+    "slug": "cala-los-cuarezos"
    }
   },
   {
@@ -179,7 +187,8 @@
     "province": "Asturias",
     "size_m": 150,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/272969510"
+    "osm": "https://www.openstreetmap.org/way/272969510",
+    "slug": "cala-puerto-llampreu"
    }
   },
   {
@@ -198,7 +207,8 @@
     "province": "Cantabria",
     "size_m": 69,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/413939221"
+    "osm": "https://www.openstreetmap.org/way/413939221",
+    "slug": "cala-de-cotolino"
    }
   },
   {
@@ -218,7 +228,8 @@
     "size_m": 84,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/427562768",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "cala-de-dicido"
    }
   },
   {
@@ -238,7 +249,8 @@
     "size_m": 53,
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/way/633882674",
-    "surface": "rock"
+    "surface": "rock",
+    "slug": "cala-de-linera"
    }
   },
   {
@@ -258,7 +270,8 @@
     "size_m": 50,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/413685308",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "cala-de-los-frailes"
    }
   },
   {
@@ -282,7 +295,8 @@
     "wikipedia": "es:Playa de Cobijero",
     "wikidata": "Q6078674",
     "name_es": "Cobijero",
-    "name_ast": "Cobiḥeru"
+    "name_ast": "Cobiḥeru",
+    "slug": "cobiheru"
    }
   },
   {
@@ -302,7 +316,8 @@
     "size_m": 1119,
     "coast_km": 0.27,
     "osm": "https://www.openstreetmap.org/way/271810689",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "concha-de-artedo-asturias"
    }
   },
   {
@@ -322,7 +337,8 @@
     "size_m": 1144,
     "coast_km": 0.26,
     "osm": "https://www.openstreetmap.org/way/516090456",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "concha-de-artedo-asturias-2"
    }
   },
   {
@@ -341,7 +357,8 @@
     "province": "Asturias",
     "size_m": 315,
     "coast_km": 0.34,
-    "osm": "https://www.openstreetmap.org/way/1082418340"
+    "osm": "https://www.openstreetmap.org/way/1082418340",
+    "slug": "el-doque"
    }
   },
   {
@@ -362,7 +379,8 @@
     "coast_km": 0.11,
     "osm": "https://www.openstreetmap.org/way/1309954801",
     "surface": "gravel",
-    "lifeguard": "no"
+    "lifeguard": "no",
+    "slug": "ensenada-de-la-barra"
    }
   },
   {
@@ -383,7 +401,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/relation/2187448",
     "surface": "sand",
-    "access": "yes"
+    "access": "yes",
+    "slug": "la-nixon"
    }
   },
   {
@@ -402,7 +421,8 @@
     "province": "Cantabria",
     "size_m": 71,
     "coast_km": 0.66,
-    "osm": "https://www.openstreetmap.org/way/201910797"
+    "osm": "https://www.openstreetmap.org/way/201910797",
+    "slug": "la-playuca-cantabria-2"
    }
   },
   {
@@ -425,7 +445,8 @@
     "surface": "sand",
     "dog": "yes",
     "alt_name": "Playa de la Pozona; Playuca de la Cantera",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "la-playuca-cantabria"
    }
   },
   {
@@ -447,7 +468,8 @@
     "osm": "https://www.openstreetmap.org/way/157106199",
     "surface": "sand",
     "wikidata": "Q18720045",
-    "access": "yes"
+    "access": "yes",
+    "slug": "la-tayada"
    }
   },
   {
@@ -466,7 +488,8 @@
     "province": "Asturias",
     "size_m": 91,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/relation/6727019"
+    "osm": "https://www.openstreetmap.org/relation/6727019",
+    "slug": "moris"
    }
   },
   {
@@ -485,7 +508,8 @@
     "province": "Asturias",
     "size_m": 272,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/515851972"
+    "osm": "https://www.openstreetmap.org/way/515851972",
+    "slug": "paya-de-la-acacia-o-jorconera"
    }
   },
   {
@@ -504,7 +528,8 @@
     "province": "Asturias",
     "size_m": 421,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/260003632"
+    "osm": "https://www.openstreetmap.org/way/260003632",
+    "slug": "pena-maria"
    }
   },
   {
@@ -523,7 +548,8 @@
     "province": "Asturias",
     "size_m": 94,
     "coast_km": 0.01,
-    "osm": "https://www.openstreetmap.org/way/1228509530"
+    "osm": "https://www.openstreetmap.org/way/1228509530",
+    "slug": "placa-los-boletos"
    }
   },
   {
@@ -544,7 +570,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/250844945",
     "wikipedia": "es:Playa de Aramar",
-    "wikidata": "Q19614631"
+    "wikidata": "Q19614631",
+    "slug": "playa-aramar"
    }
   },
   {
@@ -564,7 +591,8 @@
     "size_m": 845,
     "coast_km": 0.15,
     "osm": "https://www.openstreetmap.org/way/175664263",
-    "wikidata": "Q18812527"
+    "wikidata": "Q18812527",
+    "slug": "playa-arenal-de-moris"
    }
   },
   {
@@ -583,7 +611,8 @@
     "province": "Asturias",
     "size_m": 287,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/36867841"
+    "osm": "https://www.openstreetmap.org/way/36867841",
+    "slug": "playa-bahinas"
    }
   },
   {
@@ -602,7 +631,8 @@
     "province": "Asturias",
     "size_m": 502,
     "coast_km": 0.25,
-    "osm": "https://www.openstreetmap.org/way/1087726328"
+    "osm": "https://www.openstreetmap.org/way/1087726328",
+    "slug": "playa-bajo-de-les-mueles"
    }
   },
   {
@@ -622,7 +652,8 @@
     "size_m": 417,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/852197513",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-barchinas"
    }
   },
   {
@@ -643,7 +674,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/102685728",
     "wikipedia": "es:Brazomar",
-    "wikidata": "Q8251766"
+    "wikidata": "Q8251766",
+    "slug": "playa-brazomar"
    }
   },
   {
@@ -663,7 +695,8 @@
     "size_m": 198,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/925955626",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-calabon"
    }
   },
   {
@@ -685,7 +718,8 @@
     "osm": "https://www.openstreetmap.org/way/1414603341",
     "surface": "sand",
     "lifeguard": "no",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-canal"
    }
   },
   {
@@ -704,7 +738,8 @@
     "province": "Asturias",
     "size_m": 269,
     "coast_km": 0.13,
-    "osm": "https://www.openstreetmap.org/way/1228502890"
+    "osm": "https://www.openstreetmap.org/way/1228502890",
+    "slug": "playa-carnera"
    }
   },
   {
@@ -724,7 +759,8 @@
     "size_m": 400,
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/way/36867810",
-    "wikidata": "Q19360681"
+    "wikidata": "Q19360681",
+    "slug": "playa-carniciega"
    }
   },
   {
@@ -745,7 +781,8 @@
     "coast_km": 0.12,
     "osm": "https://www.openstreetmap.org/way/902267588",
     "wikipedia": "es:Playa de Conejera",
-    "wikidata": "Q18819344"
+    "wikidata": "Q18819344",
+    "slug": "playa-conejera"
    }
   },
   {
@@ -765,7 +802,8 @@
     "size_m": 185,
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/250844938",
-    "alt_name": "Playa Bigaral"
+    "alt_name": "Playa Bigaral",
+    "slug": "playa-cristal"
    }
   },
   {
@@ -786,7 +824,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/823785524",
     "surface": "sand",
-    "wikidata": "Q24003936"
+    "wikidata": "Q24003936",
+    "slug": "playa-cuarezo"
    }
   },
   {
@@ -805,7 +844,8 @@
     "province": "Asturias",
     "size_m": 117,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/relation/3987687"
+    "osm": "https://www.openstreetmap.org/relation/3987687",
+    "slug": "playa-cueva"
    }
   },
   {
@@ -824,7 +864,8 @@
     "province": "Asturias",
     "size_m": 79,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/42730757"
+    "osm": "https://www.openstreetmap.org/way/42730757",
+    "slug": "playa-de-la-paloma-asturias-2"
    }
   },
   {
@@ -845,7 +886,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/493272372",
     "surface": "pebblestone",
-    "wikidata": "Q19672842"
+    "wikidata": "Q19672842",
+    "slug": "playa-el-castrillon-asturias"
    }
   },
   {
@@ -866,7 +908,8 @@
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/way/656011796",
     "surface": "sand",
-    "wikidata": "Q19672842"
+    "wikidata": "Q19672842",
+    "slug": "playa-el-castrillon-asturias-2"
    }
   },
   {
@@ -886,7 +929,8 @@
     "size_m": 342,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/649310894",
-    "alt_name": "Playa de Tagle"
+    "alt_name": "Playa de Tagle",
+    "slug": "playa-el-sable"
    }
   },
   {
@@ -906,7 +950,8 @@
     "size_m": 229,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/676771425",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-el-sabin"
    }
   },
   {
@@ -925,7 +970,8 @@
     "province": "Asturias",
     "size_m": 124,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/515851970"
+    "osm": "https://www.openstreetmap.org/way/515851970",
+    "slug": "playa-el-vivero"
    }
   },
   {
@@ -948,7 +994,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de La Espasa",
     "wikidata": "Q6079110",
-    "wheelchair": "yes"
+    "wheelchair": "yes",
+    "slug": "playa-espasa"
    }
   },
   {
@@ -969,7 +1016,8 @@
     "coast_km": 0.11,
     "osm": "https://www.openstreetmap.org/way/38292453",
     "surface": "sand",
-    "wikidata": "Q6078742"
+    "wikidata": "Q6078742",
+    "slug": "playa-espana"
    }
   },
   {
@@ -988,7 +1036,8 @@
     "province": "Asturias",
     "size_m": 179,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/366954237"
+    "osm": "https://www.openstreetmap.org/way/366954237",
+    "slug": "playa-fajal"
    }
   },
   {
@@ -1007,7 +1056,8 @@
     "province": "Asturias",
     "size_m": 255,
     "coast_km": 0.11,
-    "osm": "https://www.openstreetmap.org/way/975625898"
+    "osm": "https://www.openstreetmap.org/way/975625898",
+    "slug": "playa-fontaniecho"
    }
   },
   {
@@ -1027,7 +1077,8 @@
     "size_m": 215,
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/887379060",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-gancedo"
    }
   },
   {
@@ -1051,7 +1102,8 @@
     "wikipedia": "es:Playa del Silencio",
     "wikidata": "Q6078521",
     "name_ast": "Ribera Gavieiro",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-gavieiro"
    }
   },
   {
@@ -1073,7 +1125,8 @@
     "osm": "https://www.openstreetmap.org/way/490761675",
     "surface": "sand",
     "website": "https://es.wikipedia.org/wiki/Playa_de_La_Gueir%C3%BAa",
-    "name_ast": "Ribera Gueirúa"
+    "name_ast": "Ribera Gueirúa",
+    "slug": "playa-gueirua-gairua"
    }
   },
   {
@@ -1098,7 +1151,8 @@
     "wikidata": "Q9060803",
     "wheelchair": "yes",
     "name_es": "Playa del Arbeyal",
-    "name_ast": "Playa L'Arbeyal"
+    "name_ast": "Playa L'Arbeyal",
+    "slug": "playa-l-arbeyal"
    }
   },
   {
@@ -1119,7 +1173,8 @@
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/way/36867812",
     "surface": "sand",
-    "wikidata": "Q19339035"
+    "wikidata": "Q19339035",
+    "slug": "playa-la-aguilera"
    }
   },
   {
@@ -1140,7 +1195,8 @@
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/way/229915259",
     "surface": "gravel",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-la-barquera"
    }
   },
   {
@@ -1159,7 +1215,8 @@
     "province": "Asturias",
     "size_m": 79,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/1416246959"
+    "osm": "https://www.openstreetmap.org/way/1416246959",
+    "slug": "playa-la-cagonera"
    }
   },
   {
@@ -1179,7 +1236,8 @@
     "size_m": 105,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/534490835",
-    "surface": "rocky"
+    "surface": "rocky",
+    "slug": "playa-la-caladoria"
    }
   },
   {
@@ -1198,7 +1256,8 @@
     "province": "Asturias",
     "size_m": 177,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/relation/3987682"
+    "osm": "https://www.openstreetmap.org/relation/3987682",
+    "slug": "playa-la-isla"
    }
   },
   {
@@ -1218,7 +1277,8 @@
     "size_m": 33,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/824113929",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-la-nao"
    }
   },
   {
@@ -1237,7 +1297,8 @@
     "province": "Asturias",
     "size_m": 30,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/656203710"
+    "osm": "https://www.openstreetmap.org/way/656203710",
+    "slug": "playa-las-rubias"
    }
   },
   {
@@ -1256,7 +1317,8 @@
     "province": "Asturias",
     "size_m": 490,
     "coast_km": 0.12,
-    "osm": "https://www.openstreetmap.org/way/496511974"
+    "osm": "https://www.openstreetmap.org/way/496511974",
+    "slug": "playa-los-negros"
    }
   },
   {
@@ -1277,7 +1339,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/496511802",
     "wikidata": "Q19678110",
-    "name_es": "Playa Lairín"
+    "name_es": "Playa Lairín",
+    "slug": "playa-l-airin"
    }
   },
   {
@@ -1298,7 +1361,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/node/6198817059",
     "lifeguard": "no",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-mexa-la-yegua-playa-de-los-chalanos"
    }
   },
   {
@@ -1319,7 +1383,8 @@
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/way/656207504",
     "surface": "pebblestone",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-penadoiro"
    }
   },
   {
@@ -1338,7 +1403,8 @@
     "province": "Asturias",
     "size_m": 325,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/359230534"
+    "osm": "https://www.openstreetmap.org/way/359230534",
+    "slug": "playa-portizuelu"
    }
   },
   {
@@ -1358,7 +1424,8 @@
     "size_m": 94,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/465671717",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-puerto-refugio-de-islares"
    }
   },
   {
@@ -1377,7 +1444,8 @@
     "province": "Asturias",
     "size_m": 121,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/36867820"
+    "osm": "https://www.openstreetmap.org/way/36867820",
+    "slug": "playa-riba-pachon"
    }
   },
   {
@@ -1397,7 +1465,8 @@
     "size_m": 64,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/235890871",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-rosamunda"
    }
   },
   {
@@ -1416,7 +1485,8 @@
     "province": "Asturias",
     "size_m": 366,
     "coast_km": 0.14,
-    "osm": "https://www.openstreetmap.org/way/366919077"
+    "osm": "https://www.openstreetmap.org/way/366919077",
+    "slug": "playa-rio-cabo"
    }
   },
   {
@@ -1436,7 +1506,8 @@
     "size_m": 87,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/656028889",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-salencia"
    }
   },
   {
@@ -1455,7 +1526,8 @@
     "province": "Asturias",
     "size_m": 33,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/299784106"
+    "osm": "https://www.openstreetmap.org/way/299784106",
+    "slug": "playa-samarincha"
    }
   },
   {
@@ -1474,7 +1546,8 @@
     "province": "Asturias",
     "size_m": 285,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/852198441"
+    "osm": "https://www.openstreetmap.org/way/852198441",
+    "slug": "playa-serron"
    }
   },
   {
@@ -1493,7 +1566,8 @@
     "province": "Asturias",
     "size_m": 62,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/1218448330"
+    "osm": "https://www.openstreetmap.org/way/1218448330",
+    "slug": "playa-solfin"
    }
   },
   {
@@ -1513,7 +1587,8 @@
     "size_m": 267,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/163995479",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-sorraos"
    }
   },
   {
@@ -1532,7 +1607,8 @@
     "province": "Asturias",
     "size_m": 63,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/837829621"
+    "osm": "https://www.openstreetmap.org/way/837829621",
+    "slug": "playa-a-ribeiria"
    }
   },
   {
@@ -1552,7 +1628,8 @@
     "size_m": 91,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/55682741",
-    "surface": "paved"
+    "surface": "paved",
+    "slug": "playa-artificial-de-punta-parayas"
    }
   },
   {
@@ -1573,7 +1650,8 @@
     "coast_km": 0.17,
     "osm": "https://www.openstreetmap.org/way/39351398",
     "name_es": "Playa de Otur",
-    "name_ast": "Playa d'Outur"
+    "name_ast": "Playa d'Outur",
+    "slug": "playa-d-outur"
    }
   },
   {
@@ -1594,7 +1672,8 @@
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/relation/18052559",
     "surface": "sand",
-    "dog": "no"
+    "dog": "no",
+    "slug": "playa-de-aguilar"
    }
   },
   {
@@ -1613,7 +1692,8 @@
     "province": "Asturias",
     "size_m": 194,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/496506747"
+    "osm": "https://www.openstreetmap.org/way/496506747",
+    "slug": "playa-de-albuerne"
    }
   },
   {
@@ -1634,7 +1714,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/515843864",
     "wikipedia": "es:Playa de Amió",
-    "wikidata": "Q6078562"
+    "wikidata": "Q6078562",
+    "slug": "playa-de-amio"
    }
   },
   {
@@ -1656,7 +1737,8 @@
     "osm": "https://www.openstreetmap.org/way/177004778",
     "surface": "sand",
     "wikidata": "Q18755861",
-    "access": "yes"
+    "access": "yes",
+    "slug": "playa-de-andrin"
    }
   },
   {
@@ -1677,7 +1759,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/515851973",
     "surface": "sand",
-    "alt_name": "Playa de Cué"
+    "alt_name": "Playa de Cué",
+    "slug": "playa-de-antilles"
    }
   },
   {
@@ -1698,7 +1781,8 @@
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/way/1370796081",
     "wikipedia": "es:Antuerta",
-    "wikidata": "Q5700523"
+    "wikidata": "Q5700523",
+    "slug": "playa-de-antuerta"
    }
   },
   {
@@ -1719,7 +1803,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/208836960",
     "wikipedia": "es:Playa de Aramal",
-    "wikidata": "Q6078569"
+    "wikidata": "Q6078569",
+    "slug": "playa-de-aramal"
    }
   },
   {
@@ -1739,7 +1824,8 @@
     "size_m": 68,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/74333380",
-    "alt_name": "Playa de Arcisero"
+    "alt_name": "Playa de Arcisero",
+    "slug": "playa-de-arciseri"
    }
   },
   {
@@ -1760,7 +1846,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/160419298",
     "surface": "sand",
-    "wikidata": "Q6078579"
+    "wikidata": "Q6078579",
+    "slug": "playa-de-arenillas"
    }
   },
   {
@@ -1779,7 +1866,8 @@
     "province": "Asturias",
     "size_m": 459,
     "coast_km": 0.11,
-    "osm": "https://www.openstreetmap.org/way/1023801369"
+    "osm": "https://www.openstreetmap.org/way/1023801369",
+    "slug": "playa-de-armaza"
    }
   },
   {
@@ -1799,7 +1887,8 @@
     "size_m": 162,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/44907667",
-    "wikidata": "Q113653853"
+    "wikidata": "Q113653853",
+    "slug": "playa-de-arnadal"
    }
   },
   {
@@ -1819,7 +1908,8 @@
     "size_m": 325,
     "coast_km": 0.15,
     "osm": "https://www.openstreetmap.org/way/36867835",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-arnao-asturias-2"
    }
   },
   {
@@ -1840,7 +1930,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/365981848",
     "surface": "sand",
-    "wikidata": "Q17625295"
+    "wikidata": "Q17625295",
+    "slug": "playa-de-arnao-asturias"
    }
   },
   {
@@ -1862,7 +1953,8 @@
     "osm": "https://www.openstreetmap.org/way/254406091",
     "surface": "sand",
     "wikipedia": "es:Playa de Arnielles",
-    "wikidata": "Q18221209"
+    "wikidata": "Q18221209",
+    "slug": "playa-de-arnelles-asturias"
    }
   },
   {
@@ -1882,7 +1974,8 @@
     "size_m": 106,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/299863449",
-    "alt_name": "Playa de Viodo"
+    "alt_name": "Playa de Viodo",
+    "slug": "playa-de-arnelles-asturias-2"
    }
   },
   {
@@ -1903,7 +1996,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/129105242",
     "wikipedia": "es:Playa de Arenilla",
-    "wikidata": "Q6078577"
+    "wikidata": "Q6078577",
+    "slug": "playa-de-arnillas"
    }
   },
   {
@@ -1925,7 +2019,8 @@
     "osm": "https://www.openstreetmap.org/way/284167513",
     "surface": "pebblestone",
     "wikipedia": "es:Playa de Arra",
-    "wikidata": "Q18764184"
+    "wikidata": "Q18764184",
+    "slug": "playa-de-arra"
    }
   },
   {
@@ -1944,7 +2039,8 @@
     "province": "Asturias",
     "size_m": 261,
     "coast_km": 0.06,
-    "osm": "https://www.openstreetmap.org/way/837818755"
+    "osm": "https://www.openstreetmap.org/way/837818755",
+    "slug": "playa-de-ballota"
    }
   },
   {
@@ -1966,7 +2062,8 @@
     "osm": "https://www.openstreetmap.org/way/39351396",
     "surface": "sand",
     "wikidata": "Q9060645",
-    "name_es": "Playa de Barayo"
+    "name_es": "Playa de Barayo",
+    "slug": "playa-de-barayu"
    }
   },
   {
@@ -1988,7 +2085,8 @@
     "osm": "https://www.openstreetmap.org/relation/18016148",
     "surface": "sand",
     "wikipedia": "es:Playas de Barro, Xiglu y Sorraos",
-    "wikidata": "Q18952502"
+    "wikidata": "Q18952502",
+    "slug": "playa-de-barro"
    }
   },
   {
@@ -2007,7 +2105,8 @@
     "province": "Asturias",
     "size_m": 1043,
     "coast_km": 0.28,
-    "osm": "https://www.openstreetmap.org/way/961685890"
+    "osm": "https://www.openstreetmap.org/way/961685890",
+    "slug": "playa-de-bayas-zona-para-perros"
    }
   },
   {
@@ -2027,7 +2126,8 @@
     "size_m": 36,
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/way/1283201939",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-de-banaperros"
    }
   },
   {
@@ -2049,7 +2149,8 @@
     "osm": "https://www.openstreetmap.org/relation/3987683",
     "surface": "sand",
     "wikidata": "Q19595487",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-banugues"
    }
   },
   {
@@ -2070,7 +2171,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/1201608329",
     "surface": "sand",
-    "alt_name": "Playa de Barnejo"
+    "alt_name": "Playa de Barnejo",
+    "slug": "playa-de-berellin-cantabria"
    }
   },
   {
@@ -2091,7 +2193,8 @@
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/way/1201608330",
     "surface": "sand",
-    "alt_name": "Playa de Barnejo"
+    "alt_name": "Playa de Barnejo",
+    "slug": "playa-de-berellin-cantabria-2"
    }
   },
   {
@@ -2113,7 +2216,8 @@
     "osm": "https://www.openstreetmap.org/way/550235807",
     "surface": "sand",
     "wikipedia": "es:Playa de Berria",
-    "wikidata": "Q3394182"
+    "wikidata": "Q3394182",
+    "slug": "playa-de-berria"
    }
   },
   {
@@ -2132,7 +2236,8 @@
     "province": "Asturias",
     "size_m": 136,
     "coast_km": 1.27,
-    "osm": "https://www.openstreetmap.org/way/896652156"
+    "osm": "https://www.openstreetmap.org/way/896652156",
+    "slug": "playa-de-bonhome"
    }
   },
   {
@@ -2155,7 +2260,8 @@
     "surface": "sand",
     "wikidata": "Q18715411",
     "access": "yes",
-    "name_es": "Playa de Borizo"
+    "name_es": "Playa de Borizo",
+    "slug": "playa-de-borizu"
    }
   },
   {
@@ -2175,7 +2281,8 @@
     "size_m": 240,
     "coast_km": 0.19,
     "osm": "https://www.openstreetmap.org/way/1159146265",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-bretones"
    }
   },
   {
@@ -2195,7 +2302,8 @@
     "size_m": 410,
     "coast_km": 0.0,
     "osm": "https://www.openstreetmap.org/way/515851975",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-buelna"
    }
   },
   {
@@ -2217,7 +2325,8 @@
     "osm": "https://www.openstreetmap.org/relation/16215221",
     "surface": "pebblestone",
     "wikidata": "Q6078621",
-    "name_es": "Playa de Cadavedo"
+    "name_es": "Playa de Cadavedo",
+    "slug": "playa-de-cadaveu"
    }
   },
   {
@@ -2238,7 +2347,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/1023800302",
     "wikipedia": "es:Playa de Cambaredo",
-    "wikidata": "Q17385211"
+    "wikidata": "Q17385211",
+    "slug": "playa-de-cambaredo"
    }
   },
   {
@@ -2259,7 +2369,8 @@
     "coast_km": 0.11,
     "osm": "https://www.openstreetmap.org/way/755539301",
     "surface": "pebblestone",
-    "wikidata": "Q18170746"
+    "wikidata": "Q18170746",
+    "slug": "playa-de-campiecho"
    }
   },
   {
@@ -2280,7 +2391,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/651758502",
     "wikipedia": "es:Playa de Canallave",
-    "wikidata": "Q3966665"
+    "wikidata": "Q3966665",
+    "slug": "playa-de-canallave"
    }
   },
   {
@@ -2304,7 +2416,8 @@
     "wikipedia": "ast:Sablera de Carranques",
     "wikidata": "Q19280235",
     "lifeguard": "yes",
-    "supervised": "yes"
+    "supervised": "yes",
+    "slug": "playa-de-carranques"
    }
   },
   {
@@ -2325,7 +2438,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/356104642",
     "wikipedia": "es:Playa de Castello",
-    "wikidata": "Q9060654"
+    "wikidata": "Q9060654",
+    "slug": "playa-de-castello"
    }
   },
   {
@@ -2344,7 +2458,8 @@
     "province": "Asturias",
     "size_m": 0,
     "coast_km": 0.09,
-    "osm": "https://www.openstreetmap.org/node/2442563017"
+    "osm": "https://www.openstreetmap.org/node/2442563017",
+    "slug": "playa-de-cazonera"
    }
   },
   {
@@ -2366,7 +2481,8 @@
     "osm": "https://www.openstreetmap.org/way/224830987",
     "surface": "sand",
     "wikipedia": "es:Playa de Cerrías",
-    "wikidata": "Q5762782"
+    "wikidata": "Q5762782",
+    "slug": "playa-de-cerrias"
    }
   },
   {
@@ -2387,7 +2503,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/relation/1756829",
     "surface": "sand",
-    "wikidata": "Q6078678"
+    "wikidata": "Q6078678",
+    "slug": "playa-de-comillas"
    }
   },
   {
@@ -2407,7 +2524,8 @@
     "size_m": 102,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/465671719",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-de-cotonera"
    }
   },
   {
@@ -2432,7 +2550,8 @@
     "nudism": "yes",
     "description": "Arenal con zona especial para la práctica del naturismo, aunque este se suele tolerar en todo el espacio de la playa",
     "name_es": "Playa de Covachos",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-de-covachos"
    }
   },
   {
@@ -2455,7 +2574,8 @@
     "surface": "sand",
     "wikipedia": "es:Cuberris",
     "wikidata": "Q5793487",
-    "lifeguard": "yes"
+    "lifeguard": "yes",
+    "slug": "playa-de-cuberris"
    }
   },
   {
@@ -2481,7 +2601,8 @@
     "lifeguard": "no",
     "access": "yes",
     "alt_name": "Playa de Marzán",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-de-cuchia"
    }
   },
   {
@@ -2500,7 +2621,8 @@
     "province": "Asturias",
     "size_m": 212,
     "coast_km": 0.25,
-    "osm": "https://www.openstreetmap.org/way/95531723"
+    "osm": "https://www.openstreetmap.org/way/95531723",
+    "slug": "playa-de-cueva-asturias-3"
    }
   },
   {
@@ -2519,7 +2641,8 @@
     "province": "Asturias",
     "size_m": 657,
     "coast_km": 0.11,
-    "osm": "https://www.openstreetmap.org/way/95531739"
+    "osm": "https://www.openstreetmap.org/way/95531739",
+    "slug": "playa-de-cueva-asturias-4"
    }
   },
   {
@@ -2541,7 +2664,8 @@
     "osm": "https://www.openstreetmap.org/way/516090458",
     "surface": "pebblestone",
     "wikipedia": "es:Playa de La Cueva",
-    "wikidata": "Q19678652"
+    "wikidata": "Q19678652",
+    "slug": "playa-de-cueva-asturias-2"
    }
   },
   {
@@ -2561,7 +2685,8 @@
     "size_m": 792,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/relation/1380194",
-    "wikidata": "Q18224636"
+    "wikidata": "Q18224636",
+    "slug": "playa-de-cueva-asturias"
    }
   },
   {
@@ -2580,7 +2705,8 @@
     "province": "Asturias",
     "size_m": 295,
     "coast_km": 0.08,
-    "osm": "https://www.openstreetmap.org/way/233427412"
+    "osm": "https://www.openstreetmap.org/way/233427412",
+    "slug": "playa-de-cuevas-coloradas"
    }
   },
   {
@@ -2599,7 +2725,8 @@
     "province": "Cantabria",
     "size_m": 223,
     "coast_km": 0.67,
-    "osm": "https://www.openstreetmap.org/way/201909164"
+    "osm": "https://www.openstreetmap.org/way/201909164",
+    "slug": "playa-de-currucasa"
    }
   },
   {
@@ -2621,7 +2748,8 @@
     "osm": "https://www.openstreetmap.org/way/116411548",
     "wikipedia": "es:Dícido",
     "wikidata": "Q11681226",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-dicido"
    }
   },
   {
@@ -2644,7 +2772,8 @@
     "surface": "gravel",
     "wikipedia": "es:Playa de El Bocal",
     "wikidata": "Q6079223",
-    "wheelchair": "no"
+    "wheelchair": "no",
+    "slug": "playa-de-el-bocal"
    }
   },
   {
@@ -2664,7 +2793,8 @@
     "size_m": 2671,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/649463736",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-el-brusco"
    }
   },
   {
@@ -2685,7 +2815,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/relation/3986650",
     "wikipedia": "es:Playa de El Dique",
-    "wikidata": "Q19614861"
+    "wikidata": "Q19614861",
+    "slug": "playa-de-el-dique"
    }
   },
   {
@@ -2705,7 +2836,8 @@
     "size_m": 223,
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/way/188647656",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-de-el-dolar"
    }
   },
   {
@@ -2726,7 +2858,8 @@
     "coast_km": 0.63,
     "osm": "https://www.openstreetmap.org/way/1178309643",
     "wikipedia": "es:Playa de El Embayo",
-    "wikidata": "Q19346352"
+    "wikidata": "Q19346352",
+    "slug": "playa-de-el-embayo"
    }
   },
   {
@@ -2751,7 +2884,8 @@
     "wikidata": "Q9060665",
     "access": "yes",
     "name_es": "Playa de El Espartal",
-    "name_ast": "Sablera del Espartal"
+    "name_ast": "Sablera del Espartal",
+    "slug": "playa-de-el-espartal"
    }
   },
   {
@@ -2771,7 +2905,8 @@
     "size_m": 45,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/730122052",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-el-pescador"
    }
   },
   {
@@ -2790,7 +2925,8 @@
     "province": "Asturias",
     "size_m": 369,
     "coast_km": 0.06,
-    "osm": "https://www.openstreetmap.org/way/36867837"
+    "osm": "https://www.openstreetmap.org/way/36867837",
+    "slug": "playa-de-el-puerto"
    }
   },
   {
@@ -2814,7 +2950,8 @@
     "wikipedia": "es:Playa de El Puntal (Cantabria)",
     "wikidata": "Q6078736",
     "nudism": "permissive",
-    "name_es": "Playa de El Puntal"
+    "name_es": "Playa de El Puntal",
+    "slug": "playa-de-el-puntal"
    }
   },
   {
@@ -2833,7 +2970,8 @@
     "province": "Asturias",
     "size_m": 52,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/328355499"
+    "osm": "https://www.openstreetmap.org/way/328355499",
+    "slug": "playa-de-el-regolgueru"
    }
   },
   {
@@ -2852,7 +2990,8 @@
     "province": "Cantabria",
     "size_m": 670,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/1309128373"
+    "osm": "https://www.openstreetmap.org/way/1309128373",
+    "slug": "playa-de-el-rosal"
    }
   },
   {
@@ -2871,7 +3010,8 @@
     "province": "Cantabria",
     "size_m": 346,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/178953400"
+    "osm": "https://www.openstreetmap.org/way/178953400",
+    "slug": "playa-de-el-rostro"
    }
   },
   {
@@ -2894,7 +3034,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de El Tostadero",
     "wikidata": "Q5823187",
-    "alt_name": "Playa de El Rosal"
+    "alt_name": "Playa de El Rosal",
+    "slug": "playa-de-el-tostadero"
    }
   },
   {
@@ -2914,7 +3055,8 @@
     "size_m": 218,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/86366284",
-    "wikidata": "Q18932022"
+    "wikidata": "Q18932022",
+    "slug": "playa-de-estano"
    }
   },
   {
@@ -2935,7 +3077,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/1086217889",
     "wikipedia": "es:Playa de Figueras",
-    "wikidata": "Q17625306"
+    "wikidata": "Q17625306",
+    "slug": "playa-de-figueras"
    }
   },
   {
@@ -2955,7 +3098,8 @@
     "size_m": 120,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/610288986",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-de-fonfria"
    }
   },
   {
@@ -2976,7 +3120,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/165235280",
     "wikidata": "Q18223258",
-    "alt_name": "Playa Barra"
+    "alt_name": "Playa Barra",
+    "slug": "playa-de-foxos-asturias"
    }
   },
   {
@@ -2995,7 +3140,8 @@
     "province": "Asturias",
     "size_m": 88,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/567188825"
+    "osm": "https://www.openstreetmap.org/way/567188825",
+    "slug": "playa-de-foxos-asturias-2"
    }
   },
   {
@@ -3016,7 +3162,8 @@
     "coast_km": 0.31,
     "osm": "https://www.openstreetmap.org/way/165233392",
     "wikidata": "Q2888465",
-    "name_ast": "Sablera de Frexulfe"
+    "name_ast": "Sablera de Frexulfe",
+    "slug": "playa-de-frexulfe"
    }
   },
   {
@@ -3038,7 +3185,8 @@
     "osm": "https://www.openstreetmap.org/way/608392326",
     "surface": "sand",
     "wikipedia": "es:Playa de La Fuente",
-    "wikidata": "Q5963447"
+    "wikidata": "Q5963447",
+    "slug": "playa-de-fuentes"
    }
   },
   {
@@ -3060,7 +3208,8 @@
     "osm": "https://www.openstreetmap.org/way/70845672",
     "wikipedia": "es:Playa de Galizano",
     "wikidata": "Q6078757",
-    "alt_name": "Playa de San Miguel"
+    "alt_name": "Playa de San Miguel",
+    "slug": "playa-de-galizano"
    }
   },
   {
@@ -3079,7 +3228,8 @@
     "province": "Asturias",
     "size_m": 209,
     "coast_km": 0.06,
-    "osm": "https://www.openstreetmap.org/way/268923128"
+    "osm": "https://www.openstreetmap.org/way/268923128",
+    "slug": "playa-de-gargantera"
    }
   },
   {
@@ -3100,7 +3250,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/486066198",
     "surface": "sand",
-    "alt_name": "Playa de Merón"
+    "alt_name": "Playa de Merón",
+    "slug": "playa-de-gerra"
    }
   },
   {
@@ -3119,7 +3270,8 @@
     "province": "Asturias",
     "size_m": 258,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/656011790"
+    "osm": "https://www.openstreetmap.org/way/656011790",
+    "slug": "playa-de-gradas"
    }
   },
   {
@@ -3141,7 +3293,8 @@
     "osm": "https://www.openstreetmap.org/relation/1563524",
     "wikidata": "Q18713988",
     "tidal": "yes",
-    "name_ast": "Playa de Aguamía"
+    "name_ast": "Playa de Aguamía",
+    "slug": "playa-de-guadamia"
    }
   },
   {
@@ -3166,7 +3319,8 @@
     "wikidata": "Q3753808",
     "description": "20 meters of length by 4 meters.Very small",
     "wheelchair": "no",
-    "alt_name": "Cala de Gulpiyuri"
+    "alt_name": "Cala de Gulpiyuri",
+    "slug": "playa-de-gulpiyuri"
    }
   },
   {
@@ -3187,7 +3341,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/129106558",
     "wikipedia": "es:Arnía",
-    "wikidata": "Q5704921"
+    "wikidata": "Q5704921",
+    "slug": "playa-de-la-arnia"
    }
   },
   {
@@ -3211,7 +3366,8 @@
     "wikidata": "Q18748931",
     "lifeguard": "yes",
     "access": "yes",
-    "supervised": "yes"
+    "supervised": "yes",
+    "slug": "playa-de-la-ballota"
    }
   },
   {
@@ -3232,7 +3388,8 @@
     "coast_km": 0.15,
     "osm": "https://www.openstreetmap.org/way/144649101",
     "surface": "sand",
-    "wikidata": "Q18812509"
+    "wikidata": "Q18812509",
+    "slug": "playa-de-la-beciella"
    }
   },
   {
@@ -3254,7 +3411,8 @@
     "osm": "https://www.openstreetmap.org/way/961525275",
     "surface": "sand",
     "wikipedia": "es:Playa de La Concha (Santander)",
-    "wikidata": "Q6078794"
+    "wikidata": "Q6078794",
+    "slug": "playa-de-la-concha-cantabria-2"
    }
   },
   {
@@ -3274,7 +3432,8 @@
     "size_m": 170,
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/way/1451985756",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-la-fenomeno"
    }
   },
   {
@@ -3295,7 +3454,8 @@
     "coast_km": 0.15,
     "osm": "https://www.openstreetmap.org/way/37848194",
     "surface": "sand",
-    "wikidata": "Q6079118"
+    "wikidata": "Q6079118",
+    "slug": "playa-de-la-griega"
    }
   },
   {
@@ -3318,7 +3478,8 @@
     "surface": "sand",
     "access": "yes",
     "name_es": "Playa de La Huelga",
-    "name_ast": "Playa de La Güelga"
+    "name_ast": "Playa de La Güelga",
+    "slug": "playa-de-la-guelga"
    }
   },
   {
@@ -3338,7 +3499,8 @@
     "size_m": 566,
     "coast_km": 1.36,
     "osm": "https://www.openstreetmap.org/way/962344732",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-la-llama"
    }
   },
   {
@@ -3359,7 +3521,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/28951920",
     "wikipedia": "es:La Maruca",
-    "wikidata": "Q5964281"
+    "wikidata": "Q5964281",
+    "slug": "playa-de-la-maruca"
    }
   },
   {
@@ -3378,7 +3541,8 @@
     "province": "Cantabria",
     "size_m": 27,
     "coast_km": 0.01,
-    "osm": "https://www.openstreetmap.org/way/613591481"
+    "osm": "https://www.openstreetmap.org/way/613591481",
+    "slug": "playa-de-la-mina"
    }
   },
   {
@@ -3398,7 +3562,8 @@
     "size_m": 529,
     "coast_km": 0.44,
     "osm": "https://www.openstreetmap.org/way/61327231",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-la-rabia"
    }
   },
   {
@@ -3419,7 +3584,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/relation/2401135",
     "surface": "sand",
-    "wikidata": "Q19653688"
+    "wikidata": "Q19653688",
+    "slug": "playa-de-la-ribera-asturias"
    }
   },
   {
@@ -3440,7 +3606,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/837818756",
     "wikipedia": "es:Playa de La Ribera del Molín",
-    "wikidata": "Q19678089"
+    "wikidata": "Q19678089",
+    "slug": "playa-de-la-ribera-del-molin"
    }
   },
   {
@@ -3462,7 +3629,8 @@
     "osm": "https://www.openstreetmap.org/relation/6755886",
     "surface": "gravel",
     "wheelchair": "no",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-de-la-turbia"
    }
   },
   {
@@ -3483,7 +3651,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/38292539",
     "surface": "sand",
-    "wikidata": "Q6079149"
+    "wikidata": "Q6079149",
+    "slug": "playa-de-la-nora"
    }
   },
   {
@@ -3504,7 +3673,8 @@
     "coast_km": 0.26,
     "osm": "https://www.openstreetmap.org/way/128274175",
     "wikipedia": "es:Playa de Langre",
-    "wikidata": "Q5400255"
+    "wikidata": "Q5400255",
+    "slug": "playa-de-langre"
    }
   },
   {
@@ -3527,7 +3697,8 @@
     "wikipedia": "es:Playa de Langre",
     "wikidata": "Q5400255",
     "nudism": "yes",
-    "alt_name": "Playa de Langre"
+    "alt_name": "Playa de Langre",
+    "slug": "playa-de-langre-pequena"
    }
   },
   {
@@ -3546,7 +3717,8 @@
     "province": "Asturias",
     "size_m": 69,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/837829623"
+    "osm": "https://www.openstreetmap.org/way/837829623",
+    "slug": "playa-de-las-furadas"
    }
   },
   {
@@ -3566,7 +3738,8 @@
     "size_m": 433,
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/25885635",
-    "name_es": "Playa de Lastres"
+    "name_es": "Playa de Lastres",
+    "slug": "playa-de-llastres"
    }
   },
   {
@@ -3587,7 +3760,8 @@
     "coast_km": 0.18,
     "osm": "https://www.openstreetmap.org/relation/3987684",
     "surface": "gravel",
-    "wikidata": "Q19634156"
+    "wikidata": "Q19634156",
+    "slug": "playa-de-llumeres"
    }
   },
   {
@@ -3607,7 +3781,8 @@
     "size_m": 617,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/40627479",
-    "wikidata": "Q123076252"
+    "wikidata": "Q123076252",
+    "slug": "playa-de-loredo"
    }
   },
   {
@@ -3626,7 +3801,8 @@
     "province": "Asturias",
     "size_m": 574,
     "coast_km": 0.08,
-    "osm": "https://www.openstreetmap.org/way/42730896"
+    "osm": "https://www.openstreetmap.org/way/42730896",
+    "slug": "playa-de-los-campos"
    }
   },
   {
@@ -3648,7 +3824,8 @@
     "osm": "https://www.openstreetmap.org/relation/3986642",
     "surface": "gravel",
     "wikidata": "Q19656829",
-    "alt_name": "Playa del Bigaral"
+    "alt_name": "Playa del Bigaral",
+    "slug": "playa-de-los-cristales"
    }
   },
   {
@@ -3667,7 +3844,8 @@
     "province": "Asturias",
     "size_m": 181,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/236596250"
+    "osm": "https://www.openstreetmap.org/way/236596250",
+    "slug": "playa-de-los-molinos"
    }
   },
   {
@@ -3690,7 +3868,8 @@
     "surface": "sand",
     "wikidata": "Q19653511",
     "access": "yes",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-luanco"
    }
   },
   {
@@ -3712,7 +3891,8 @@
     "osm": "https://www.openstreetmap.org/way/299921957",
     "wikipedia": "es:Playa de Luaña",
     "wikidata": "Q6078887",
-    "alt_name": "Playa de Cóbreces"
+    "alt_name": "Playa de Cóbreces",
+    "slug": "playa-de-luana"
    }
   },
   {
@@ -3734,7 +3914,8 @@
     "osm": "https://www.openstreetmap.org/way/28423344",
     "surface": "sand",
     "wikipedia": "es:Playa de Mataleñas",
-    "wikidata": "Q6005692"
+    "wikidata": "Q6005692",
+    "slug": "playa-de-matalenas"
    }
   },
   {
@@ -3755,7 +3936,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/233427288",
     "wikidata": "Q23995081",
-    "alt_name": "Playa de Bendía"
+    "alt_name": "Playa de Bendía",
+    "slug": "playa-de-mendia"
    }
   },
   {
@@ -3776,7 +3958,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/108479308",
     "surface": "sand",
-    "alt_name": "Playa de Bederna"
+    "alt_name": "Playa de Bederna",
+    "slug": "playa-de-meron-cantabria"
    }
   },
   {
@@ -3797,7 +3980,8 @@
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/relation/1957382",
     "surface": "sand",
-    "wikidata": "Q6078902"
+    "wikidata": "Q6078902",
+    "slug": "playa-de-meron-asturias"
    }
   },
   {
@@ -3818,7 +4002,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/1219684703",
     "wikidata": "Q17266517",
-    "name_es": "Playa de Mexota"
+    "name_es": "Playa de Mexota",
+    "slug": "playa-de-mexota"
    }
   },
   {
@@ -3838,7 +4023,8 @@
     "size_m": 199,
     "coast_km": 1.29,
     "osm": "https://www.openstreetmap.org/way/220364142",
-    "wikidata": "Q18819335"
+    "wikidata": "Q18819335",
+    "slug": "playa-de-misiego"
    }
   },
   {
@@ -3860,7 +4046,8 @@
     "osm": "https://www.openstreetmap.org/way/197770840",
     "wikipedia": "es:Playa de Mogro",
     "wikidata": "Q6078907",
-    "alt_name": "Playa de Usil"
+    "alt_name": "Playa de Usil",
+    "slug": "playa-de-mogro"
    }
   },
   {
@@ -3880,7 +4067,8 @@
     "size_m": 81,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/242368396",
-    "wikidata": "Q17625318"
+    "wikidata": "Q17625318",
+    "slug": "playa-de-monellos"
    }
   },
   {
@@ -3900,7 +4088,8 @@
     "size_m": 98,
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/relation/3987685",
-    "wikidata": "Q19653368"
+    "wikidata": "Q19653368",
+    "slug": "playa-de-moniello"
    }
   },
   {
@@ -3920,7 +4109,8 @@
     "size_m": 516,
     "coast_km": 0.12,
     "osm": "https://www.openstreetmap.org/way/144635801",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-moracey"
    }
   },
   {
@@ -3939,7 +4129,8 @@
     "province": "Asturias",
     "size_m": 282,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/36867845"
+    "osm": "https://www.openstreetmap.org/way/36867845",
+    "slug": "playa-de-munielles"
    }
   },
   {
@@ -3960,7 +4151,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/165233406",
     "wikidata": "Q9060701",
-    "alt_name": "Playa de Andés"
+    "alt_name": "Playa de Andés",
+    "slug": "playa-de-navia"
    }
   },
   {
@@ -3980,7 +4172,8 @@
     "size_m": 753,
     "coast_km": 0.16,
     "osm": "https://www.openstreetmap.org/way/516090461",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-de-oleiros"
    }
   },
   {
@@ -4003,7 +4196,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de Oriñon",
     "wikidata": "Q6078915",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-orinon"
    }
   },
   {
@@ -4025,7 +4219,8 @@
     "osm": "https://www.openstreetmap.org/way/56460542",
     "wikipedia": "es:Playa de Ostende (Castro Urdiales)",
     "wikidata": "Q6078920",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-ostende-o-urdiales"
    }
   },
   {
@@ -4048,7 +4243,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de Oyambre",
     "wikidata": "Q6078924",
-    "name_es": "Playa de Oyambre"
+    "name_es": "Playa de Oyambre",
+    "slug": "playa-de-oyambre"
    }
   },
   {
@@ -4069,7 +4265,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/relation/2187455",
     "surface": "sand",
-    "wikidata": "Q18715438"
+    "wikidata": "Q18715438",
+    "slug": "playa-de-palombina"
    }
   },
   {
@@ -4090,7 +4287,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/1023791336",
     "wikipedia": "es:Playa de Pormenande",
-    "wikidata": "Q6078950"
+    "wikidata": "Q6078950",
+    "slug": "playa-de-permenande"
    }
   },
   {
@@ -4112,7 +4310,8 @@
     "osm": "https://www.openstreetmap.org/way/534536447",
     "surface": "sand",
     "wikipedia": "es:Playa de Pestaña",
-    "wikidata": "Q18418167"
+    "wikidata": "Q18418167",
+    "slug": "playa-de-pestana"
    }
   },
   {
@@ -4133,7 +4332,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/723116744",
     "surface": "sand",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-pena-pombera"
    }
   },
   {
@@ -4153,7 +4353,8 @@
     "size_m": 396,
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/way/520990635",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-de-penadoria"
    }
   },
   {
@@ -4175,7 +4376,8 @@
     "osm": "https://www.openstreetmap.org/way/42731080",
     "surface": "sand",
     "wikidata": "Q6078938",
-    "dog": "no"
+    "dog": "no",
+    "slug": "playa-de-penarronda"
    }
   },
   {
@@ -4195,7 +4397,8 @@
     "size_m": 326,
     "coast_km": 0.17,
     "osm": "https://www.openstreetmap.org/way/11308443",
-    "wikidata": "Q18933461"
+    "wikidata": "Q18933461",
+    "slug": "playa-de-penarrubia"
    }
   },
   {
@@ -4214,7 +4417,8 @@
     "province": "Asturias",
     "size_m": 706,
     "coast_km": 0.09,
-    "osm": "https://www.openstreetmap.org/way/185302903"
+    "osm": "https://www.openstreetmap.org/way/185302903",
+    "slug": "playa-de-pluminero-o-quintana"
    }
   },
   {
@@ -4235,7 +4439,8 @@
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/relation/3556941",
     "surface": "sand",
-    "wikidata": "Q9060716"
+    "wikidata": "Q9060716",
+    "slug": "playa-de-poniente"
    }
   },
   {
@@ -4257,7 +4462,8 @@
     "osm": "https://www.openstreetmap.org/way/303092437",
     "surface": "sand",
     "wikipedia": "es:Playa de Poo",
-    "wikidata": "Q18729404"
+    "wikidata": "Q18729404",
+    "slug": "playa-de-poo"
    }
   },
   {
@@ -4277,7 +4483,8 @@
     "size_m": 366,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/365977285",
-    "wikidata": "Q6078948"
+    "wikidata": "Q6078948",
+    "slug": "playa-de-porcia"
    }
   },
   {
@@ -4299,7 +4506,8 @@
     "osm": "https://www.openstreetmap.org/way/224753683",
     "surface": "sand",
     "wikipedia": "es:Playa de Portío",
-    "wikidata": "Q6083201"
+    "wikidata": "Q6083201",
+    "slug": "playa-de-portio"
    }
   },
   {
@@ -4319,7 +4527,8 @@
     "size_m": 85,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/429393573",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-de-puertochico"
    }
   },
   {
@@ -4338,7 +4547,8 @@
     "province": "Asturias",
     "size_m": 342,
     "coast_km": 0.13,
-    "osm": "https://www.openstreetmap.org/way/516090457"
+    "osm": "https://www.openstreetmap.org/way/516090457",
+    "slug": "playa-de-pumarin"
    }
   },
   {
@@ -4357,7 +4567,8 @@
     "province": "Cantabria",
     "size_m": 236,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/651680851"
+    "osm": "https://www.openstreetmap.org/way/651680851",
+    "slug": "playa-de-punta-ballota"
    }
   },
   {
@@ -4377,7 +4588,8 @@
     "size_m": 283,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/42730893",
-    "wikidata": "Q17625327"
+    "wikidata": "Q17625327",
+    "slug": "playa-de-represas"
    }
   },
   {
@@ -4398,7 +4610,8 @@
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/way/1003275696",
     "surface": "sand",
-    "name_ast": "Sablera de Requexinos"
+    "name_ast": "Sablera de Requexinos",
+    "slug": "playa-de-requexinos"
    }
   },
   {
@@ -4420,7 +4633,8 @@
     "osm": "https://www.openstreetmap.org/way/516090452",
     "wikipedia": "es:Playa de Ribón",
     "wikidata": "Q18224670",
-    "alt_name": "Playa de los Cuervos"
+    "alt_name": "Playa de los Cuervos",
+    "slug": "playa-de-ribon"
    }
   },
   {
@@ -4443,7 +4657,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de Ris",
     "wikidata": "Q6078966",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-ris-cantabria-2"
    }
   },
   {
@@ -4466,7 +4681,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de Ris",
     "wikidata": "Q6078966",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-ris-cantabria"
    }
   },
   {
@@ -4488,7 +4704,8 @@
     "osm": "https://www.openstreetmap.org/way/201950091",
     "wikipedia": "es:Robayera",
     "wikidata": "Q6109361",
-    "alt_name": "Playa de Rubayera"
+    "alt_name": "Playa de Rubayera",
+    "slug": "playa-de-robayera"
    }
   },
   {
@@ -4509,7 +4726,8 @@
     "coast_km": 0.19,
     "osm": "https://www.openstreetmap.org/way/319610737",
     "surface": "sand",
-    "wikidata": "Q6078968"
+    "wikidata": "Q6078968",
+    "slug": "playa-de-rodiles"
    }
   },
   {
@@ -4529,7 +4747,8 @@
     "size_m": 238,
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/way/516108472",
-    "name_es": "Playa de Sabugo"
+    "name_es": "Playa de Sabugo",
+    "slug": "playa-de-sabugo"
    }
   },
   {
@@ -4548,7 +4767,8 @@
     "province": "Asturias",
     "size_m": 305,
     "coast_km": 0.12,
-    "osm": "https://www.openstreetmap.org/way/93411417"
+    "osm": "https://www.openstreetmap.org/way/93411417",
+    "slug": "playa-de-salinas"
    }
   },
   {
@@ -4567,7 +4787,8 @@
     "province": "Asturias",
     "size_m": 138,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/268923112"
+    "osm": "https://www.openstreetmap.org/way/268923112",
+    "slug": "playa-de-samarincha"
    }
   },
   {
@@ -4588,7 +4809,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/81243650",
     "surface": "sand",
-    "wikidata": "Q6078983"
+    "wikidata": "Q6078983",
+    "slug": "playa-de-san-antolin-de-bedon"
    }
   },
   {
@@ -4609,7 +4831,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/173310395",
     "surface": "sand",
-    "wikidata": "Q18714129"
+    "wikidata": "Q18714129",
+    "slug": "playa-de-san-antonio-del-mar"
    }
   },
   {
@@ -4628,7 +4851,8 @@
     "province": "Asturias",
     "size_m": 322,
     "coast_km": 1.66,
-    "osm": "https://www.openstreetmap.org/way/1056463218"
+    "osm": "https://www.openstreetmap.org/way/1056463218",
+    "slug": "playa-de-san-balandran"
    }
   },
   {
@@ -4647,7 +4871,8 @@
     "province": "Asturias",
     "size_m": 396,
     "coast_km": 0.09,
-    "osm": "https://www.openstreetmap.org/way/656011795"
+    "osm": "https://www.openstreetmap.org/way/656011795",
+    "slug": "playa-de-san-cidiello"
    }
   },
   {
@@ -4668,7 +4893,8 @@
     "coast_km": 0.07,
     "osm": "https://www.openstreetmap.org/way/38834953",
     "wikidata": "Q6078992",
-    "alt_name": "Playa de la Casuca"
+    "alt_name": "Playa de la Casuca",
+    "slug": "playa-de-san-juan-de-la-canal"
    }
   },
   {
@@ -4689,7 +4915,8 @@
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/54513375",
     "wikipedia": "es:Playa de San Julián (Liendo)",
-    "wikidata": "Q6078994"
+    "wikidata": "Q6078994",
+    "slug": "playa-de-san-julian"
    }
   },
   {
@@ -4712,7 +4939,8 @@
     "surface": "sand",
     "wikidata": "Q9060729",
     "dog": "no",
-    "name_ast": "Playa de San Llorienzu"
+    "name_ast": "Playa de San Llorienzu",
+    "slug": "playa-de-san-lorenzo"
    }
   },
   {
@@ -4732,7 +4960,8 @@
     "size_m": 82,
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/way/363467722",
-    "wikidata": "Q5555397"
+    "wikidata": "Q5555397",
+    "slug": "playa-de-san-martin-asturias"
    }
   },
   {
@@ -4751,7 +4980,8 @@
     "province": "Cantabria",
     "size_m": 345,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/678751140"
+    "osm": "https://www.openstreetmap.org/way/678751140",
+    "slug": "playa-de-san-martin-cantabria"
    }
   },
   {
@@ -4773,7 +5003,8 @@
     "osm": "https://www.openstreetmap.org/way/357946684",
     "wikidata": "Q19672833",
     "name_es": "Playa de San Pedro de la Ribera",
-    "name_ast": "Playa de San Pedru la Ribera"
+    "name_ast": "Playa de San Pedru la Ribera",
+    "slug": "playa-de-san-pedru-la-ribera"
    }
   },
   {
@@ -4795,7 +5026,8 @@
     "osm": "https://www.openstreetmap.org/way/42730982",
     "surface": "sand",
     "dog": "no",
-    "alt_name": "A Ribeiria"
+    "alt_name": "A Ribeiria",
+    "slug": "playa-de-santa-gadea"
    }
   },
   {
@@ -4815,7 +5047,8 @@
     "size_m": 183,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/651680856",
-    "wikidata": "Q6079008"
+    "wikidata": "Q6079008",
+    "slug": "playa-de-santa-justa"
    }
   },
   {
@@ -4837,7 +5070,8 @@
     "osm": "https://www.openstreetmap.org/relation/1554416",
     "wikipedia": "es:Playa de Santa Marina",
     "wikidata": "Q18762206",
-    "wheelchair": "yes"
+    "wheelchair": "yes",
+    "slug": "playa-de-santa-marina"
    }
   },
   {
@@ -4856,7 +5090,8 @@
     "province": "Asturias",
     "size_m": 269,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/36867838"
+    "osm": "https://www.openstreetmap.org/way/36867838",
+    "slug": "playa-de-santa-maria-del-mar"
    }
   },
   {
@@ -4876,7 +5111,8 @@
     "size_m": 590,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/516108477",
-    "name_es": "Playa de Serantes"
+    "name_es": "Playa de Serantes",
+    "slug": "playa-de-serantes"
    }
   },
   {
@@ -4896,7 +5132,8 @@
     "size_m": 220,
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/way/651671842",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-serin-asturias"
    }
   },
   {
@@ -4916,7 +5153,8 @@
     "size_m": 355,
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/86366229",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-serin-asturias-2"
    }
   },
   {
@@ -4935,7 +5173,8 @@
     "province": "Asturias",
     "size_m": 175,
     "coast_km": 0.16,
-    "osm": "https://www.openstreetmap.org/way/516090454"
+    "osm": "https://www.openstreetmap.org/way/516090454",
+    "slug": "playa-de-sienra"
    }
   },
   {
@@ -4958,7 +5197,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de Somo",
     "wikidata": "Q6079020",
-    "name_es": "Playa de Somo"
+    "name_es": "Playa de Somo",
+    "slug": "playa-de-somo"
    }
   },
   {
@@ -4983,7 +5223,8 @@
     "wikidata": "Q6079022",
     "lifeguard": "yes",
     "nudism": "yes",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-de-somocuevas"
    }
   },
   {
@@ -5005,7 +5246,8 @@
     "osm": "https://www.openstreetmap.org/way/83639988",
     "wikipedia": "es:Arenal de Sonabia",
     "wikidata": "Q5703454",
-    "name_es": "Playa de Sonabia"
+    "name_es": "Playa de Sonabia",
+    "slug": "playa-de-sonabia"
    }
   },
   {
@@ -5025,7 +5267,8 @@
     "size_m": 496,
     "coast_km": 0.15,
     "osm": "https://www.openstreetmap.org/way/516090462",
-    "wikidata": "Q18224676"
+    "wikidata": "Q18224676",
+    "slug": "playa-de-tablizo"
    }
   },
   {
@@ -5045,7 +5288,8 @@
     "size_m": 118,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/93549837",
-    "wikidata": "Q18224678"
+    "wikidata": "Q18224678",
+    "slug": "playa-de-tauran"
    }
   },
   {
@@ -5066,7 +5310,8 @@
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/way/642587768",
     "surface": "sand",
-    "wikidata": "Q6079035"
+    "wikidata": "Q6079035",
+    "slug": "playa-de-tazones"
    }
   },
   {
@@ -5086,7 +5331,8 @@
     "size_m": 574,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/429181822",
-    "wikidata": "Q17625353"
+    "wikidata": "Q17625353",
+    "slug": "playa-de-torbas"
    }
   },
   {
@@ -5107,7 +5353,8 @@
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/way/42202282",
     "surface": "sand",
-    "wikidata": "Q18748393"
+    "wikidata": "Q18748393",
+    "slug": "playa-de-toro"
    }
   },
   {
@@ -5130,7 +5377,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de Tregandín",
     "wikidata": "Q6152065",
-    "tidal": "yes"
+    "tidal": "yes",
+    "slug": "playa-de-tregandin"
    }
   },
   {
@@ -5152,7 +5400,8 @@
     "osm": "https://www.openstreetmap.org/way/163995475",
     "surface": "sand",
     "wikidata": "Q18713987",
-    "access": "yes"
+    "access": "yes",
+    "slug": "playa-de-troenzo"
    }
   },
   {
@@ -5173,7 +5422,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/110014959",
     "wikipedia": "es:Playa de Usgo",
-    "wikidata": "Q6079062"
+    "wikidata": "Q6079062",
+    "slug": "playa-de-usgo"
    }
   },
   {
@@ -5197,7 +5447,8 @@
     "wikipedia": "es:Playa de Valdearenas",
     "wikidata": "Q3966673",
     "description": "La zona nudista se sitúa entre las dunas y la desembocadura de la ría de Mogro, en la más alejada de la zona de aparcamiento.",
-    "name_es": "Playa de Valdearenas"
+    "name_es": "Playa de Valdearenas",
+    "slug": "playa-de-valdearenas"
    }
   },
   {
@@ -5217,7 +5468,8 @@
     "size_m": 980,
     "coast_km": 0.14,
     "osm": "https://www.openstreetmap.org/way/554747277",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-de-vallina-o-del-gallo"
    }
   },
   {
@@ -5238,7 +5490,8 @@
     "coast_km": 0.14,
     "osm": "https://www.openstreetmap.org/way/144652811",
     "surface": "sand",
-    "alt_name": "Playa de Berbes"
+    "alt_name": "Playa de Berbes",
+    "slug": "playa-de-vega"
    }
   },
   {
@@ -5259,7 +5512,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/36867798",
     "surface": "sand",
-    "wikidata": "Q19360708"
+    "wikidata": "Q19360708",
+    "slug": "playa-de-verdicio"
    }
   },
   {
@@ -5281,7 +5535,8 @@
     "osm": "https://www.openstreetmap.org/way/1159146267",
     "surface": "sand",
     "wikipedia": "es:Playa de Vidiago",
-    "wikidata": "Q18759103"
+    "wikidata": "Q18759103",
+    "slug": "playa-de-vidiago"
    }
   },
   {
@@ -5305,7 +5560,8 @@
     "wikidata": "Q18418169",
     "lifeguard": "no",
     "alt_name": "Playa La Canal",
-    "supervised": "no"
+    "supervised": "no",
+    "slug": "playa-de-villaneuva"
    }
   },
   {
@@ -5324,7 +5580,8 @@
     "province": "Asturias",
     "size_m": 491,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/496506935"
+    "osm": "https://www.openstreetmap.org/way/496506935",
+    "slug": "playa-de-vivigo"
    }
   },
   {
@@ -5345,7 +5602,8 @@
     "coast_km": 0.27,
     "osm": "https://www.openstreetmap.org/way/36867824",
     "surface": "sand",
-    "wikidata": "Q6079079"
+    "wikidata": "Q6079079",
+    "slug": "playa-de-xago"
    }
   },
   {
@@ -5365,7 +5623,8 @@
     "size_m": 266,
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/relation/5329406",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-xilo-veneiro"
    }
   },
   {
@@ -5386,7 +5645,8 @@
     "coast_km": 0.11,
     "osm": "https://www.openstreetmap.org/relation/2129524",
     "wikidata": "Q5962016",
-    "nudism": "yes"
+    "nudism": "yes",
+    "slug": "playa-de-la-arena"
    }
   },
   {
@@ -5407,7 +5667,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/651679116",
     "wikipedia": "es:Playa de Las Arenas (Val de San Vicente)",
-    "wikidata": "Q6079155"
+    "wikidata": "Q6079155",
+    "slug": "playa-de-la-arenas"
    }
   },
   {
@@ -5428,7 +5689,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/60905207",
     "wikipedia": "es:Playa de La Atalaya",
-    "wikidata": "Q18763692"
+    "wikidata": "Q18763692",
+    "slug": "playa-de-la-atalaya"
    }
   },
   {
@@ -5447,7 +5709,8 @@
     "province": "Asturias",
     "size_m": 185,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/1179664435"
+    "osm": "https://www.openstreetmap.org/way/1179664435",
+    "slug": "playa-de-la-barca"
    }
   },
   {
@@ -5467,7 +5730,8 @@
     "size_m": 353,
     "coast_km": 0.13,
     "osm": "https://www.openstreetmap.org/way/516874767",
-    "wikidata": "Q19604171"
+    "wikidata": "Q19604171",
+    "slug": "playa-de-la-cabana"
    }
   },
   {
@@ -5487,7 +5751,8 @@
     "size_m": 26,
     "coast_km": 0.71,
     "osm": "https://www.openstreetmap.org/way/1302224266",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-la-cava"
    }
   },
   {
@@ -5508,7 +5773,8 @@
     "coast_km": 0.2,
     "osm": "https://www.openstreetmap.org/way/53881236",
     "wikipedia": "es:Playa de La Concha (Suances)",
-    "wikidata": "Q6078797"
+    "wikidata": "Q6078797",
+    "slug": "playa-de-la-concha-cantabria"
    }
   },
   {
@@ -5529,7 +5795,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/656025083",
     "surface": "stone",
-    "wikidata": "Q18649786"
+    "wikidata": "Q18649786",
+    "slug": "playa-de-la-conchiquina"
    }
   },
   {
@@ -5549,7 +5816,8 @@
     "size_m": 575,
     "coast_km": 0.18,
     "osm": "https://www.openstreetmap.org/way/516108471",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "playa-de-la-estaca-o-perceberos"
    }
   },
   {
@@ -5570,7 +5838,8 @@
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/relation/2190763",
     "surface": "sand",
-    "wikidata": "Q5963423"
+    "wikidata": "Q5963423",
+    "slug": "playa-de-la-franca-asturias-2"
    }
   },
   {
@@ -5590,7 +5859,8 @@
     "size_m": 537,
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/relation/10191243",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-la-franca-asturias"
    }
   },
   {
@@ -5612,7 +5882,8 @@
     "osm": "https://www.openstreetmap.org/way/144622324",
     "surface": "sand",
     "wikipedia": "es:Playa de La Isla",
-    "wikidata": "Q6079129"
+    "wikidata": "Q6079129",
+    "slug": "playa-de-la-isla"
    }
   },
   {
@@ -5634,7 +5905,8 @@
     "osm": "https://www.openstreetmap.org/way/28423269",
     "surface": "sand",
     "wikipedia": "es:Playa de La Magdalena",
-    "wikidata": "Q6078808"
+    "wikidata": "Q6078808",
+    "slug": "playa-de-la-magdalena"
    }
   },
   {
@@ -5657,7 +5929,8 @@
     "wikipedia": "es:Playa de La Maza",
     "wikidata": "Q5964309",
     "dog": "yes",
-    "alt_name": "Playa de los Vagos"
+    "alt_name": "Playa de los Vagos",
+    "slug": "playa-de-la-maza"
    }
   },
   {
@@ -5676,7 +5949,8 @@
     "province": "Asturias",
     "size_m": 480,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/relation/1394718"
+    "osm": "https://www.openstreetmap.org/relation/1394718",
+    "slug": "playa-de-la-paloma-asturias"
    }
   },
   {
@@ -5695,7 +5969,8 @@
     "province": "Asturias",
     "size_m": 285,
     "coast_km": 0.14,
-    "osm": "https://www.openstreetmap.org/way/236596251"
+    "osm": "https://www.openstreetmap.org/way/236596251",
+    "slug": "playa-de-la-polea"
    }
   },
   {
@@ -5716,7 +5991,8 @@
     "coast_km": 0.4,
     "osm": "https://www.openstreetmap.org/way/73504227",
     "wikipedia": "es:Playa de La Ribera (Suances)",
-    "wikidata": "Q6078826"
+    "wikidata": "Q6078826",
+    "slug": "playa-de-la-ribera-cantabria"
    }
   },
   {
@@ -5736,7 +6012,8 @@
     "size_m": 251,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/1107387642",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-de-la-ribera-asturias-2"
    }
   },
   {
@@ -5756,7 +6033,8 @@
     "size_m": 289,
     "coast_km": 0.82,
     "osm": "https://www.openstreetmap.org/way/73115979",
-    "wikidata": "Q5965104"
+    "wikidata": "Q5965104",
+    "slug": "playa-de-la-riberuca"
    }
   },
   {
@@ -5780,7 +6058,8 @@
     "wikipedia": "es:La Salvé",
     "wikidata": "Q5965192",
     "lifeguard": "yes",
-    "description": "La Playa de La Salvé se extiende a lo largo de 4.250 metros,​ paralela al ensanche de Laredo, entre el antiguo puerto (\"El Canto\") y la punta de arena (\"El Puntal\") que enmarca por el sur la bahía de Santoña."
+    "description": "La Playa de La Salvé se extiende a lo largo de 4.250 metros,​ paralela al ensanche de Laredo, entre el antiguo puerto (\"El Canto\") y la punta de arena (\"El Puntal\") que enmarca por el sur la bahía de Santoña.",
+    "slug": "playa-de-la-salve"
    }
   },
   {
@@ -5799,7 +6078,8 @@
     "province": "Cantabria",
     "size_m": 419,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/1498130338"
+    "osm": "https://www.openstreetmap.org/way/1498130338",
+    "slug": "playa-de-la-tablia"
    }
   },
   {
@@ -5820,7 +6100,8 @@
     "coast_km": 0.0,
     "osm": "https://www.openstreetmap.org/way/356128878",
     "wikipedia": "es:Playa de la Virgen del Mar",
-    "wikidata": "Q2841948"
+    "wikidata": "Q2841948",
+    "slug": "playa-de-la-virgen-del-mar"
    }
   },
   {
@@ -5842,7 +6123,8 @@
     "osm": "https://www.openstreetmap.org/way/25924040",
     "surface": "sand",
     "wikipedia": "es:Playa de Cuevas del Mar",
-    "wikidata": "Q18418160"
+    "wikidata": "Q18418160",
+    "slug": "playa-de-las-cuevas-del-mar"
    }
   },
   {
@@ -5863,7 +6145,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/relation/2187449",
     "surface": "sand",
-    "access": "yes"
+    "access": "yes",
+    "slug": "playa-de-las-camaras"
    }
   },
   {
@@ -5882,7 +6165,8 @@
     "province": "Asturias",
     "size_m": 542,
     "coast_km": 0.16,
-    "osm": "https://www.openstreetmap.org/way/656025077"
+    "osm": "https://www.openstreetmap.org/way/656025077",
+    "slug": "playa-de-las-rubias"
    }
   },
   {
@@ -5901,7 +6185,8 @@
     "province": "Cantabria",
     "size_m": 70,
     "coast_km": 0.12,
-    "osm": "https://www.openstreetmap.org/way/44908433"
+    "osm": "https://www.openstreetmap.org/way/44908433",
+    "slug": "playa-de-los-barcos-cantabria-2"
    }
   },
   {
@@ -5921,7 +6206,8 @@
     "size_m": 67,
     "coast_km": 0.19,
     "osm": "https://www.openstreetmap.org/way/437341777",
-    "wikidata": "Q6078866"
+    "wikidata": "Q6078866",
+    "slug": "playa-de-los-barcos-cantabria"
    }
   },
   {
@@ -5943,7 +6229,8 @@
     "osm": "https://www.openstreetmap.org/way/197777972",
     "surface": "sand",
     "wikipedia": "es:Playa de los Bikinis",
-    "wikidata": "Q6079183"
+    "wikidata": "Q6079183",
+    "slug": "playa-de-los-bikinis"
    }
   },
   {
@@ -5965,7 +6252,8 @@
     "osm": "https://www.openstreetmap.org/way/73655493",
     "wikipedia": "es:Playa de los Caballos",
     "wikidata": "Q6079187",
-    "alt_name": "Playa de Umbreda"
+    "alt_name": "Playa de Umbreda",
+    "slug": "playa-de-los-caballos"
    }
   },
   {
@@ -5984,7 +6272,8 @@
     "province": "Cantabria",
     "size_m": 44,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/1283201940"
+    "osm": "https://www.openstreetmap.org/way/1283201940",
+    "slug": "playa-de-los-carabineros"
    }
   },
   {
@@ -6005,7 +6294,8 @@
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/way/837818754",
     "wikipedia": "es:Playa de Los Castros",
-    "wikidata": "Q18224659"
+    "wikidata": "Q18224659",
+    "slug": "playa-de-los-castros"
    }
   },
   {
@@ -6026,7 +6316,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/relation/2187450",
     "surface": "sand",
-    "access": "yes"
+    "access": "yes",
+    "slug": "playa-de-los-curas"
    }
   },
   {
@@ -6045,7 +6336,8 @@
     "province": "Asturias",
     "size_m": 118,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/656025073"
+    "osm": "https://www.openstreetmap.org/way/656025073",
+    "slug": "playa-de-los-espinos"
    }
   },
   {
@@ -6066,7 +6358,8 @@
     "coast_km": 0.13,
     "osm": "https://www.openstreetmap.org/way/651680854",
     "wikipedia": "es:Playa de los Locos",
-    "wikidata": "Q5979921"
+    "wikidata": "Q5979921",
+    "slug": "playa-de-los-locos"
    }
   },
   {
@@ -6088,7 +6381,8 @@
     "osm": "https://www.openstreetmap.org/way/28423544",
     "surface": "sand",
     "wikipedia": "es:Playa de los Molinucos",
-    "wikidata": "Q6079197"
+    "wikidata": "Q6079197",
+    "slug": "playa-de-los-molinucos"
    }
   },
   {
@@ -6109,7 +6403,8 @@
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/way/28423268",
     "wikipedia": "es:Playa de los Peligros",
-    "wikidata": "Q6079202"
+    "wikidata": "Q6079202",
+    "slug": "playa-de-los-peligros"
    }
   },
   {
@@ -6130,7 +6425,8 @@
     "coast_km": 0.26,
     "osm": "https://www.openstreetmap.org/way/36867849",
     "surface": "sand",
-    "wikidata": "Q6079206"
+    "wikidata": "Q6079206",
+    "slug": "playa-de-los-quebrantos"
    }
   },
   {
@@ -6151,7 +6447,8 @@
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/40627397",
     "surface": "sand",
-    "alt_name": "Boo"
+    "alt_name": "Boo",
+    "slug": "playa-de-los-tranquilos"
    }
   },
   {
@@ -6170,7 +6467,8 @@
     "province": "Asturias",
     "size_m": 415,
     "coast_km": 0.06,
-    "osm": "https://www.openstreetmap.org/way/1023802666"
+    "osm": "https://www.openstreetmap.org/way/1023802666",
+    "slug": "playa-del-aguion"
    }
   },
   {
@@ -6189,7 +6487,8 @@
     "province": "Asturias",
     "size_m": 141,
     "coast_km": 0.03,
-    "osm": "https://www.openstreetmap.org/way/651187034"
+    "osm": "https://www.openstreetmap.org/way/651187034",
+    "slug": "playa-del-aranon"
    }
   },
   {
@@ -6208,7 +6507,8 @@
     "province": "Asturias",
     "size_m": 197,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/way/356833645"
+    "osm": "https://www.openstreetmap.org/way/356833645",
+    "slug": "playa-del-barco"
    }
   },
   {
@@ -6229,7 +6529,8 @@
     "coast_km": 0.09,
     "osm": "https://www.openstreetmap.org/way/144622330",
     "surface": "sand",
-    "wikidata": "Q5400220"
+    "wikidata": "Q5400220",
+    "slug": "playa-del-barrigon"
    }
   },
   {
@@ -6248,7 +6549,8 @@
     "province": "Asturias",
     "size_m": 126,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/1023801370"
+    "osm": "https://www.openstreetmap.org/way/1023801370",
+    "slug": "playa-del-burro"
    }
   },
   {
@@ -6271,7 +6573,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de El Camello",
     "wikidata": "Q6078715",
-    "name_es": "Playa del Camello"
+    "name_es": "Playa del Camello",
+    "slug": "playa-del-camello"
    }
   },
   {
@@ -6290,7 +6593,8 @@
     "province": "Asturias",
     "size_m": 135,
     "coast_km": 0.08,
-    "osm": "https://www.openstreetmap.org/way/656011789"
+    "osm": "https://www.openstreetmap.org/way/656011789",
+    "slug": "playa-del-castro"
    }
   },
   {
@@ -6313,7 +6617,8 @@
     "surface": "fine_gravel",
     "wikipedia": "es:Playa de El Rinconín",
     "wikidata": "Q18932971",
-    "name_es": "Playa del Rinconín"
+    "name_es": "Playa del Rinconín",
+    "slug": "playa-del-cervigon"
    }
   },
   {
@@ -6332,7 +6637,8 @@
     "province": "Asturias",
     "size_m": 574,
     "coast_km": 0.12,
-    "osm": "https://www.openstreetmap.org/way/516090453"
+    "osm": "https://www.openstreetmap.org/way/516090453",
+    "slug": "playa-del-churin"
    }
   },
   {
@@ -6351,7 +6657,8 @@
     "province": "Asturias",
     "size_m": 89,
     "coast_km": 0.02,
-    "osm": "https://www.openstreetmap.org/way/656200911"
+    "osm": "https://www.openstreetmap.org/way/656200911",
+    "slug": "playa-del-coedo"
    }
   },
   {
@@ -6371,7 +6678,8 @@
     "size_m": 461,
     "coast_km": 0.15,
     "osm": "https://www.openstreetmap.org/way/1001998928",
-    "name_ast": "Sablera del Cordial"
+    "name_ast": "Sablera del Cordial",
+    "slug": "playa-del-cordial"
    }
   },
   {
@@ -6390,7 +6698,8 @@
     "province": "Asturias",
     "size_m": 117,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/123906712"
+    "osm": "https://www.openstreetmap.org/way/123906712",
+    "slug": "playa-del-cuerno"
    }
   },
   {
@@ -6410,7 +6719,8 @@
     "size_m": 198,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/159830117",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-del-cura"
    }
   },
   {
@@ -6430,7 +6740,8 @@
     "size_m": 60,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/234398521",
-    "wikidata": "Q17625300"
+    "wikidata": "Q17625300",
+    "slug": "playa-del-figo"
    }
   },
   {
@@ -6451,7 +6762,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/730118149",
     "dog": "yes",
-    "alt_name": "Arenal del Jortín"
+    "alt_name": "Arenal del Jortín",
+    "slug": "playa-del-fortin"
    }
   },
   {
@@ -6470,7 +6782,8 @@
     "province": "Cantabria",
     "size_m": 107,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/276953597"
+    "osm": "https://www.openstreetmap.org/way/276953597",
+    "slug": "playa-del-huevo-frito"
    }
   },
   {
@@ -6490,7 +6803,8 @@
     "size_m": 261,
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/288877893",
-    "alt_name": "Playa de Pedruquías"
+    "alt_name": "Playa de Pedruquías",
+    "slug": "playa-del-madero"
    }
   },
   {
@@ -6511,7 +6825,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/165233388",
     "wikipedia": "es:Playa del Moro",
-    "wikidata": "Q9060813"
+    "wikidata": "Q9060813",
+    "slug": "playa-del-moro"
    }
   },
   {
@@ -6531,7 +6846,8 @@
     "size_m": 117,
     "coast_km": 0.01,
     "osm": "https://www.openstreetmap.org/way/837829622",
-    "alt_name": "Playa de Maleguas"
+    "alt_name": "Playa de Maleguas",
+    "slug": "playa-del-murallon"
    }
   },
   {
@@ -6550,7 +6866,8 @@
     "province": "Asturias",
     "size_m": 167,
     "coast_km": 0.04,
-    "osm": "https://www.openstreetmap.org/relation/16225023"
+    "osm": "https://www.openstreetmap.org/relation/16225023",
+    "slug": "playa-del-oso"
    }
   },
   {
@@ -6570,7 +6887,8 @@
     "size_m": 350,
     "coast_km": 0.54,
     "osm": "https://www.openstreetmap.org/relation/4020892",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-del-pasaje-cantabria"
    }
   },
   {
@@ -6590,7 +6908,8 @@
     "size_m": 215,
     "coast_km": 0.28,
     "osm": "https://www.openstreetmap.org/relation/4020893",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-del-pasaje-cantabria-2"
    }
   },
   {
@@ -6612,7 +6931,8 @@
     "osm": "https://www.openstreetmap.org/way/208836963",
     "wikipedia": "es:Playa del Pedreru",
     "wikidata": "Q6079272",
-    "alt_name": "Playa del Pedrero"
+    "alt_name": "Playa del Pedrero",
+    "slug": "playa-del-pedreru"
    }
   },
   {
@@ -6631,7 +6951,8 @@
     "province": "Asturias",
     "size_m": 308,
     "coast_km": 0.05,
-    "osm": "https://www.openstreetmap.org/way/429179902"
+    "osm": "https://www.openstreetmap.org/way/429179902",
+    "slug": "playa-del-pichel"
    }
   },
   {
@@ -6650,7 +6971,8 @@
     "province": "Asturias",
     "size_m": 104,
     "coast_km": 0.55,
-    "osm": "https://www.openstreetmap.org/way/896356968"
+    "osm": "https://www.openstreetmap.org/way/896356968",
+    "slug": "playa-del-puntal"
    }
   },
   {
@@ -6672,7 +6994,8 @@
     "osm": "https://www.openstreetmap.org/way/503187326",
     "surface": "sand",
     "wikipedia": "es:Playa del Regatón",
-    "wikidata": "Q6078739"
+    "wikidata": "Q6078739",
+    "slug": "playa-del-regaton"
    }
   },
   {
@@ -6695,7 +7018,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa del Sable (Arnuero)",
     "wikidata": "Q2835168",
-    "alt_name": "Playa de Quejo"
+    "alt_name": "Playa de Quejo",
+    "slug": "playa-del-sable-cantabria-2"
    }
   },
   {
@@ -6716,7 +7040,8 @@
     "coast_km": 0.69,
     "osm": "https://www.openstreetmap.org/way/208836964",
     "wikipedia": "es:Playa del Sable (Val de San Vicente)",
-    "wikidata": "Q6079290"
+    "wikidata": "Q6079290",
+    "slug": "playa-del-sable-cantabria"
    }
   },
   {
@@ -6736,7 +7061,8 @@
     "size_m": 479,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/333294996",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-del-sable-asturias"
    }
   },
   {
@@ -6755,7 +7081,8 @@
     "province": "Asturias",
     "size_m": 176,
     "coast_km": 0.07,
-    "osm": "https://www.openstreetmap.org/way/656011794"
+    "osm": "https://www.openstreetmap.org/way/656011794",
+    "slug": "playa-del-sable-o-de-deiros"
    }
   },
   {
@@ -6777,7 +7104,8 @@
     "osm": "https://www.openstreetmap.org/way/42203106",
     "surface": "sand",
     "wikipedia": "es:Playa de El Sablón",
-    "wikidata": "Q18744473"
+    "wikidata": "Q18744473",
+    "slug": "playa-del-sablon"
    }
   },
   {
@@ -6797,7 +7125,8 @@
     "size_m": 210,
     "coast_km": 0.08,
     "osm": "https://www.openstreetmap.org/way/42961558",
-    "name_es": "Playa del Sarello"
+    "name_es": "Playa del Sarello",
+    "slug": "playa-del-sarello"
    }
   },
   {
@@ -6818,7 +7147,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/651671845",
     "wikipedia": "es:Playa de El Tranquero",
-    "wikidata": "Q19314215"
+    "wikidata": "Q19314215",
+    "slug": "playa-del-tranqueru"
    }
   },
   {
@@ -6838,7 +7168,8 @@
     "size_m": 55,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/672769335",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-el-garruncho"
    }
   },
   {
@@ -6860,7 +7191,8 @@
     "osm": "https://www.openstreetmap.org/way/195450308",
     "wikidata": "Q11699698",
     "name_es": "Playa Escanu",
-    "name_ast": "Playa l'escanu"
+    "name_ast": "Playa l'escanu",
+    "slug": "playa-l-escanu"
    }
   },
   {
@@ -6880,7 +7212,8 @@
     "size_m": 277,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/925955627",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playa-la-conchona"
    }
   },
   {
@@ -6901,7 +7234,8 @@
     "coast_km": 0.06,
     "osm": "https://www.openstreetmap.org/way/938382956",
     "wikipedia": "es:Playas de Xan-Xún y Las Llanas",
-    "wikidata": "Q19637042"
+    "wikidata": "Q19637042",
+    "slug": "playas-de-xan-xun-y-las-llanas"
    }
   },
   {
@@ -6921,7 +7255,8 @@
     "size_m": 110,
     "coast_km": 0.52,
     "osm": "https://www.openstreetmap.org/way/729105674",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playina-de-rodiles"
    }
   },
   {
@@ -6941,7 +7276,8 @@
     "size_m": 2701,
     "coast_km": 0.24,
     "osm": "https://www.openstreetmap.org/way/36867848",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "playon-de-bayas-el-sablon"
    }
   },
   {
@@ -6962,7 +7298,8 @@
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/way/333872158",
     "surface": "sand",
-    "description": "Playa nudista"
+    "description": "Playa nudista",
+    "slug": "portacos"
    }
   },
   {
@@ -6982,7 +7319,8 @@
     "size_m": 123,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/333872159",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "portaquinos"
    }
   },
   {
@@ -7001,7 +7339,8 @@
     "province": "Asturias",
     "size_m": 23,
     "coast_km": 0.01,
-    "osm": "https://www.openstreetmap.org/relation/1245738"
+    "osm": "https://www.openstreetmap.org/relation/1245738",
+    "slug": "praia-das-cabanas"
    }
   },
   {
@@ -7023,7 +7362,8 @@
     "osm": "https://www.openstreetmap.org/way/316088323",
     "wikipedia": "gl:Praia das Rochas Brancas",
     "wikidata": "Q12398071",
-    "name_es": "Playa de Rochas Brancas"
+    "name_es": "Playa de Rochas Brancas",
+    "slug": "praia-de-rochas-brancas"
    }
   },
   {
@@ -7044,7 +7384,8 @@
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/relation/1245737",
     "wikipedia": "gl:Praia do Cargadoiro",
-    "wikidata": "Q12398095"
+    "wikidata": "Q12398095",
+    "slug": "praia-do-cargadoiro"
    }
   },
   {
@@ -7067,7 +7408,8 @@
     "surface": "sand",
     "wikipedia": "gl:Praia dos Bloques",
     "wikidata": "Q20543661",
-    "name_es": "Playa de Os Bloques"
+    "name_es": "Playa de Os Bloques",
+    "slug": "praia-dos-bloques"
    }
   },
   {
@@ -7089,7 +7431,8 @@
     "osm": "https://www.openstreetmap.org/way/27226149",
     "wikipedia": "es:Playa del Sardinero",
     "wikidata": "Q24019705",
-    "alt_name": "Playa Primera del Sardinero"
+    "alt_name": "Playa Primera del Sardinero",
+    "slug": "primera-playa-de-el-sardinero"
    }
   },
   {
@@ -7109,7 +7452,8 @@
     "size_m": 193,
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/way/656212844",
-    "surface": "pebblestone"
+    "surface": "pebblestone",
+    "slug": "puerto-chico"
    }
   },
   {
@@ -7129,7 +7473,8 @@
     "size_m": 161,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/way/515851981",
-    "name_es": "Puerto Chico"
+    "name_es": "Puerto Chico",
+    "slug": "puertu-chicu"
    }
   },
   {
@@ -7151,7 +7496,8 @@
     "osm": "https://www.openstreetmap.org/relation/2402619",
     "surface": "sand",
     "wikidata": "Q19013616",
-    "name_es": "Playa Palmera"
+    "name_es": "Playa Palmera",
+    "slug": "sablera-palmera"
    }
   },
   {
@@ -7173,7 +7519,8 @@
     "osm": "https://www.openstreetmap.org/way/261554499",
     "wikipedia": "ast:Sablera de Rebolleres",
     "wikidata": "Q19324462",
-    "name_es": "Playa Rebolleres"
+    "name_es": "Playa Rebolleres",
+    "slug": "sablera-rebolleres"
    }
   },
   {
@@ -7193,7 +7540,8 @@
     "size_m": 69,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/relation/6725712",
-    "name_es": "Playa d'Entrellusa"
+    "name_es": "Playa d'Entrellusa",
+    "slug": "sablera-d-entrellusa"
    }
   },
   {
@@ -7213,7 +7561,8 @@
     "size_m": 174,
     "coast_km": 0.04,
     "osm": "https://www.openstreetmap.org/relation/6725711",
-    "name_es": "Playa de Güelgues"
+    "name_es": "Playa de Güelgues",
+    "slug": "sablera-de-guelgues"
    }
   },
   {
@@ -7236,7 +7585,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa de San Pedro de Antromero",
     "wikidata": "Q19656681",
-    "name_es": "Playa de San Pedro de Antromero"
+    "name_es": "Playa de San Pedro de Antromero",
+    "slug": "sablera-de-san-pedro-d-antromero"
    }
   },
   {
@@ -7256,7 +7606,8 @@
     "size_m": 51,
     "coast_km": 0.02,
     "osm": "https://www.openstreetmap.org/relation/6725713",
-    "name_es": "Playa del Cura"
+    "name_es": "Playa del Cura",
+    "slug": "sablera-l-cura"
    }
   },
   {
@@ -7276,7 +7627,8 @@
     "size_m": 582,
     "coast_km": 1.35,
     "osm": "https://www.openstreetmap.org/way/261582503",
-    "name_es": "San Balandrán"
+    "name_es": "San Balandrán",
+    "slug": "samalandran"
    }
   },
   {
@@ -7297,7 +7649,8 @@
     "coast_km": 0.05,
     "osm": "https://www.openstreetmap.org/relation/2187453",
     "surface": "sand",
-    "access": "yes"
+    "access": "yes",
+    "slug": "san-martin"
    }
   },
   {
@@ -7320,7 +7673,8 @@
     "surface": "sand",
     "wikipedia": "es:Playa del Sardinero",
     "wikidata": "Q24019705",
-    "alt_name": "Playa Segunda del Sardinero"
+    "alt_name": "Playa Segunda del Sardinero",
+    "slug": "segunda-playa-de-el-sardinero"
    }
   },
   {
@@ -7340,7 +7694,8 @@
     "size_m": 252,
     "coast_km": 0.14,
     "osm": "https://www.openstreetmap.org/way/1133595943",
-    "lifeguard": "only in summer"
+    "lifeguard": "only in summer",
+    "slug": "solarium"
    }
   },
   {
@@ -7360,7 +7715,8 @@
     "size_m": 113,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/288671648",
-    "surface": "sand"
+    "surface": "sand",
+    "slug": "somocuevas-oeste"
    }
   },
   {
@@ -7382,7 +7738,8 @@
     "osm": "https://www.openstreetmap.org/relation/18016162",
     "surface": "sand",
     "wikidata": "Q18844158",
-    "access": "yes"
+    "access": "yes",
+    "slug": "toranda"
    }
   },
   {
@@ -7404,7 +7761,8 @@
     "osm": "https://www.openstreetmap.org/way/50157286",
     "surface": "sand",
     "wikidata": "Q6149186",
-    "nudism": "yes"
+    "nudism": "yes",
+    "slug": "torimbia"
    }
   },
   {
@@ -7423,7 +7781,8 @@
     "province": "Cantabria",
     "size_m": 177,
     "coast_km": 0.06,
-    "osm": "https://www.openstreetmap.org/way/288759834"
+    "osm": "https://www.openstreetmap.org/way/288759834",
+    "slug": "tombolo-de-covachos"
    }
   },
   {
@@ -7443,7 +7802,8 @@
     "size_m": 0,
     "coast_km": 0.14,
     "osm": "https://www.openstreetmap.org/node/3827071098",
-    "wikidata": "Q19678316"
+    "wikidata": "Q19678316",
+    "slug": "vallina"
    }
   },
   {
@@ -7463,7 +7823,8 @@
     "size_m": 410,
     "coast_km": 0.1,
     "osm": "https://www.openstreetmap.org/way/260003633",
-    "name_es": "Xivares"
+    "name_es": "Xivares",
+    "slug": "xibares"
    }
   },
   {
@@ -7483,7 +7844,8 @@
     "size_m": 147,
     "coast_km": 0.03,
     "osm": "https://www.openstreetmap.org/way/237464824",
-    "surface": "gravel"
+    "surface": "gravel",
+    "slug": "playa-de-pendueles-o-castiellu"
    }
   }
  ]
