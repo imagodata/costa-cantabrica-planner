@@ -115,12 +115,14 @@ authentification par mot de passe (Caddy `basic_auth`, TLS Let's Encrypt), à l'
 créer un enregistrement A `costa.gispulse.dev → 188.245.235.42` chez Infomaniak puis relancer
 avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
 
-- Premier déploiement : `scripts/deploy_vps.sh --init <utilisateur> <motdepasse>` ajoute le
-  bloc Caddy (sauvegarde du Caddyfile, validation, rechargement) puis synchronise.
+- Comptes : `scripts/deploy_vps.sh --init simon:motdepasse marie:motdepasse` (re)crée le bloc
+  Caddy avec un compte par voyageur (sauvegarde du Caddyfile, validation, rechargement) puis
+  synchronise. L'application lit `/whoami` au démarrage et active automatiquement le voyageur
+  correspondant (`simon` → voyageur 1, `marie` → voyageur 2, ou le prénom configuré).
 - Déploiements suivants : `make deploy` (rsync des fichiers suivis par git, sans sources ni
   données brutes, et pages de partage régénérées avec l'URL du serveur).
-- Changer le mot de passe : relancer `--init` avec le nouveau, puis supprimer l'ancien bloc
-  dans `/etc/caddy/Caddyfile`.
+- Changer un mot de passe : relancer `--init` avec tous les comptes ; l'ancien bloc est
+  remplacé automatiquement.
 
 ## Adapter à une autre côte
 

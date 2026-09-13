@@ -126,6 +126,19 @@
     const s = spotBySlug(m[1]); if (!s) return false;
     state.selected = s.properties.id; return true;
   }
+  /* Version protégée (VPS) : l'utilisateur authentifié (/whoami) devient le voyageur actif. */
+  async function applyServerIdentity() {
+    try {
+      const r = await fetch('whoami', { cache: 'no-store' });
+      if (!r.ok) return;
+      const id = (await r.text()).trim().toLowerCase();
+      if (!id || id.includes('<')) return;
+      const k = id === state.users.b.name.toLowerCase() ? 'b' : id === state.users.a.name.toLowerCase() ? 'a' : (id === 'marie' ? 'b' : id === 'simon' ? 'a' : null);
+      if (!k) return;
+      if (state.me !== k) { state.me = k; save(); }
+      state.serverUser = id;
+    } catch (e) { /* version publique : pas de serveur */ }
+  }
   /* #view=explore|wishes|trip|config ouvre directement une vue (combinable : #share=…&view=explore). */
   function applyViewParam() {
     const m = location.hash.match(/[#&]view=(explore|wishes|trip|config)/);
@@ -773,6 +786,7 @@
       <div class="card"><div class="h"><h3>${I('info', { size: 13 })} À propos</h3></div>
         <span class="hint">${esc(state.region.name)} · ${state.spots.length} plages et criques · ${state.pois.length ? state.pois.length + ' lieux' : 'lieux chargés à la demande'} · version ${esc(assetVer || '—')}</span>
         <span class="hint">Données © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · prévisions <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) · photos Wikimedia Commons, Flickr, Openverse (licences indiquées) · imagerie Esri · <a href="https://github.com/imagodata/costa-cantabrica-planner" target="_blank" rel="noopener">code source</a>.</span></div>`;
+    if (state.serverUser) { const hint = document.createElement('span'); hint.className = 'hint'; hint.textContent = `Connecté sur le serveur en tant que « ${state.serverUser} » : le voyageur est choisi automatiquement.`; $('#c-me').closest('.card').appendChild(hint); }
     const commit = () => { save(); renderTabs(); renderWho(); };
     $('#c-a').onchange = (e) => { state.users.a.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[0]; commit(); renderConfig(); };
     $('#c-b').onchange = (e) => { state.users.b.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[1]; commit(); renderConfig(); };
@@ -1253,6 +1267,7 @@
       history.replaceState(null, '', location.pathname + location.search + location.hash.replace(/[#&]reset\b/, '').replace(/^&/, '#'));
     }
     restore();
+    await applyServerIdentity();
     const shared = applyShare();
     let routed = false;
     if (!shared && applyViewParam()) history.replaceState(null, '', location.pathname + location.search);
