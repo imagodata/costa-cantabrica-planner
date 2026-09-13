@@ -308,7 +308,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   :root { --sidebar: 440px; }
   #map { inset: var(--topbar) 0 0 var(--sidebar); }
   .sheet, .sheet.half, .sheet.full { top: var(--topbar); bottom: 0; left: 0; right: auto; width: var(--sidebar); height: auto; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); }
-  .layer-chips { left: calc(var(--sidebar) + 10px); }
+  .layer-chips { left: calc(var(--sidebar) + 58px); }
   .tabs { position: sticky; top: 0; z-index: 2; background: var(--panel); margin: 0; padding: 8px 12px; border-radius: 0; border: 0; border-bottom: 1px solid var(--line); }
   .tabs button { border: 1px solid transparent; } .tabs button.on { border-color: var(--line); }
   .handle { display: none; }
