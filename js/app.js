@@ -194,7 +194,9 @@
   }
   function planRemove(spotId, idx) { const pn = planOf(spotId); pn.items.splice(idx, 1); save(); }
   const poiById = (id) => state.pois.find((x) => x.id === id);
+  const buzz = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { } };
   function toggleWish(id, who) {
+    buzz();
     const list = state.users[who].wish, i = list.indexOf(id);
     if (i >= 0) list.splice(i, 1); else list.push(id);
     save(); renderTabs(); if (state.view === 'wishes') renderWishes(); else renderList(); paintMarkers();
@@ -232,7 +234,7 @@
 
   /* ------------------------------------------------------------------ carte */
   function initMap() {
-    map = L.map('map', { zoomControl: true, attributionControl: true, tap: true }).setView(C.center, C.zoom);
+    map = L.map('map', { zoomControl: true, attributionControl: true, tapTolerance: 20, zoomSnap: 0.5, wheelPxPerZoomLevel: 90 }).setView(C.center, C.zoom);
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · prévisions <a href="https://open-meteo.com/">Open-Meteo</a>' });
     const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
@@ -245,6 +247,7 @@
         .on('click', () => select(s.properties.id, { pan: false }));
       m.addTo(map); markers.set(s.properties.id, m);
     }
+    map.on('dragstart', () => { if (window.innerWidth < 900 && !sheet.classList.contains('peek')) setSheet('peek'); });
     map.on('click', (e) => {
       if (!state.pickBase) return;
       state.pickBase = false; ensureTrip();
@@ -808,7 +811,10 @@
   }
 
   /* ------------------------------------------------------------------ liste */
-  function renderList() {
+  const LIST_CHUNK = 60;
+  let listShown = LIST_CHUNK, listObserver = null;
+  function renderList({ more = false } = {}) {
+    if (!more) listShown = LIST_CHUNK;
     const ul = $('#list'), list = sorted(filtered());
     let ideal = 0, good = 0;
     if (state.bulk) for (const s of list) { const c = scoreOf(s).cls; if (c === 'ideal') ideal++; else if (c === 'good') good++; }
@@ -816,7 +822,7 @@
     $('#summary').innerHTML = (state.bulk ? `<span><b>${ideal} idéale${ideal > 1 ? 's' : ''}</b> · ${good} bonne${good > 1 ? 's' : ''} · ${list.length} spot${list.length > 1 ? 's' : ''}</span>` : `<span>${list.length} spots</span>`) +
       (fetched ? `<span><a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Open-Meteo</a> ${fetched}</span>` : `<span class="warn">prévisions indisponibles</span>`);
     const frag = document.createDocumentFragment();
-    for (const s of list) {
+    for (const s of list.slice(0, listShown)) {
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id), ph = photoOf(p.id);
       const li = document.createElement('li');
       li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
@@ -841,6 +847,14 @@
     }
     ul.innerHTML = ''; ul.appendChild(frag);
     if (!list.length) ul.innerHTML = '<li class="loading">Aucun spot ne correspond aux filtres.</li>';
+    if (list.length > listShown) {
+      const li = document.createElement('li'); li.innerHTML = `<button type="button" class="more">Afficher ${Math.min(LIST_CHUNK, list.length - listShown)} de plus (${list.length - listShown} restants)</button>`;
+      li.querySelector('button').onclick = () => { listShown += LIST_CHUNK; renderList({ more: true }); };
+      ul.appendChild(li);
+      // chargement automatique quand le bouton entre dans la vue
+      if (!listObserver) listObserver = new IntersectionObserver((es) => { es.forEach((e) => { if (e.isIntersecting) { listShown += LIST_CHUNK; renderList({ more: true }); } }); }, { root: $('#panels'), rootMargin: '200px' });
+      listObserver.disconnect(); listObserver.observe(li);
+    } else if (listObserver) listObserver.disconnect();
   }
 
   /* ------------------------------------------------------------------ détail */
@@ -858,6 +872,7 @@
     paintMarkers();
     $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-trip').hidden = true; $('#panel-config').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
     if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
+    buzz(8);
     renderDetailHead();
     $('#detail-body').innerHTML = '<div class="loading">Chargement des prévisions horaires…</div>';
     if (pan) panTo(s);
@@ -1083,13 +1098,44 @@
     sheet = $('#sheet'); setSheet('half');
     const order = ['peek', 'half', 'full'], cur = () => order.find((m) => sheet.classList.contains(m));
     const move = (dir) => { const i = order.indexOf(cur()); setSheet(order[Math.max(0, Math.min(2, i + dir))]); };
-    let y0 = null; const h = $('#handle');
-    h.addEventListener('touchstart', (e) => { y0 = e.touches[0].clientY; }, { passive: true });
-    h.addEventListener('touchend', (e) => { const dy = e.changedTouches[0].clientY - y0; if (Math.abs(dy) < 18) move(cur() === 'full' ? -1 : 1); else move(dy < 0 ? 1 : -1); });
-    h.addEventListener('click', () => move(cur() === 'full' ? -1 : 1));
-    const panel = $('#panels');
+    const isMobile = () => window.innerWidth < 900;
+    /* Glisser : le panneau suit le doigt ; au relâcher, aimantation vers la hauteur la plus proche
+       en tenant compte de la vitesse (un geste vif suffit à changer d'état). */
+    let drag = null;
+    const start = (y) => { if (!isMobile()) return; drag = { y0: y, h0: sheet.getBoundingClientRect().height, t0: performance.now(), y: y, t: performance.now(), moved: false }; sheet.classList.add('dragging'); };
+    const update = (y) => {
+      if (!drag) return;
+      const H = window.innerHeight, hs = { peek: H * 0.30, half: H * 0.58, full: H - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar')) - 6 };
+      let h = drag.h0 + (drag.y0 - y);
+      if (h > hs.full) h = hs.full + (h - hs.full) * 0.2; if (h < hs.peek) h = hs.peek - (hs.peek - h) * 0.2;
+      if (Math.abs(y - drag.y0) > 4) drag.moved = true;
+      drag.vy = (y - drag.y) / Math.max(1, performance.now() - drag.t); drag.y = y; drag.t = performance.now();
+      sheet.style.height = h + 'px';
+    };
+    const end = () => {
+      if (!drag) return;
+      const H = window.innerHeight, hs = { peek: H * 0.30, half: H * 0.58, full: H - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar')) - 6 };
+      const h = sheet.getBoundingClientRect().height, vy = drag.vy || 0, moved = drag.moved;
+      sheet.classList.remove('dragging'); sheet.style.height = '';
+      if (!moved) { move(cur() === 'full' ? -1 : 1); drag = null; return; }
+      let target;
+      if (Math.abs(vy) > 0.6) target = vy < 0 ? order[Math.min(2, order.indexOf(cur()) + 1)] : order[Math.max(0, order.indexOf(cur()) - 1)];
+      else target = Object.entries(hs).sort((a, b) => Math.abs(a[1] - h) - Math.abs(b[1] - h))[0][0];
+      setSheet(target); drag = null;
+    };
+    for (const zone of [$('#handle'), $('#tabs')]) {
+      zone.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && zone !== $('#handle')) return; if (e.target.closest('button') && zone !== $('#handle') && e.pointerType === 'mouse') return; start(e.clientY); zone.setPointerCapture?.(e.pointerId); });
+      zone.addEventListener('pointermove', (e) => update(e.clientY));
+      zone.addEventListener('pointerup', (e) => { const wasDrag = drag && drag.moved; end(); if (wasDrag && e.target.closest('button')) e.preventDefault(); });
+      zone.addEventListener('pointercancel', end);
+    }
+    $('#tabs').addEventListener('click', (e) => { if (drag) e.stopPropagation(); }, true);
+    // Tirer vers le bas depuis le haut de la liste replie le panneau (tactile uniquement)
+    const panel = $('#panels'); let y0 = null;
     panel.addEventListener('touchstart', (e) => { y0 = panel.scrollTop === 0 ? e.touches[0].clientY : null; }, { passive: true });
-    panel.addEventListener('touchend', (e) => { if (y0 == null) return; const dy = e.changedTouches[0].clientY - y0; if (dy > 70 && panel.scrollTop === 0) move(-1); y0 = null; });
+    panel.addEventListener('touchend', (e) => { if (y0 == null) return; const dy = e.changedTouches[0].clientY - y0; if (dy > 70 && panel.scrollTop === 0) move(-1); y0 = null; }, { passive: true });
+    // Clavier : la recherche déploie le panneau pour rester visible au-dessus du clavier
+    $('#q').addEventListener('focus', () => { if (isMobile()) setSheet('full'); });
   }
 
   /* ------------------------------------------------------------------ filtres & réglages */

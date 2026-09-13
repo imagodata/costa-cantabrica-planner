@@ -25,8 +25,10 @@ deux listes sur l'autre téléphone.
 - **Deux voyageurs** : prénoms personnalisables, envies ♡ distinctes par personne, filtre
   « envies communes », **partage par lien** (Web Share sur mobile, sinon presse-papiers),
   export GeoJSON des envies.
-- **Mobile** : panneau glissant (3 hauteurs), gros boutons tactiles, géolocalisation et tri
-  par distance, installable sur l'écran d'accueil (manifest PWA), thème sombre automatique.
+- **Mobile et tactile** : panneau glissant qui suit le doigt (trois hauteurs, aimantation selon
+  la vitesse du geste), glisser la carte replie le panneau, toucher un repère le rouvre, la
+  recherche déploie le panneau au-dessus du clavier, liste rendue par lots au défilement, zones
+  sûres iOS, retour haptique, installable sur l'écran d'accueil (manifest PWA), thème sombre.
 - **Photos** : galerie Wikimedia Commons par spot (jusqu'à 10 images : catégorie Commons,
   Wikidata, photos géolocalisées), repli Openverse, avec crédit et licence, en carrousel en tête
   de fiche et en vignette dans la liste. Chaque galerie se termine par une **vue aérienne**

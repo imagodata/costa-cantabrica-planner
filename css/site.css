@@ -12,7 +12,10 @@ a { color: var(--accent); }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
 .brand .mark { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; }
 .brand b { font-size: 18px; } .brand small { display: block; font-size: 12px; color: var(--muted); line-height: 1.1; }
-.hero { margin: 28px 0 20px; }
+.cover { margin: 20px 0 0; position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 16 / 9; max-width: 100%; background: #1b3a4b; }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 12px 8px; font-size: 11px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.6)); }
+.hero { margin: 20px 0 20px; }
 .hero h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 0 0 10px; letter-spacing: -.01em; }
 .hero p { font-size: 17px; color: var(--muted); margin: 0; max-width: 56ch; }
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, var(--bg)); color: var(--accent); font-size: 12.5px; font-weight: 600; margin-bottom: 12px; }
