@@ -48,6 +48,16 @@ deux listes sur l'autre téléphone.
   (répartit les envies sur les jours selon le score, en pénalisant l'éloignement de
   l'hébergement), lien Google Maps par jour avec départ et retour à l'hébergement, tout
   partagé par lien.
+- **Page de configuration** (icône voyageurs) : prénoms et « qui je suis », résidence
+  (recherche, position GPS, point sur la carte, nom), période du séjour (dates d'arrivée et de
+  départ), planning dynamique, retour quotidien, déjeuner proposé, plages par jour, rayon
+  depuis la résidence, profil par défaut, couches, partage, export, remise à zéro, crédits.
+- **Séjour dynamique** : en mode dynamique, le planning est recalculé à chaque mise à jour des
+  prévisions à partir des envies et des préférences ; toute modification manuelle d'une étape
+  fige le planning (mode manuel), réactivable d'un geste.
+- **Carte** : les lieux secondaires retenus dans les programmes (restos, visites) restent
+  visibles dans toutes les vues, cerclés et reliés à leur plage, ainsi que le parcours du
+  séjour (tracé discret) et la résidence.
 - **Liens courts par plage** : `index.html#<slug>` ouvre la fiche ; `s/<slug>.html` est une page
   de partage avec aperçu (titre, photo) qui redirige vers la fiche. Le bouton « partager » d'une
   fiche copie ce lien.
@@ -72,7 +82,8 @@ Les prévisions sont mises en cache dans le navigateur pendant 60 min.
 ## Utilisation
 
 Hébergée sur GitHub Pages : ouvrir la page, choisir le jour et le profil, parcourir la liste
-classée ou toucher un point de la carte.
+classée ou toucher un point de la carte. Vues directes : `index.html#view=trip`,
+`#view=config`, `#view=wishes` ; fiche : `#<slug>`.
 
 En local :
 
