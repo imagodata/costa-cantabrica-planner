@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <title>Costa Cantábrica · plages & criques</title>
+  <meta name="description" content="Sélecteur de plages et criques des Asturies et de Cantabrie, avec prévisions météo, houle et marées pour planifier vos sorties.">
+  <meta name="theme-color" content="#0b6e99">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏖️</text></svg>">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🏖️ Costa<small>Asturias · Cantabria</small></div>
+    <div class="spacer"></div>
+    <div class="who" id="who"></div>
+    <div class="days" id="days" aria-label="Choix du jour"></div>
+    <button class="iconbtn" id="btn-profile" title="Profil d'activité & voyageurs">🏖️</button>
+    <button class="iconbtn" id="btn-filters" title="Filtres & tri">⚙️</button>
+  </header>
+
+  <div id="map" role="application" aria-label="Carte des plages"></div>
+  <div class="map-tools">
+    <button class="iconbtn" id="btn-locate" title="Ma position">📍</button>
+    <button class="iconbtn" id="btn-share" title="Partager la sélection">🔗</button>
+    <button class="iconbtn" id="btn-list" title="Liste">☰</button>
+  </div>
+
+  <aside id="sheet" class="sheet half">
+    <div class="handle" id="handle" aria-label="Agrandir ou réduire le panneau"></div>
+    <div class="panel" id="panels">
+      <section id="panel-list">
+        <div class="toolbar">
+          <input id="q" type="search" placeholder="Rechercher une plage…" autocomplete="off">
+        </div>
+        <div class="summary" id="summary"></div>
+        <ul class="list" id="list"><li class="loading">Chargement…</li></ul>
+      </section>
+      <section id="panel-detail" class="detail" hidden>
+        <div id="detail-head"></div>
+        <div id="detail-body"></div>
+      </section>
+    </div>
+  </aside>
+
+  <dialog id="dlg-filters">
+    <form method="dialog" class="dlg" onsubmit="return false">
+      <h2>Filtres & tri</h2>
+      <label>Province
+        <select id="f-province"><option value="all">Asturies + Cantabrie</option><option value="Asturias">Asturies</option><option value="Cantabria">Cantabrie</option></select></label>
+      <label>Type
+        <select id="f-type"><option value="all">Plages et criques</option><option value="playa">Plages</option><option value="cala">Criques</option></select></label>
+      <label>Surface
+        <select id="f-surface"><option value="all">Toutes</option><option value="sand">Sable</option><option value="other">Galets / rochers / inconnue</option></select></label>
+      <label>Envies
+        <select id="f-wish"><option value="all">Tous les spots</option><option value="any">Au moins une envie</option><option value="both">Envies communes</option><option value="a">envies de A</option><option value="b">envies de B</option></select></label>
+      <label>Score minimum : <output id="f-min-out">0</output>/100
+        <input id="f-min" type="range" min="0" max="90" step="5" value="0"></label>
+      <label>Tri
+        <select id="f-sort"><option value="score">Meilleur score</option><option value="dist">Distance (après 📍)</option><option value="name">Nom</option><option value="size">Taille</option></select></label>
+      <div class="row"><button class="btn ghost" id="f-reset" type="button">Réinitialiser</button><button class="btn" id="f-apply" type="button">Appliquer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-profile">
+    <form method="dialog" class="dlg" onsubmit="return false">
+      <h2>Profil d'activité</h2>
+      <div class="profiles" id="profiles"></div>
+      <h2>Voyageurs</h2>
+      <div class="user-row"><span class="dot a"></span><input type="text" id="u-a" maxlength="14" placeholder="Prénom 1"></div>
+      <div class="user-row"><span class="dot b"></span><input type="text" id="u-b" maxlength="14" placeholder="Prénom 2"></div>
+      <p style="margin:0;font-size:12px;color:var(--muted)">Chacun marque ses envies ♡ ; le lien de partage fusionne les deux listes sur l'autre téléphone.</p>
+      <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
+        <button class="btn ghost" id="u-share" type="button">🔗 Partager</button>
+        <button class="btn ghost" id="u-export" type="button">⬇ GeoJSON</button>
+        <button class="btn ghost" id="u-refresh" type="button">🔄 Prévisions</button>
+      </div>
+      <div class="row"><button class="btn ghost close" type="button">Fermer</button><button class="btn" id="u-save" type="button">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="js/config.js"></script>
+  <script src="js/forecast.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

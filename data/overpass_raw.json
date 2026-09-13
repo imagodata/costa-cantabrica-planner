@@ -1,0 +1,5787 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-06-01T08:52:28Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 2442563017,
+  "lat": 43.5580831,
+  "lon": -6.0970507,
+  "tags": {
+    "name": "Playa de Cazonera",
+    "natural": "beach"
+  }
+},
+{
+  "type": "node",
+  "id": 3827071098,
+  "lat": 43.5766016,
+  "lon": -6.2599869,
+  "tags": {
+    "name": "Vallina",
+    "natural": "beach",
+    "wikidata": "Q19678316"
+  }
+},
+{
+  "type": "node",
+  "id": 6198817059,
+  "lat": 43.5596778,
+  "lon": -6.1022218,
+  "tags": {
+    "lifeguard": "no",
+    "name": "Playa Mexa La Yegua / Playa de Los Chalanos",
+    "natural": "beach",
+    "supervised": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 11308443,
+  "bounds": {
+    "minlat": 43.5511842,
+    "minlon": -5.6258441,
+    "maxlat": 43.5526920,
+    "maxlon": -5.6223706
+  },
+  "tags": {
+    "name": "Playa de Peñarrubia",
+    "natural": "beach",
+    "wikidata": "Q18933461"
+  }
+},
+{
+  "type": "way",
+  "id": 25885635,
+  "bounds": {
+    "minlat": 43.5059594,
+    "minlon": -5.2710324,
+    "maxlat": 43.5093248,
+    "maxlon": -5.2683209
+  },
+  "tags": {
+    "name": "Playa de Llastres",
+    "name:en": "Llastres' beach",
+    "name:es": "Playa de Lastres",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 25924040,
+  "bounds": {
+    "minlat": 43.4560786,
+    "minlon": -4.9382120,
+    "maxlat": 43.4580994,
+    "maxlon": -4.9350762
+  },
+  "tags": {
+    "name": "Playa de las Cuevas del Mar",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18418160",
+    "wikipedia": "es:Playa de Cuevas del Mar"
+  }
+},
+{
+  "type": "way",
+  "id": 27226148,
+  "bounds": {
+    "minlat": 43.4742035,
+    "minlon": -3.7886292,
+    "maxlat": 43.4801723,
+    "maxlon": -3.7832574
+  },
+  "tags": {
+    "alt_name": "Playa Segunda del Sardinero",
+    "name": "Segunda Playa de El Sardinero",
+    "natural": "beach",
+    "old_name": "Playa de Castañeda",
+    "surface": "sand",
+    "wikidata": "Q24019705",
+    "wikipedia": "es:Playa del Sardinero"
+  }
+},
+{
+  "type": "way",
+  "id": 27226149,
+  "bounds": {
+    "minlat": 43.4717201,
+    "minlon": -3.7836680,
+    "maxlat": 43.4743918,
+    "maxlon": -3.7800443
+  },
+  "tags": {
+    "alt_name": "Playa Primera del Sardinero",
+    "name": "Primera Playa de El Sardinero",
+    "natural": "beach",
+    "wikidata": "Q24019705",
+    "wikimedia_commons": "Category:Playa de El Sardinero",
+    "wikipedia": "es:Playa del Sardinero"
+  }
+},
+{
+  "type": "way",
+  "id": 28422652,
+  "bounds": {
+    "minlat": 43.4687331,
+    "minlon": -3.7767458,
+    "maxlat": 43.4706132,
+    "maxlon": -3.7742243
+  },
+  "tags": {
+    "name": "Playa del Camello",
+    "name:en": "El Camello Beach",
+    "name:es": "Playa del Camello",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078715",
+    "wikimedia_commons": "Category:Playa Del Camello",
+    "wikipedia": "es:Playa de El Camello"
+  }
+},
+{
+  "type": "way",
+  "id": 28423268,
+  "bounds": {
+    "minlat": 43.4638479,
+    "minlon": -3.7808678,
+    "maxlat": 43.4672390,
+    "maxlon": -3.7741102
+  },
+  "tags": {
+    "name": "Playa de los Peligros",
+    "natural": "beach",
+    "wikidata": "Q6079202",
+    "wikimedia_commons": "Category:Playa de los Peligros",
+    "wikipedia": "es:Playa de los Peligros"
+  }
+},
+{
+  "type": "way",
+  "id": 28423269,
+  "bounds": {
+    "minlat": 43.4668339,
+    "minlon": -3.7742703,
+    "maxlat": 43.4681336,
+    "maxlon": -3.7700988
+  },
+  "tags": {
+    "name": "Playa de la Magdalena",
+    "name:en": "Magdalena Beach",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078808",
+    "wikimedia_commons": "Category:Playa de la Magdalena",
+    "wikipedia": "es:Playa de La Magdalena"
+  }
+},
+{
+  "type": "way",
+  "id": 28423344,
+  "bounds": {
+    "minlat": 43.4853383,
+    "minlon": -3.7884351,
+    "maxlat": 43.4866718,
+    "maxlon": -3.7873126
+  },
+  "tags": {
+    "name": "Playa de Mataleñas",
+    "natural": "beach",
+    "old_name": "Cala Mataleña",
+    "surface": "sand",
+    "wikidata": "Q6005692",
+    "wikipedia": "es:Playa de Mataleñas"
+  }
+},
+{
+  "type": "way",
+  "id": 28423544,
+  "bounds": {
+    "minlat": 43.4834756,
+    "minlon": -3.7851102,
+    "maxlat": 43.4840111,
+    "maxlon": -3.7844267
+  },
+  "tags": {
+    "name": "Playa de los Molinucos",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079197",
+    "wikipedia": "es:Playa de los Molinucos"
+  }
+},
+{
+  "type": "way",
+  "id": 28951920,
+  "bounds": {
+    "minlat": 43.4781735,
+    "minlon": -3.8384174,
+    "maxlat": 43.4808360,
+    "maxlon": -3.8353224
+  },
+  "tags": {
+    "name": "Playa de La Maruca",
+    "natural": "beach",
+    "wikidata": "Q5964281",
+    "wikipedia": "es:La Maruca"
+  }
+},
+{
+  "type": "way",
+  "id": 36867798,
+  "bounds": {
+    "minlat": 43.6245193,
+    "minlon": -5.8789392,
+    "maxlat": 43.6280934,
+    "maxlon": -5.8748889
+  },
+  "tags": {
+    "name": "Playa de Verdicio",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q19360708"
+  }
+},
+{
+  "type": "way",
+  "id": 36867810,
+  "bounds": {
+    "minlat": 43.6231496,
+    "minlon": -5.8837524,
+    "maxlat": 43.6248715,
+    "maxlon": -5.8793864
+  },
+  "tags": {
+    "name": "Playa Carniciega",
+    "natural": "beach",
+    "wikidata": "Q19360681"
+  }
+},
+{
+  "type": "way",
+  "id": 36867812,
+  "bounds": {
+    "minlat": 43.6224279,
+    "minlon": -5.8891084,
+    "maxlat": 43.6242132,
+    "maxlon": -5.8845644
+  },
+  "tags": {
+    "name": "Playa La Aguilera",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q19339035"
+  }
+},
+{
+  "type": "way",
+  "id": 36867820,
+  "bounds": {
+    "minlat": 43.6227983,
+    "minlon": -5.9064274,
+    "maxlat": 43.6235892,
+    "maxlon": -5.9053871
+  },
+  "tags": {
+    "name": "Playa Riba Pachón",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 36867824,
+  "bounds": {
+    "minlat": 43.5974859,
+    "minlon": -5.9292798,
+    "maxlat": 43.6103954,
+    "maxlon": -5.9124976
+  },
+  "tags": {
+    "name": "Playa de Xagó",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079079"
+  }
+},
+{
+  "type": "way",
+  "id": 36867835,
+  "bounds": {
+    "minlat": 43.5767504,
+    "minlon": -5.9835071,
+    "maxlat": 43.5778236,
+    "maxlon": -5.9797543
+  },
+  "tags": {
+    "name": "Playa de Arnao",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 36867837,
+  "bounds": {
+    "minlat": 43.5712758,
+    "minlon": -5.9968306,
+    "maxlat": 43.5741297,
+    "maxlon": -5.9944928
+  },
+  "tags": {
+    "name": "Playa de El Puerto",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 36867838,
+  "bounds": {
+    "minlat": 43.5729387,
+    "minlon": -5.9990719,
+    "maxlat": 43.5745801,
+    "maxlon": -5.9966232
+  },
+  "tags": {
+    "name": "Playa de Santa María del Mar",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 36867841,
+  "bounds": {
+    "minlat": 43.5770738,
+    "minlon": -6.0069783,
+    "maxlat": 43.5781492,
+    "maxlon": -6.0037341
+  },
+  "tags": {
+    "name": "Playa Bahínas",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 36867845,
+  "bounds": {
+    "minlat": 43.5789010,
+    "minlon": -6.0137614,
+    "maxlat": 43.5804246,
+    "maxlon": -6.0109580
+  },
+  "tags": {
+    "name": "Playa de Munielles",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 36867848,
+  "bounds": {
+    "minlat": 43.5661643,
+    "minlon": -6.0635634,
+    "maxlat": 43.5795851,
+    "maxlon": -6.0356134
+  },
+  "tags": {
+    "name": "Playón de Bayas / El Sablón",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 36867849,
+  "bounds": {
+    "minlat": 43.5635961,
+    "minlon": -6.0758185,
+    "maxlat": 43.5667376,
+    "maxlon": -6.0630112
+  },
+  "tags": {
+    "name": "Playa de los Quebrantos",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079206"
+  }
+},
+{
+  "type": "way",
+  "id": 37848194,
+  "bounds": {
+    "minlat": 43.4985801,
+    "minlon": -5.2665518,
+    "maxlat": 43.5047756,
+    "maxlon": -5.2541731
+  },
+  "tags": {
+    "name": "Playa de La Griega",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079118"
+  }
+},
+{
+  "type": "way",
+  "id": 38292453,
+  "bounds": {
+    "minlat": 43.5443865,
+    "minlon": -5.5312443,
+    "maxlat": 43.5470260,
+    "maxlon": -5.5259994
+  },
+  "tags": {
+    "name": "Playa España",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078742"
+  }
+},
+{
+  "type": "way",
+  "id": 38292539,
+  "bounds": {
+    "minlat": 43.5462535,
+    "minlon": -5.5911908,
+    "maxlat": 43.5478479,
+    "maxlon": -5.5892850
+  },
+  "tags": {
+    "name": "Playa de La Ñora",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079149"
+  }
+},
+{
+  "type": "way",
+  "id": 38834953,
+  "bounds": {
+    "minlat": 43.4731311,
+    "minlon": -3.8944155,
+    "maxlat": 43.4745641,
+    "maxlon": -3.8922514
+  },
+  "tags": {
+    "alt_name": "Playa de la Casuca",
+    "name": "Playa de San Juan de la Canal",
+    "natural": "beach",
+    "wikidata": "Q6078992"
+  }
+},
+{
+  "type": "way",
+  "id": 39351396,
+  "bounds": {
+    "minlat": 43.5591371,
+    "minlon": -6.6194332,
+    "maxlat": 43.5628270,
+    "maxlon": -6.6102639
+  },
+  "tags": {
+    "name": "Playa de Barayu",
+    "name:es": "Playa de Barayo",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q9060645"
+  }
+},
+{
+  "type": "way",
+  "id": 39351398,
+  "bounds": {
+    "minlat": 43.5513739,
+    "minlon": -6.6004554,
+    "maxlat": 43.5551810,
+    "maxlon": -6.5931975
+  },
+  "tags": {
+    "name": "Playa d'Outur",
+    "name:ast": "Playa d'Outur",
+    "name:es": "Playa de Otur",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 40627397,
+  "bounds": {
+    "minlat": 43.4676408,
+    "minlon": -3.7264270,
+    "maxlat": 43.4695423,
+    "maxlon": -3.7252078
+  },
+  "tags": {
+    "alt_name": "Boo",
+    "loc_name": "La Playuca",
+    "name": "Playa de los Tranquilos",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 40627479,
+  "bounds": {
+    "minlat": 43.4616676,
+    "minlon": -3.7276191,
+    "maxlat": 43.4668108,
+    "maxlon": -3.7247561
+  },
+  "tags": {
+    "name": "Playa de Loredo",
+    "natural": "beach",
+    "wikidata": "Q123076252"
+  }
+},
+{
+  "type": "way",
+  "id": 42202282,
+  "bounds": {
+    "minlat": 43.4162152,
+    "minlon": -4.7448358,
+    "maxlat": 43.4174926,
+    "maxlon": -4.7421083
+  },
+  "tags": {
+    "name": "Playa de Toró",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18748393"
+  }
+},
+{
+  "type": "way",
+  "id": 42203106,
+  "bounds": {
+    "minlat": 43.4222378,
+    "minlon": -4.7533499,
+    "maxlat": 43.4232043,
+    "maxlon": -4.7519101
+  },
+  "tags": {
+    "name": "Playa del Sablón",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18744473",
+    "wikipedia": "es:Playa de El Sablón"
+  }
+},
+{
+  "type": "way",
+  "id": 42730757,
+  "bounds": {
+    "minlat": 43.5661100,
+    "minlon": -6.9546900,
+    "maxlat": 43.5664500,
+    "maxlon": -6.9538300
+  },
+  "tags": {
+    "name": "Playa De La Paloma",
+    "natural": "beach",
+    "source": "Cesar Fraga Bobis"
+  }
+},
+{
+  "type": "way",
+  "id": 42730893,
+  "bounds": {
+    "minlat": 43.5694440,
+    "minlon": -6.9392158,
+    "maxlat": 43.5703751,
+    "maxlon": -6.9359438
+  },
+  "tags": {
+    "name": "Playa de Represas",
+    "name:gl": "Praia de Represas",
+    "natural": "beach",
+    "wikidata": "Q17625327"
+  }
+},
+{
+  "type": "way",
+  "id": 42730896,
+  "bounds": {
+    "minlat": 43.5633765,
+    "minlon": -6.9510242,
+    "maxlat": 43.5676600,
+    "maxlon": -6.9470564
+  },
+  "tags": {
+    "name": "Playa de Los Campos",
+    "name:gl": "Praia dos Campos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 42730982,
+  "bounds": {
+    "minlat": 43.5549228,
+    "minlon": -6.9889654,
+    "maxlat": 43.5564423,
+    "maxlon": -6.9863127
+  },
+  "tags": {
+    "alt_name": "A Ribeiria",
+    "dog": "no",
+    "name": "Playa de Santa Gadea",
+    "name:gl": "Praia de Santa Gadía",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 42731080,
+  "bounds": {
+    "minlat": 43.5516696,
+    "minlon": -7.0012246,
+    "maxlat": 43.5548948,
+    "maxlon": -6.9924067
+  },
+  "tags": {
+    "dog": "no",
+    "name": "Playa de Peñarronda",
+    "name:gl": "Praia de Penarronda",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078938"
+  }
+},
+{
+  "type": "way",
+  "id": 42961558,
+  "bounds": {
+    "minlat": 43.5567992,
+    "minlon": -6.9817163,
+    "maxlat": 43.5579417,
+    "maxlon": -6.9796363
+  },
+  "tags": {
+    "name": "Playa del Sarello",
+    "name:es": "Playa del Sarello",
+    "name:gl": "Praia del Sarello",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 44907283,
+  "bounds": {
+    "minlat": 43.4979793,
+    "minlon": -3.5433157,
+    "maxlat": 43.4987768,
+    "maxlon": -3.5413926
+  },
+  "tags": {
+    "alt_name": "Playa de Quejo",
+    "name": "Playa del Sable",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q2835168",
+    "wikipedia": "es:Playa del Sable (Arnuero)"
+  }
+},
+{
+  "type": "way",
+  "id": 44907667,
+  "bounds": {
+    "minlat": 43.4998176,
+    "minlon": -3.5417765,
+    "maxlat": 43.5010149,
+    "maxlon": -3.5406290
+  },
+  "tags": {
+    "name": "Playa de Arnadal",
+    "natural": "beach",
+    "wikidata": "Q113653853"
+  }
+},
+{
+  "type": "way",
+  "id": 44908433,
+  "bounds": {
+    "minlat": 43.4959828,
+    "minlon": -3.5426338,
+    "maxlat": 43.4964730,
+    "maxlon": -3.5420821
+  },
+  "tags": {
+    "name": "Playa de los Barcos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 50157286,
+  "bounds": {
+    "minlat": 43.4416065,
+    "minlon": -4.8552262,
+    "maxlat": 43.4439535,
+    "maxlon": -4.8485055
+  },
+  "tags": {
+    "name": "Torimbia",
+    "natural": "beach",
+    "nudism": "yes",
+    "surface": "sand",
+    "wikidata": "Q6149186"
+  }
+},
+{
+  "type": "way",
+  "id": 53881236,
+  "bounds": {
+    "minlat": 43.4337626,
+    "minlon": -4.0451389,
+    "maxlat": 43.4376486,
+    "maxlon": -4.0358842
+  },
+  "tags": {
+    "name": "Playa de la Concha",
+    "natural": "beach",
+    "wikidata": "Q6078797",
+    "wikipedia": "es:Playa de La Concha (Suances)"
+  }
+},
+{
+  "type": "way",
+  "id": 54513375,
+  "bounds": {
+    "minlat": 43.4123064,
+    "minlon": -3.3714762,
+    "maxlat": 43.4132555,
+    "maxlon": -3.3695348
+  },
+  "tags": {
+    "name": "Playa de San Julián",
+    "natural": "beach",
+    "wikidata": "Q6078994",
+    "wikipedia": "es:Playa de San Julián (Liendo)"
+  }
+},
+{
+  "type": "way",
+  "id": 55682741,
+  "bounds": {
+    "minlat": 43.4211980,
+    "minlon": -3.8107289,
+    "maxlat": 43.4217717,
+    "maxlon": -3.8099241
+  },
+  "tags": {
+    "name": "Playa artificial de Punta Parayas",
+    "natural": "beach",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 56460542,
+  "bounds": {
+    "minlat": 43.3845206,
+    "minlon": -3.2273258,
+    "maxlat": 43.3892192,
+    "maxlon": -3.2217013
+  },
+  "tags": {
+    "name": "Playa de Ostende o Urdiales",
+    "natural": "beach",
+    "tidal": "yes",
+    "wikidata": "Q6078920",
+    "wikipedia": "es:Playa de Ostende (Castro Urdiales)"
+  }
+},
+{
+  "type": "way",
+  "id": 60905207,
+  "bounds": {
+    "minlat": 43.4638683,
+    "minlon": -5.0556270,
+    "maxlat": 43.4650797,
+    "maxlon": -5.0539034
+  },
+  "tags": {
+    "name": "Playa de la Atalaya",
+    "natural": "beach",
+    "wikidata": "Q18763692",
+    "wikipedia": "es:Playa de La Atalaya"
+  }
+},
+{
+  "type": "way",
+  "id": 61326060,
+  "bounds": {
+    "minlat": 43.3882296,
+    "minlon": -4.3399887,
+    "maxlat": 43.3998134,
+    "maxlon": -4.3189325
+  },
+  "tags": {
+    "loc_name": "Playa del golf",
+    "name": "Playa de Oyambre",
+    "name:es": "Playa de Oyambre",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078924",
+    "wikipedia": "es:Playa de Oyambre"
+  }
+},
+{
+  "type": "way",
+  "id": 61327231,
+  "bounds": {
+    "minlat": 43.3852063,
+    "minlon": -4.3238240,
+    "maxlat": 43.3883985,
+    "maxlon": -4.3189704
+  },
+  "tags": {
+    "name": "Playa de La Rabia",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 70845672,
+  "bounds": {
+    "minlat": 43.4787364,
+    "minlon": -3.6771552,
+    "maxlat": 43.4814694,
+    "maxlon": -3.6700234
+  },
+  "tags": {
+    "alt_name": "Playa de San Miguel",
+    "loc_name": "La Canal",
+    "name": "Playa de Galizano",
+    "natural": "beach",
+    "wikidata": "Q6078757",
+    "wikipedia": "es:Playa de Galizano"
+  }
+},
+{
+  "type": "way",
+  "id": 73115979,
+  "bounds": {
+    "minlat": 43.4264481,
+    "minlon": -4.0352894,
+    "maxlat": 43.4288790,
+    "maxlon": -4.0340236
+  },
+  "tags": {
+    "name": "Playa de la Riberuca",
+    "natural": "beach",
+    "wikidata": "Q5965104"
+  }
+},
+{
+  "type": "way",
+  "id": 73504227,
+  "bounds": {
+    "minlat": 43.4304166,
+    "minlon": -4.0361639,
+    "maxlat": 43.4325826,
+    "maxlon": -4.0346624
+  },
+  "tags": {
+    "name": "Playa de la Ribera",
+    "natural": "beach",
+    "wikidata": "Q6078826",
+    "wikipedia": "es:Playa de La Ribera (Suances)"
+  }
+},
+{
+  "type": "way",
+  "id": 73655493,
+  "bounds": {
+    "minlat": 43.4411464,
+    "minlon": -4.0242450,
+    "maxlat": 43.4433440,
+    "maxlon": -4.0221498
+  },
+  "tags": {
+    "alt_name": "Playa de Umbreda",
+    "name": "Playa de los Caballos",
+    "natural": "beach",
+    "wikidata": "Q6079187",
+    "wikipedia": "es:Playa de los Caballos"
+  }
+},
+{
+  "type": "way",
+  "id": 74333380,
+  "bounds": {
+    "minlat": 43.3730239,
+    "minlon": -3.2048783,
+    "maxlat": 43.3732751,
+    "maxlon": -3.2041085
+  },
+  "tags": {
+    "alt_name": "Playa de Arcisero",
+    "name": "Playa de Arciseri",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 81243650,
+  "bounds": {
+    "minlat": 43.4410288,
+    "minlon": -4.8766316,
+    "maxlat": 43.4444210,
+    "maxlon": -4.8624481
+  },
+  "tags": {
+    "name": "Playa de San Antolín de Bedón",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078983"
+  }
+},
+{
+  "type": "way",
+  "id": 83639988,
+  "bounds": {
+    "minlat": 43.4114891,
+    "minlon": -3.3366860,
+    "maxlat": 43.4130228,
+    "maxlon": -3.3335127
+  },
+  "tags": {
+    "name": "Playa de Sonabia",
+    "name:es": "Playa de Sonabia",
+    "natural": "beach",
+    "wikidata": "Q5703454",
+    "wikipedia": "es:Arenal de Sonabia"
+  }
+},
+{
+  "type": "way",
+  "id": 83639992,
+  "bounds": {
+    "minlat": 43.3958784,
+    "minlon": -3.3267943,
+    "maxlat": 43.4059158,
+    "maxlon": -3.3165286
+  },
+  "tags": {
+    "name": "Playa de Oriñón",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes",
+    "wikidata": "Q6078915",
+    "wikipedia": "es:Playa de Oriñon"
+  }
+},
+{
+  "type": "way",
+  "id": 86366229,
+  "bounds": {
+    "minlat": 43.5496120,
+    "minlon": -5.6122018,
+    "maxlat": 43.5514459,
+    "maxlon": -5.6085889
+  },
+  "tags": {
+    "name": "Playa de Serín",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 86366284,
+  "bounds": {
+    "minlat": 43.5476192,
+    "minlon": -5.5990526,
+    "maxlat": 43.5481535,
+    "maxlon": -5.5964440
+  },
+  "tags": {
+    "name": "Playa de Estaño",
+    "natural": "beach",
+    "wikidata": "Q18932022"
+  }
+},
+{
+  "type": "way",
+  "id": 93411417,
+  "bounds": {
+    "minlat": 43.5486395,
+    "minlon": -6.5426710,
+    "maxlat": 43.5506939,
+    "maxlon": -6.5401562
+  },
+  "tags": {
+    "name": "Playa de Salinas",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 93411419,
+  "bounds": {
+    "minlat": 43.5458825,
+    "minlon": -6.5378817,
+    "maxlat": 43.5464783,
+    "maxlon": -6.5352443
+  },
+  "tags": {
+    "name": "1ª Playa de Luarca",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 93549837,
+  "bounds": {
+    "minlat": 43.5498826,
+    "minlon": -6.5582398,
+    "maxlat": 43.5506358,
+    "maxlon": -6.5572135
+  },
+  "tags": {
+    "name": "Playa de Taurán",
+    "natural": "beach",
+    "wikidata": "Q18224678"
+  }
+},
+{
+  "type": "way",
+  "id": 95531723,
+  "bounds": {
+    "minlat": 43.5501815,
+    "minlon": -6.4700774,
+    "maxlat": 43.5516821,
+    "maxlon": -6.4684624
+  },
+  "tags": {
+    "name": "Playa de Cueva",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 95531739,
+  "bounds": {
+    "minlat": 43.5490993,
+    "minlon": -6.4768173,
+    "maxlat": 43.5528453,
+    "maxlon": -6.4705066
+  },
+  "tags": {
+    "name": "Playa de Cueva",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 102685728,
+  "bounds": {
+    "minlat": 43.3735986,
+    "minlon": -3.2133125,
+    "maxlat": 43.3750279,
+    "maxlon": -3.2096009
+  },
+  "tags": {
+    "name": "Playa Brazomar",
+    "natural": "beach",
+    "wikidata": "Q8251766",
+    "wikipedia": "es:Brazomar"
+  }
+},
+{
+  "type": "way",
+  "id": 108476984,
+  "bounds": {
+    "minlat": 43.3851466,
+    "minlon": -4.3885650,
+    "maxlat": 43.3888968,
+    "maxlon": -4.3860920
+  },
+  "tags": {
+    "alt_name": "Playa de El Rosal",
+    "name": "Playa de El Tostadero",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q5823187",
+    "wikipedia": "es:Playa de El Tostadero"
+  }
+},
+{
+  "type": "way",
+  "id": 108476990,
+  "bounds": {
+    "minlat": 43.3821243,
+    "minlon": -4.3917801,
+    "maxlat": 43.3847825,
+    "maxlon": -4.3888998
+  },
+  "tags": {
+    "alt_name": "Playa de los Vagos",
+    "dog": "yes",
+    "name": "Playa de la Maza",
+    "natural": "beach",
+    "wikidata": "Q5964309",
+    "wikipedia": "es:Playa de La Maza"
+  }
+},
+{
+  "type": "way",
+  "id": 108479308,
+  "bounds": {
+    "minlat": 43.3898162,
+    "minlon": -4.3800259,
+    "maxlat": 43.3999189,
+    "maxlon": -4.3563372
+  },
+  "tags": {
+    "alt_name": "Playa de Bederna",
+    "name": "Playa de Merón",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 110014959,
+  "bounds": {
+    "minlat": 43.4385549,
+    "minlon": -4.0030843,
+    "maxlat": 43.4402659,
+    "maxlon": -3.9984860
+  },
+  "tags": {
+    "name": "Playa de Usgo",
+    "natural": "beach",
+    "wikidata": "Q6079062",
+    "wikipedia": "es:Playa de Usgo"
+  }
+},
+{
+  "type": "way",
+  "id": 116411548,
+  "bounds": {
+    "minlat": 43.3627137,
+    "minlon": -3.1959222,
+    "maxlat": 43.3647757,
+    "maxlon": -3.1920890
+  },
+  "tags": {
+    "name": "Playa de Dicido",
+    "natural": "beach",
+    "tidal": "yes",
+    "wikidata": "Q11681226",
+    "wikipedia": "es:Dícido"
+  }
+},
+{
+  "type": "way",
+  "id": 123906712,
+  "bounds": {
+    "minlat": 43.5794241,
+    "minlon": -5.9693353,
+    "maxlat": 43.5802587,
+    "maxlon": -5.9684587
+  },
+  "tags": {
+    "name": "Playa del Cuerno",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 128274175,
+  "bounds": {
+    "minlat": 43.4744650,
+    "minlon": -3.6938326,
+    "maxlat": 43.4769102,
+    "maxlon": -3.6853005
+  },
+  "tags": {
+    "name": "Playa de Langre",
+    "natural": "beach",
+    "wikidata": "Q5400255",
+    "wikipedia": "es:Playa de Langre"
+  }
+},
+{
+  "type": "way",
+  "id": 129105242,
+  "bounds": {
+    "minlat": 43.4775908,
+    "minlon": -3.6820561,
+    "maxlat": 43.4782820,
+    "maxlon": -3.6804002
+  },
+  "tags": {
+    "name": "Playa de Arnillas",
+    "natural": "beach",
+    "wikidata": "Q6078577",
+    "wikipedia": "es:Playa de Arenilla"
+  }
+},
+{
+  "type": "way",
+  "id": 129105243,
+  "bounds": {
+    "minlat": 43.4765212,
+    "minlon": -3.6960232,
+    "maxlat": 43.4780075,
+    "maxlon": -3.6940589
+  },
+  "tags": {
+    "alt_name": "Playa de Langre",
+    "name": "Playa de Langre Pequeña",
+    "natural": "beach",
+    "nudism": "yes",
+    "wikidata": "Q5400255",
+    "wikipedia": "es:Playa de Langre"
+  }
+},
+{
+  "type": "way",
+  "id": 129106558,
+  "bounds": {
+    "minlat": 43.4733203,
+    "minlon": -3.9166452,
+    "maxlat": 43.4750687,
+    "maxlon": -3.9145897
+  },
+  "tags": {
+    "name": "Playa de La Arnía",
+    "natural": "beach",
+    "wikidata": "Q5704921",
+    "wikipedia": "es:Arnía"
+  }
+},
+{
+  "type": "way",
+  "id": 129107144,
+  "bounds": {
+    "minlat": 43.4941775,
+    "minlon": -3.6158318,
+    "maxlat": 43.4997264,
+    "maxlon": -3.6113586
+  },
+  "tags": {
+    "lifeguard": "yes",
+    "name": "Playa de Cuberris",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q5793487",
+    "wikipedia": "es:Cuberris"
+  }
+},
+{
+  "type": "way",
+  "id": 144622324,
+  "bounds": {
+    "minlat": 43.4776027,
+    "minlon": -5.2263119,
+    "maxlat": 43.4819906,
+    "maxlon": -5.2219063
+  },
+  "tags": {
+    "name": "Playa de la Isla",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079129",
+    "wikipedia": "es:Playa de La Isla"
+  }
+},
+{
+  "type": "way",
+  "id": 144622330,
+  "bounds": {
+    "minlat": 43.4761161,
+    "minlon": -5.2219832,
+    "maxlat": 43.4777804,
+    "maxlon": -5.2193868
+  },
+  "tags": {
+    "name": "Playa del Barrigón",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q5400220"
+  }
+},
+{
+  "type": "way",
+  "id": 144635798,
+  "bounds": {
+    "minlat": 43.4731597,
+    "minlon": -5.2192301,
+    "maxlat": 43.4766036,
+    "maxlon": -5.2097339
+  },
+  "tags": {
+    "name": "Playa Espasa",
+    "natural": "beach",
+    "surface": "sand",
+    "wheelchair": "yes",
+    "wikidata": "Q6079110",
+    "wikipedia": "es:Playa de La Espasa"
+  }
+},
+{
+  "type": "way",
+  "id": 144635801,
+  "bounds": {
+    "minlat": 43.4739661,
+    "minlon": -5.2098569,
+    "maxlat": 43.4755034,
+    "maxlon": -5.2038182
+  },
+  "tags": {
+    "name": "Playa de Moracey",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 144649101,
+  "bounds": {
+    "minlat": 43.4750114,
+    "minlon": -5.1993245,
+    "maxlat": 43.4758883,
+    "maxlon": -5.1949631
+  },
+  "tags": {
+    "name": "Playa de La Beciella",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18812509"
+  }
+},
+{
+  "type": "way",
+  "id": 144652811,
+  "bounds": {
+    "minlat": 43.4775776,
+    "minlon": -5.1530224,
+    "maxlat": 43.4828074,
+    "maxlon": -5.1316187
+  },
+  "tags": {
+    "alt_name": "Playa de Berbes",
+    "name": "Playa de Vega",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 157106199,
+  "bounds": {
+    "minlat": 43.4375306,
+    "minlon": -4.8173742,
+    "maxlat": 43.4386725,
+    "maxlon": -4.8155038
+  },
+  "tags": {
+    "access": "yes",
+    "name": "La Tayada",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18720045"
+  }
+},
+{
+  "type": "way",
+  "id": 159093320,
+  "bounds": {
+    "minlat": 43.4733071,
+    "minlon": -3.5178212,
+    "maxlat": 43.4823311,
+    "maxlon": -3.5048141
+  },
+  "tags": {
+    "name": "Playa de Tregandín",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes",
+    "wikidata": "Q6152065",
+    "wikipedia": "es:Playa de Tregandín"
+  }
+},
+{
+  "type": "way",
+  "id": 159113808,
+  "bounds": {
+    "minlat": 43.4104190,
+    "minlon": -3.4529561,
+    "maxlat": 43.4357585,
+    "maxlon": -3.4159887
+  },
+  "tags": {
+    "description": "La Playa de La Salvé se extiende a lo largo de 4.250 metros,​ paralela al ensanche de Laredo, entre el antiguo puerto (\"El Canto\") y la punta de arena (\"El Puntal\") que enmarca por el sur la bahía de Santoña.",
+    "lifeguard": "yes",
+    "name": "Playa de la Salvé",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q5965192",
+    "wikipedia": "es:La Salvé"
+  }
+},
+{
+  "type": "way",
+  "id": 159830117,
+  "bounds": {
+    "minlat": 43.4150272,
+    "minlon": -4.7412501,
+    "maxlat": 43.4162296,
+    "maxlon": -4.7394418
+  },
+  "tags": {
+    "name": "Playa del Cura",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 160419298,
+  "bounds": {
+    "minlat": 43.4035871,
+    "minlon": -3.3126346,
+    "maxlat": 43.4042157,
+    "maxlon": -3.3120503
+  },
+  "tags": {
+    "name": "Playa de Arenillas",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078579"
+  }
+},
+{
+  "type": "way",
+  "id": 163995475,
+  "bounds": {
+    "minlat": 43.4359036,
+    "minlon": -4.8191715,
+    "maxlat": 43.4378480,
+    "maxlon": -4.8171239
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de Troenzo",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18713987"
+  }
+},
+{
+  "type": "way",
+  "id": 163995479,
+  "bounds": {
+    "minlat": 43.4356285,
+    "minlon": -4.8241583,
+    "maxlat": 43.4374323,
+    "maxlon": -4.8219850
+  },
+  "tags": {
+    "name": "Playa Sorraos",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 165233388,
+  "bounds": {
+    "minlat": 43.5580634,
+    "minlon": -6.7178351,
+    "maxlat": 43.5590802,
+    "maxlon": -6.7158908
+  },
+  "tags": {
+    "name": "Playa del Moro",
+    "name:gl": "Praia del Mouro",
+    "natural": "beach",
+    "wikidata": "Q9060813",
+    "wikipedia": "es:Playa del Moro"
+  }
+},
+{
+  "type": "way",
+  "id": 165233392,
+  "bounds": {
+    "minlat": 43.5583822,
+    "minlon": -6.6821401,
+    "maxlat": 43.5612898,
+    "maxlon": -6.6726898
+  },
+  "tags": {
+    "name": "Playa de Frexulfe",
+    "name:ast": "Sablera de Frexulfe",
+    "natural": "beach",
+    "wikidata": "Q2888465"
+  }
+},
+{
+  "type": "way",
+  "id": 165233406,
+  "bounds": {
+    "minlat": 43.5543265,
+    "minlon": -6.7244600,
+    "maxlat": 43.5564560,
+    "maxlon": -6.7199174
+  },
+  "tags": {
+    "alt_name": "Playa de Andés",
+    "name": "Playa de Navia",
+    "name:gl": "Praia de Navia",
+    "natural": "beach",
+    "wikidata": "Q9060701"
+  }
+},
+{
+  "type": "way",
+  "id": 165235280,
+  "bounds": {
+    "minlat": 43.5558384,
+    "minlon": -6.7274460,
+    "maxlat": 43.5571635,
+    "maxlon": -6.7259779
+  },
+  "tags": {
+    "alt_name": "Playa Barra",
+    "name": "Playa de Foxos",
+    "natural": "beach",
+    "wikidata": "Q18223258"
+  }
+},
+{
+  "type": "way",
+  "id": 167978455,
+  "bounds": {
+    "minlat": 43.4490170,
+    "minlon": -4.9002027,
+    "maxlat": 43.4501057,
+    "maxlon": -4.8966727
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de La Güelga",
+    "name:ast": "Playa de La Güelga",
+    "name:es": "Playa de La Huelga",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 173310395,
+  "bounds": {
+    "minlat": 43.4589836,
+    "minlon": -4.9287823,
+    "maxlat": 43.4599668,
+    "maxlon": -4.9274334
+  },
+  "tags": {
+    "name": "Playa de San Antonio del Mar",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18714129"
+  }
+},
+{
+  "type": "way",
+  "id": 175664263,
+  "bounds": {
+    "minlat": 43.4742827,
+    "minlon": -5.1798509,
+    "maxlat": 43.4766108,
+    "maxlon": -5.1698881
+  },
+  "tags": {
+    "name": "Playa Arenal de Morís",
+    "natural": "beach",
+    "wikidata": "Q18812527"
+  }
+},
+{
+  "type": "way",
+  "id": 177004778,
+  "bounds": {
+    "minlat": 43.4099035,
+    "minlon": -4.7100217,
+    "maxlat": 43.4120494,
+    "maxlon": -4.7057104
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de Andrin",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18755861"
+  }
+},
+{
+  "type": "way",
+  "id": 178953400,
+  "bounds": {
+    "minlat": 43.4459892,
+    "minlon": -3.7729151,
+    "maxlat": 43.4487646,
+    "maxlon": -3.7709806
+  },
+  "tags": {
+    "name": "Playa de El Rostro",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 185302903,
+  "bounds": {
+    "minlat": 43.5557490,
+    "minlon": -6.4085175,
+    "maxlat": 43.5577000,
+    "maxlon": -6.4001781
+  },
+  "tags": {
+    "name": "Playa de Pluminero o Quintana",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 188647656,
+  "bounds": {
+    "minlat": 43.5794194,
+    "minlon": -5.9742504,
+    "maxlat": 43.5805891,
+    "maxlon": -5.9719973
+  },
+  "tags": {
+    "name": "Playa de El Dólar",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 195450308,
+  "bounds": {
+    "minlat": 43.5143100,
+    "minlon": -5.2682728,
+    "maxlat": 43.5154894,
+    "maxlon": -5.2672212
+  },
+  "tags": {
+    "name": "Playa l'escanu",
+    "name:ast": "Playa l'escanu",
+    "name:en": "Escanu beach",
+    "name:es": "Playa Escanu",
+    "natural": "beach",
+    "wikidata": "Q11699698"
+  }
+},
+{
+  "type": "way",
+  "id": 197770840,
+  "bounds": {
+    "minlat": 43.4371153,
+    "minlon": -3.9741108,
+    "maxlat": 43.4402320,
+    "maxlon": -3.9715397
+  },
+  "tags": {
+    "alt_name": "Playa de Usil",
+    "name": "Playa de Mogro",
+    "natural": "beach",
+    "wikidata": "Q6078907",
+    "wikipedia": "es:Playa de Mogro"
+  }
+},
+{
+  "type": "way",
+  "id": 197777972,
+  "bounds": {
+    "minlat": 43.4663794,
+    "minlon": -3.7701911,
+    "maxlat": 43.4681206,
+    "maxlon": -3.7659599
+  },
+  "tags": {
+    "name": "Playa de los Bikinis",
+    "name:en": "Bikini Beach",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079183",
+    "wikimedia_commons": "Category:Playa de los Bikinis",
+    "wikipedia": "es:Playa de los Bikinis"
+  }
+},
+{
+  "type": "way",
+  "id": 201909164,
+  "bounds": {
+    "minlat": 43.4357209,
+    "minlon": -3.9778157,
+    "maxlat": 43.4370136,
+    "maxlon": -3.9756964
+  },
+  "tags": {
+    "name": "Playa de Currucasa",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 201910797,
+  "bounds": {
+    "minlat": 43.4399738,
+    "minlon": -3.9713379,
+    "maxlat": 43.4403371,
+    "maxlon": -3.9706196
+  },
+  "tags": {
+    "name": "La Playuca",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 201943677,
+  "bounds": {
+    "minlat": 43.4397763,
+    "minlon": -3.9801541,
+    "maxlat": 43.4498057,
+    "maxlon": -3.9620733
+  },
+  "tags": {
+    "description": "La zona nudista se sitúa entre las dunas y la desembocadura de la ría de Mogro, en la más alejada de la zona de aparcamiento.",
+    "name": "Playa de Valdearenas",
+    "name:es": "Playa de Valdearenas",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q3966673",
+    "wikipedia": "es:Playa de Valdearenas"
+  }
+},
+{
+  "type": "way",
+  "id": 201950091,
+  "bounds": {
+    "minlat": 43.4424074,
+    "minlon": -3.9843957,
+    "maxlat": 43.4443167,
+    "maxlon": -3.9818025
+  },
+  "tags": {
+    "alt_name": "Playa de Rubayera",
+    "name": "Playa de Robayera",
+    "natural": "beach",
+    "wikidata": "Q6109361",
+    "wikipedia": "es:Robayera"
+  }
+},
+{
+  "type": "way",
+  "id": 204242841,
+  "bounds": {
+    "minlat": 43.6003736,
+    "minlon": -5.7723770,
+    "maxlat": 43.6033697,
+    "maxlon": -5.7708482
+  },
+  "tags": {
+    "name": "Sablera de San Pedro d'Antromero",
+    "name:es": "Playa de San Pedro de Antromero",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q19656681",
+    "wikipedia": "es:Playa de San Pedro de Antromero"
+  }
+},
+{
+  "type": "way",
+  "id": 208836960,
+  "bounds": {
+    "minlat": 43.3935182,
+    "minlon": -4.4907189,
+    "maxlat": 43.3946057,
+    "maxlon": -4.4897178
+  },
+  "tags": {
+    "name": "Playa de Aramal",
+    "natural": "beach",
+    "wikidata": "Q6078569",
+    "wikipedia": "es:Playa de Aramal"
+  }
+},
+{
+  "type": "way",
+  "id": 208836963,
+  "bounds": {
+    "minlat": 43.3888210,
+    "minlon": -4.5131725,
+    "maxlat": 43.3910798,
+    "maxlon": -4.5113895
+  },
+  "tags": {
+    "alt_name": "Playa del Pedrero",
+    "name": "Playa del Pedreru",
+    "natural": "beach",
+    "wikidata": "Q6079272",
+    "wikipedia": "es:Playa del Pedreru"
+  }
+},
+{
+  "type": "way",
+  "id": 208836964,
+  "bounds": {
+    "minlat": 43.3792835,
+    "minlon": -4.4753395,
+    "maxlat": 43.3864088,
+    "maxlon": -4.4684492
+  },
+  "tags": {
+    "name": "Playa del Sable",
+    "natural": "beach",
+    "wikidata": "Q6079290",
+    "wikipedia": "es:Playa del Sable (Val de San Vicente)"
+  }
+},
+{
+  "type": "way",
+  "id": 220364142,
+  "bounds": {
+    "minlat": 43.5219300,
+    "minlon": -5.3817889,
+    "maxlat": 43.5231387,
+    "maxlon": -5.3799651
+  },
+  "tags": {
+    "name": "Playa de Misiego",
+    "natural": "beach",
+    "wikidata": "Q18819335"
+  }
+},
+{
+  "type": "way",
+  "id": 224753683,
+  "bounds": {
+    "minlat": 43.4691801,
+    "minlon": -3.9311639,
+    "maxlat": 43.4708047,
+    "maxlon": -3.9293614
+  },
+  "tags": {
+    "name": "Playa de Portío",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6083201",
+    "wikipedia": "es:Playa de Portío"
+  }
+},
+{
+  "type": "way",
+  "id": 224830987,
+  "bounds": {
+    "minlat": 43.4683304,
+    "minlon": -3.9369598,
+    "maxlat": 43.4697207,
+    "maxlon": -3.9358003
+  },
+  "tags": {
+    "name": "Playa de Cerrías",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q5762782",
+    "wikipedia": "es:Playa de Cerrías"
+  }
+},
+{
+  "type": "way",
+  "id": 229915252,
+  "bounds": {
+    "minlat": 43.5655131,
+    "minlon": -6.2976029,
+    "maxlat": 43.5678452,
+    "maxlon": -6.2946686
+  },
+  "tags": {
+    "name": "Playa Gavieiro",
+    "name:ast": "Ribera Gavieiro",
+    "natural": "beach",
+    "source": "bing",
+    "supervised": "no",
+    "surface": "pebblestone",
+    "wikidata": "Q6078521",
+    "wikipedia": "es:Playa del Silencio"
+  }
+},
+{
+  "type": "way",
+  "id": 229915259,
+  "bounds": {
+    "minlat": 43.5692610,
+    "minlon": -6.2939044,
+    "maxlat": 43.5704751,
+    "maxlon": -6.2901173
+  },
+  "tags": {
+    "name": "Playa La Barquera",
+    "natural": "beach",
+    "supervised": "no",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 233427288,
+  "bounds": {
+    "minlat": 43.3923893,
+    "minlon": -4.5608147,
+    "maxlat": 43.3940337,
+    "maxlon": -4.5570766
+  },
+  "tags": {
+    "alt_name": "Playa de Bendía",
+    "name": "Playa de Mendía",
+    "natural": "beach",
+    "wikidata": "Q23995081"
+  }
+},
+{
+  "type": "way",
+  "id": 233427412,
+  "bounds": {
+    "minlat": 43.3933816,
+    "minlon": -4.5575344,
+    "maxlat": 43.3955575,
+    "maxlon": -4.5554372
+  },
+  "tags": {
+    "name": "Playa de Cuevas Coloradas",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 234398521,
+  "bounds": {
+    "minlat": 43.5660709,
+    "minlon": -6.9105267,
+    "maxlat": 43.5662993,
+    "maxlon": -6.9098477
+  },
+  "tags": {
+    "name": "Playa del Figo",
+    "natural": "beach",
+    "wikidata": "Q17625300"
+  }
+},
+{
+  "type": "way",
+  "id": 235890871,
+  "bounds": {
+    "minlat": 43.4836279,
+    "minlon": -3.8324698,
+    "maxlat": 43.4840942,
+    "maxlon": -3.8320070
+  },
+  "tags": {
+    "name": "Playa Rosamunda",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 235891307,
+  "bounds": {
+    "minlat": 43.4877191,
+    "minlon": -3.8265277,
+    "maxlat": 43.4885577,
+    "maxlon": -3.8247857
+  },
+  "tags": {
+    "name": "Playa de El Bocal",
+    "natural": "beach",
+    "sport": "surfing",
+    "surface": "gravel",
+    "wheelchair": "no",
+    "wikidata": "Q6079223",
+    "wikipedia": "es:Playa de El Bocal"
+  }
+},
+{
+  "type": "way",
+  "id": 235896376,
+  "bounds": {
+    "minlat": 43.4687761,
+    "minlon": -3.9455641,
+    "maxlat": 43.4697752,
+    "maxlon": -3.9442914
+  },
+  "tags": {
+    "lifeguard": "yes",
+    "name": "Playa de Somocuevas",
+    "natural": "beach",
+    "nudism": "yes",
+    "supervised": "no",
+    "surface": "sand",
+    "wikidata": "Q6079022",
+    "wikipedia": "es:Playa de Somocuevas"
+  }
+},
+{
+  "type": "way",
+  "id": 236596250,
+  "bounds": {
+    "minlat": 43.5484734,
+    "minlon": -6.4900628,
+    "maxlat": 43.5490529,
+    "maxlon": -6.4879702
+  },
+  "tags": {
+    "name": "Playa de Los Molinos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 236596251,
+  "bounds": {
+    "minlat": 43.5488928,
+    "minlon": -6.4961850,
+    "maxlat": 43.5503480,
+    "maxlon": -6.4932715
+  },
+  "tags": {
+    "name": "Playa de la Polea",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 237464824,
+  "bounds": {
+    "minlat": 43.3981197,
+    "minlon": -4.6305696,
+    "maxlat": 43.3988175,
+    "maxlon": -4.6290239
+  },
+  "tags": {
+    "name": "playa de Pendueles o Castiellu",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 237464827,
+  "bounds": {
+    "minlat": 43.3960063,
+    "minlon": -4.6103399,
+    "maxlat": 43.3962034,
+    "maxlon": -4.6099328
+  },
+  "tags": {
+    "name": "Cobiḥeru",
+    "name:ast": "Cobiḥeru",
+    "name:es": "Cobijero",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078674",
+    "wikipedia": "es:Playa de Cobijero"
+  }
+},
+{
+  "type": "way",
+  "id": 242368396,
+  "bounds": {
+    "minlat": 43.5623730,
+    "minlon": -6.8521631,
+    "maxlat": 43.5628159,
+    "maxlon": -6.8513591
+  },
+  "tags": {
+    "name": "Playa de Monellos",
+    "name:gl": "Praia de Monellos",
+    "natural": "beach",
+    "wikidata": "Q17625318"
+  }
+},
+{
+  "type": "way",
+  "id": 250844938,
+  "bounds": {
+    "minlat": 43.6055957,
+    "minlon": -5.7769315,
+    "maxlat": 43.6066061,
+    "maxlon": -5.7750994
+  },
+  "tags": {
+    "alt_name": "Playa Bigaral",
+    "name": "Playa Cristal",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 250844945,
+  "bounds": {
+    "minlat": 43.6089184,
+    "minlon": -5.7843795,
+    "maxlat": 43.6092521,
+    "maxlon": -5.7827338
+  },
+  "tags": {
+    "name": "Playa Aramar",
+    "natural": "beach",
+    "wikidata": "Q19614631",
+    "wikipedia": "es:Playa de Aramar"
+  }
+},
+{
+  "type": "way",
+  "id": 254406091,
+  "bounds": {
+    "minlat": 43.5596854,
+    "minlon": -6.7326506,
+    "maxlat": 43.5606629,
+    "maxlon": -6.7308506
+  },
+  "tags": {
+    "name": "Playa de Arnelles",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18221209",
+    "wikipedia": "es:Playa de Arnielles"
+  }
+},
+{
+  "type": "way",
+  "id": 260003632,
+  "bounds": {
+    "minlat": 43.5685237,
+    "minlon": -5.7183506,
+    "maxlat": 43.5701283,
+    "maxlon": -5.7136136
+  },
+  "tags": {
+    "name": "Peña Maria",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 260003633,
+  "bounds": {
+    "minlat": 43.5693310,
+    "minlon": -5.7225425,
+    "maxlat": 43.5711496,
+    "maxlon": -5.7181148
+  },
+  "tags": {
+    "name": "Xibares",
+    "name:es": "Xivares",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 261554499,
+  "bounds": {
+    "minlat": 43.5929577,
+    "minlon": -5.7666669,
+    "maxlat": 43.5947604,
+    "maxlon": -5.7635341
+  },
+  "tags": {
+    "name": "Sablera Rebolleres",
+    "name:es": "Playa Rebolleres",
+    "natural": "beach",
+    "wikidata": "Q19324462",
+    "wikipedia": "ast:Sablera de Rebolleres"
+  }
+},
+{
+  "type": "way",
+  "id": 261559844,
+  "bounds": {
+    "minlat": 43.5683085,
+    "minlon": -5.7140072,
+    "maxlat": 43.5690700,
+    "maxlon": -5.7123587
+  },
+  "tags": {
+    "name": "Aboño",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 261582503,
+  "bounds": {
+    "minlat": 43.5874543,
+    "minlon": -5.9201770,
+    "maxlat": 43.5906790,
+    "maxlon": -5.9144895
+  },
+  "tags": {
+    "name": "Samalandrán",
+    "name:es": "San Balandrán",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 268923112,
+  "bounds": {
+    "minlat": 43.6118542,
+    "minlon": -5.7898111,
+    "maxlat": 43.6127320,
+    "maxlon": -5.7885907
+  },
+  "tags": {
+    "name": "Playa de Samarincha",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 268923128,
+  "bounds": {
+    "minlat": 43.6078885,
+    "minlon": -5.7788060,
+    "maxlat": 43.6094605,
+    "maxlon": -5.7773764
+  },
+  "tags": {
+    "name": "Playa de Gargantera",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 271810689,
+  "bounds": {
+    "minlat": 43.5626846,
+    "minlon": -6.1921654,
+    "maxlat": 43.5699380,
+    "maxlon": -6.1825435
+  },
+  "tags": {
+    "name": "Concha de Artedo",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 272969510,
+  "bounds": {
+    "minlat": 43.6237564,
+    "minlon": -5.8992062,
+    "maxlat": 43.6248728,
+    "maxlon": -5.8981598
+  },
+  "tags": {
+    "name": "Cala Puerto Llampreu",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 276953597,
+  "bounds": {
+    "minlat": 43.4385877,
+    "minlon": -4.0331680,
+    "maxlat": 43.4394260,
+    "maxlon": -4.0325188
+  },
+  "tags": {
+    "name": "Playa del Huevo frito",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 284167513,
+  "bounds": {
+    "minlat": 43.4608971,
+    "minlon": -5.0403389,
+    "maxlat": 43.4618844,
+    "maxlon": -5.0381374
+  },
+  "tags": {
+    "name": "Playa de Arra",
+    "natural": "beach",
+    "surface": "pebblestone",
+    "wikidata": "Q18764184",
+    "wikipedia": "es:Playa de Arra"
+  }
+},
+{
+  "type": "way",
+  "id": 288671648,
+  "bounds": {
+    "minlat": 43.4692205,
+    "minlon": -3.9442856,
+    "maxlat": 43.4699320,
+    "maxlon": -3.9432895
+  },
+  "tags": {
+    "name": "Somocuevas Oeste",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 288759834,
+  "bounds": {
+    "minlat": 43.4736482,
+    "minlon": -3.9086941,
+    "maxlat": 43.4747247,
+    "maxlon": -3.9070852
+  },
+  "tags": {
+    "name": "Tómbolo de Covachos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 288877893,
+  "bounds": {
+    "minlat": 43.4628768,
+    "minlon": -3.9510382,
+    "maxlat": 43.4644837,
+    "maxlon": -3.9486754
+  },
+  "tags": {
+    "alt_name": "Playa de Pedruquías",
+    "name": "Playa del Madero",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 299784106,
+  "bounds": {
+    "minlat": 43.6128930,
+    "minlon": -5.7903053,
+    "maxlat": 43.6131505,
+    "maxlon": -5.7901059
+  },
+  "tags": {
+    "name": "Playa Samarincha",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 299863449,
+  "bounds": {
+    "minlat": 43.6433865,
+    "minlon": -5.8356177,
+    "maxlat": 43.6440440,
+    "maxlon": -5.8346585
+  },
+  "tags": {
+    "alt_name": "Playa de Viodo",
+    "name": "Playa de Arnelles",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 299921957,
+  "bounds": {
+    "minlat": 43.3926348,
+    "minlon": -4.2232359,
+    "maxlat": 43.3955843,
+    "maxlon": -4.2189909
+  },
+  "tags": {
+    "alt_name": "Playa de Cóbreces",
+    "name": "Playa de Luaña",
+    "natural": "beach",
+    "wikidata": "Q6078887",
+    "wikipedia": "es:Playa de Luaña"
+  }
+},
+{
+  "type": "way",
+  "id": 303092437,
+  "bounds": {
+    "minlat": 43.4263071,
+    "minlon": -4.7863892,
+    "maxlat": 43.4300980,
+    "maxlon": -4.7836328
+  },
+  "tags": {
+    "name": "Playa de Poo",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18729404",
+    "wikipedia": "es:Playa de Poo"
+  }
+},
+{
+  "type": "way",
+  "id": 316088321,
+  "bounds": {
+    "minlat": 43.5288290,
+    "minlon": -7.0445537,
+    "maxlat": 43.5295554,
+    "maxlon": -7.0439736
+  },
+  "tags": {
+    "name": "Praia dos Bloques",
+    "name:es": "Playa de Os Bloques",
+    "name:gl": "Praia dos Bloques",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q20543661",
+    "wikipedia": "gl:Praia dos Bloques"
+  }
+},
+{
+  "type": "way",
+  "id": 316088323,
+  "bounds": {
+    "minlat": 43.5534935,
+    "minlon": -7.0441528,
+    "maxlat": 43.5538852,
+    "maxlon": -7.0438323
+  },
+  "tags": {
+    "name": "Praia de Rochas Brancas",
+    "name:es": "Playa de Rochas Brancas",
+    "name:gl": "Praia de Rochas Brancas",
+    "natural": "beach",
+    "wikidata": "Q12398071",
+    "wikipedia": "gl:Praia das Rochas Brancas"
+  }
+},
+{
+  "type": "way",
+  "id": 319610737,
+  "bounds": {
+    "minlat": 43.5324759,
+    "minlon": -5.3862468,
+    "maxlat": 43.5353910,
+    "maxlon": -5.3741828
+  },
+  "tags": {
+    "name": "Playa de Rodiles",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078968"
+  }
+},
+{
+  "type": "way",
+  "id": 328355499,
+  "bounds": {
+    "minlat": 43.3972797,
+    "minlon": -4.5461237,
+    "maxlat": 43.3975071,
+    "maxlon": -4.5455553
+  },
+  "tags": {
+    "name": "Playa de El Regolgueru",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 333294996,
+  "bounds": {
+    "minlat": 43.5317448,
+    "minlon": -5.3114498,
+    "maxlat": 43.5335493,
+    "maxlon": -5.3060505
+  },
+  "tags": {
+    "name": "Playa del Sable",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 333872158,
+  "bounds": {
+    "minlat": 43.4432469,
+    "minlon": -4.8557872,
+    "maxlat": 43.4441349,
+    "maxlon": -4.8544032
+  },
+  "tags": {
+    "description": "Playa nudista",
+    "name": "Portacos",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 333872159,
+  "bounds": {
+    "minlat": 43.4439518,
+    "minlon": -4.8559106,
+    "maxlat": 43.4448476,
+    "maxlon": -4.8550215
+  },
+  "tags": {
+    "name": "Portaquinos",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 351506578,
+  "bounds": {
+    "minlat": 43.4112523,
+    "minlon": -4.7153570,
+    "maxlat": 43.4139012,
+    "maxlon": -4.7116139
+  },
+  "tags": {
+    "access": "yes",
+    "lifeguard": "yes",
+    "mapillary": "1025018656291157",
+    "name": "Playa de La Ballota",
+    "natural": "beach",
+    "supervised": "yes",
+    "surface": "sand",
+    "wikidata": "Q18748931"
+  }
+},
+{
+  "type": "way",
+  "id": 356104642,
+  "bounds": {
+    "minlat": 43.5541093,
+    "minlon": -6.8131502,
+    "maxlat": 43.5553509,
+    "maxlon": -6.8081098
+  },
+  "tags": {
+    "name": "Playa de Castello",
+    "natural": "beach",
+    "wikidata": "Q9060654",
+    "wikipedia": "es:Playa de Castello"
+  }
+},
+{
+  "type": "way",
+  "id": 356128878,
+  "bounds": {
+    "minlat": 43.4762466,
+    "minlon": -3.8790723,
+    "maxlat": 43.4781700,
+    "maxlon": -3.8747431
+  },
+  "tags": {
+    "name": "Playa de la Virgen del Mar",
+    "natural": "beach",
+    "wikidata": "Q2841948",
+    "wikipedia": "es:Playa de la Virgen del Mar"
+  }
+},
+{
+  "type": "way",
+  "id": 356833645,
+  "bounds": {
+    "minlat": 43.5555463,
+    "minlon": -6.7892960,
+    "maxlat": 43.5563920,
+    "maxlon": -6.7871543
+  },
+  "tags": {
+    "name": "Playa del Barco",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 357946684,
+  "bounds": {
+    "minlat": 43.5770898,
+    "minlon": -6.2225900,
+    "maxlat": 43.5797519,
+    "maxlon": -6.2177552
+  },
+  "tags": {
+    "name": "Playa de San Pedru la Ribera",
+    "name:ast": "Playa de San Pedru la Ribera",
+    "name:es": "Playa de San Pedro de la Ribera",
+    "natural": "beach",
+    "wikidata": "Q19672833"
+  }
+},
+{
+  "type": "way",
+  "id": 359230534,
+  "bounds": {
+    "minlat": 43.5476451,
+    "minlon": -6.5197661,
+    "maxlat": 43.5490059,
+    "maxlon": -6.5161939
+  },
+  "tags": {
+    "name": "Playa Portizuelu",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 363467722,
+  "bounds": {
+    "minlat": 43.4308266,
+    "minlon": -4.7925871,
+    "maxlat": 43.4312560,
+    "maxlon": -4.7917596
+  },
+  "tags": {
+    "name": "Playa de San Martín",
+    "natural": "beach",
+    "wikidata": "Q5555397"
+  }
+},
+{
+  "type": "way",
+  "id": 365977285,
+  "bounds": {
+    "minlat": 43.5607016,
+    "minlon": -6.8782730,
+    "maxlat": 43.5625640,
+    "maxlon": -6.8745252
+  },
+  "tags": {
+    "name": "Playa de Porcía",
+    "name:gl": "Praia de Porcía",
+    "natural": "beach",
+    "wikidata": "Q6078948"
+  }
+},
+{
+  "type": "way",
+  "id": 365981848,
+  "bounds": {
+    "minlat": 43.5476234,
+    "minlon": -7.0228912,
+    "maxlat": 43.5516279,
+    "maxlon": -7.0211312
+  },
+  "tags": {
+    "name": "Playa de Arnao",
+    "name:gl": "Praia de Arnao",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q17625295"
+  }
+},
+{
+  "type": "way",
+  "id": 366919077,
+  "bounds": {
+    "minlat": 43.5537016,
+    "minlon": -6.3450243,
+    "maxlat": 43.5558717,
+    "maxlon": -6.3416081
+  },
+  "tags": {
+    "name": "Playa Río Cabo",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 366954237,
+  "bounds": {
+    "minlat": 43.5589972,
+    "minlon": -6.6918486,
+    "maxlat": 43.5603620,
+    "maxlon": -6.6906633
+  },
+  "tags": {
+    "name": "Playa Fajal",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 413685308,
+  "bounds": {
+    "minlat": 43.3732458,
+    "minlon": -3.2033627,
+    "maxlat": 43.3736063,
+    "maxlon": -3.2029966
+  },
+  "tags": {
+    "name": "Cala de Los Frailes",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 413939221,
+  "bounds": {
+    "minlat": 43.3734942,
+    "minlon": -3.2091819,
+    "maxlat": 43.3739420,
+    "maxlon": -3.2085829
+  },
+  "tags": {
+    "name": "Cala de Cotolino",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 426374173,
+  "bounds": {
+    "minlat": 43.3814586,
+    "minlon": -3.2173375,
+    "maxlat": 43.3816109,
+    "maxlon": -3.2171260
+  },
+  "tags": {
+    "name": "Arenal",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 427562768,
+  "bounds": {
+    "minlat": 43.3671860,
+    "minlon": -3.1957134,
+    "maxlat": 43.3677744,
+    "maxlon": -3.1950576
+  },
+  "tags": {
+    "name": "Cala de Dícido",
+    "natural": "beach",
+    "source": "PNOA",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 429179902,
+  "bounds": {
+    "minlat": 43.5555281,
+    "minlon": -6.7872518,
+    "maxlat": 43.5563102,
+    "maxlon": -6.7835877
+  },
+  "tags": {
+    "name": "Playa del Pichel",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 429181822,
+  "bounds": {
+    "minlat": 43.5561304,
+    "minlon": -6.7837800,
+    "maxlat": 43.5607037,
+    "maxlon": -6.7804709
+  },
+  "tags": {
+    "name": "Playa de Torbas",
+    "natural": "beach",
+    "wikidata": "Q17625353"
+  }
+},
+{
+  "type": "way",
+  "id": 429393573,
+  "bounds": {
+    "minlat": 43.5855239,
+    "minlon": -6.2258095,
+    "maxlat": 43.5861122,
+    "maxlon": -6.2251351
+  },
+  "tags": {
+    "name": "Playa de Puertochico",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 437341777,
+  "bounds": {
+    "minlat": 43.4955973,
+    "minlon": -3.5433094,
+    "maxlat": 43.4961102,
+    "maxlon": -3.5428725
+  },
+  "tags": {
+    "name": "Playa de los Barcos",
+    "natural": "beach",
+    "wikidata": "Q6078866"
+  }
+},
+{
+  "type": "way",
+  "id": 454307313,
+  "bounds": {
+    "minlat": 43.3853820,
+    "minlon": -3.2185255,
+    "maxlat": 43.3856698,
+    "maxlon": -3.2179705
+  },
+  "tags": {
+    "name": "Cala El Pedregal",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 462278472,
+  "bounds": {
+    "minlat": 43.5479657,
+    "minlon": -5.6403391,
+    "maxlat": 43.5489476,
+    "maxlon": -5.6380323
+  },
+  "tags": {
+    "name": "Playa del Cervigón",
+    "name:es": "Playa del Rinconín",
+    "natural": "beach",
+    "surface": "fine_gravel",
+    "wikidata": "Q18932971",
+    "wikipedia": "es:Playa de El Rinconín"
+  }
+},
+{
+  "type": "way",
+  "id": 465671717,
+  "bounds": {
+    "minlat": 43.4049060,
+    "minlon": -3.3131807,
+    "maxlat": 43.4053863,
+    "maxlon": -3.3122178
+  },
+  "tags": {
+    "name": "Playa Puerto Refugio de Islares",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 465671719,
+  "bounds": {
+    "minlat": 43.4055276,
+    "minlon": -3.2948007,
+    "maxlat": 43.4061190,
+    "maxlon": -3.2938392
+  },
+  "tags": {
+    "name": "Playa de Cotonera",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 486066198,
+  "bounds": {
+    "minlat": 43.3995645,
+    "minlon": -4.3577024,
+    "maxlat": 43.4023723,
+    "maxlon": -4.3541590
+  },
+  "tags": {
+    "alt_name": "Playa de Merón",
+    "loc_name": "Playa de El Cabo",
+    "name": "Playa de Gerra",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 490761675,
+  "bounds": {
+    "minlat": 43.5628753,
+    "minlon": -6.3106174,
+    "maxlat": 43.5639020,
+    "maxlon": -6.3087168
+  },
+  "tags": {
+    "name": "Playa Gueirúa / Gairúa",
+    "name:ast": "Ribera Gueirúa",
+    "natural": "beach",
+    "surface": "sand",
+    "website": "https://es.wikipedia.org/wiki/Playa_de_La_Gueir%C3%BAa"
+  }
+},
+{
+  "type": "way",
+  "id": 493272372,
+  "bounds": {
+    "minlat": 43.5846262,
+    "minlon": -6.2250230,
+    "maxlat": 43.5850794,
+    "maxlon": -6.2246710
+  },
+  "tags": {
+    "name": "Playa El Castrillón",
+    "natural": "beach",
+    "surface": "pebblestone",
+    "wikidata": "Q19672842"
+  }
+},
+{
+  "type": "way",
+  "id": 496506747,
+  "bounds": {
+    "minlat": 43.5760330,
+    "minlon": -6.2711666,
+    "maxlat": 43.5768503,
+    "maxlon": -6.2690366
+  },
+  "tags": {
+    "name": "Playa de Albuerne",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 496506935,
+  "bounds": {
+    "minlat": 43.5789190,
+    "minlon": -6.2540405,
+    "maxlat": 43.5817836,
+    "maxlon": -6.2494062
+  },
+  "tags": {
+    "name": "Playa de Vivigo",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 496511802,
+  "bounds": {
+    "minlat": 43.5694872,
+    "minlon": -6.2872772,
+    "maxlat": 43.5721887,
+    "maxlon": -6.2807542
+  },
+  "tags": {
+    "name": "Playa L´Airín",
+    "name:es": "Playa Lairín",
+    "natural": "beach",
+    "wikidata": "Q19678110"
+  }
+},
+{
+  "type": "way",
+  "id": 496511974,
+  "bounds": {
+    "minlat": 43.5724827,
+    "minlon": -6.2773553,
+    "maxlat": 43.5753007,
+    "maxlon": -6.2726809
+  },
+  "tags": {
+    "name": "Playa Los Negros",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 503187326,
+  "bounds": {
+    "minlat": 43.4079275,
+    "minlon": -3.4586990,
+    "maxlat": 43.4331014,
+    "maxlon": -3.4513093
+  },
+  "tags": {
+    "name": "Playa del Regatón",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078739",
+    "wikipedia": "es:Playa del Regatón"
+  }
+},
+{
+  "type": "way",
+  "id": 503746748,
+  "bounds": {
+    "minlat": 43.4586125,
+    "minlon": -4.9451514,
+    "maxlat": 43.4588958,
+    "maxlon": -4.9447667
+  },
+  "tags": {
+    "alt_name": "Playa La Canal",
+    "lifeguard": "no",
+    "name": "Playa de Villaneuva",
+    "natural": "beach",
+    "supervised": "no",
+    "surface": "sand",
+    "wikidata": "Q18418169"
+  }
+},
+{
+  "type": "way",
+  "id": 515843864,
+  "bounds": {
+    "minlat": 43.3932135,
+    "minlon": -4.4849299,
+    "maxlat": 43.3953775,
+    "maxlon": -4.4818975
+  },
+  "tags": {
+    "name": "Playa de Amió",
+    "natural": "beach",
+    "wikidata": "Q6078562",
+    "wikipedia": "es:Playa de Amió"
+  }
+},
+{
+  "type": "way",
+  "id": 515851970,
+  "bounds": {
+    "minlat": 43.3920824,
+    "minlon": -4.5656960,
+    "maxlat": 43.3928053,
+    "maxlon": -4.5645216
+  },
+  "tags": {
+    "name": "Playa El Vivero",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 515851972,
+  "bounds": {
+    "minlat": 43.3951980,
+    "minlon": -4.5788347,
+    "maxlat": 43.3965428,
+    "maxlon": -4.5760255
+  },
+  "tags": {
+    "name": "Paya de la Acacia o Jorconera",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 515851973,
+  "bounds": {
+    "minlat": 43.4162715,
+    "minlon": -4.7324238,
+    "maxlat": 43.4171597,
+    "maxlon": -4.7287831
+  },
+  "tags": {
+    "alt_name": "Playa de Cué",
+    "name": "Playa de Antilles",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 515851975,
+  "bounds": {
+    "minlat": 43.3951889,
+    "minlon": -4.6197712,
+    "maxlat": 43.3973425,
+    "maxlon": -4.6156561
+  },
+  "tags": {
+    "name": "Playa de Buelna",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 515851981,
+  "bounds": {
+    "minlat": 43.4184587,
+    "minlon": -4.7483337,
+    "maxlat": 43.4193442,
+    "maxlon": -4.7467515
+  },
+  "tags": {
+    "name": "Puertu Chicu",
+    "name:es": "Puerto Chico",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 516058313,
+  "bounds": {
+    "minlat": 43.4513207,
+    "minlon": -3.7776310,
+    "maxlat": 43.4587903,
+    "maxlon": -3.7449215
+  },
+  "tags": {
+    "name": "Playa de El Puntal",
+    "name:es": "Playa de El Puntal",
+    "natural": "beach",
+    "nudism": "permissive",
+    "surface": "sand",
+    "wikidata": "Q6078736",
+    "wikipedia": "es:Playa de El Puntal (Cantabria)"
+  }
+},
+{
+  "type": "way",
+  "id": 516058323,
+  "bounds": {
+    "minlat": 43.4562532,
+    "minlon": -3.7451577,
+    "maxlat": 43.4626506,
+    "maxlon": -3.7262656
+  },
+  "tags": {
+    "name": "Playa de Somo",
+    "name:es": "Playa de Somo",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079020",
+    "wikipedia": "es:Playa de Somo"
+  }
+},
+{
+  "type": "way",
+  "id": 516073411,
+  "bounds": {
+    "minlat": 43.5770184,
+    "minlon": -5.9682292,
+    "maxlat": 43.5915619,
+    "maxlon": -5.9389589
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de El Espartal",
+    "name:ast": "Sablera del Espartal",
+    "name:es": "Playa de El Espartal",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q9060665",
+    "wikipedia": "ast:Sablera del Espartal"
+  }
+},
+{
+  "type": "way",
+  "id": 516090452,
+  "bounds": {
+    "minlat": 43.5511460,
+    "minlon": -6.3672715,
+    "maxlat": 43.5516936,
+    "maxlon": -6.3658714
+  },
+  "tags": {
+    "alt_name": "Playa de los Cuervos",
+    "name": "Playa de Ribón",
+    "natural": "beach",
+    "source": "Bing",
+    "wikidata": "Q18224670",
+    "wikipedia": "es:Playa de Ribón"
+  }
+},
+{
+  "type": "way",
+  "id": 516090453,
+  "bounds": {
+    "minlat": 43.5549716,
+    "minlon": -6.3782069,
+    "maxlat": 43.5563984,
+    "maxlon": -6.3713672
+  },
+  "tags": {
+    "name": "Playa del Churín",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 516090454,
+  "bounds": {
+    "minlat": 43.5603670,
+    "minlon": -6.3300237,
+    "maxlat": 43.5610671,
+    "maxlon": -6.3280765
+  },
+  "tags": {
+    "name": "Playa de Sienra",
+    "natural": "beach",
+    "source": "Bing"
+  }
+},
+{
+  "type": "way",
+  "id": 516090456,
+  "bounds": {
+    "minlat": 43.5624137,
+    "minlon": -6.1922088,
+    "maxlat": 43.5699326,
+    "maxlon": -6.1825182
+  },
+  "tags": {
+    "name": "Concha de Artedo",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 516090457,
+  "bounds": {
+    "minlat": 43.5625609,
+    "minlon": -6.3179219,
+    "maxlat": 43.5640754,
+    "maxlon": -6.3142314
+  },
+  "tags": {
+    "name": "Playa de Pumarín",
+    "natural": "beach",
+    "source": "DigitalGlobe-Premium"
+  }
+},
+{
+  "type": "way",
+  "id": 516090458,
+  "bounds": {
+    "minlat": 43.5829170,
+    "minlon": -6.2479765,
+    "maxlat": 43.5855599,
+    "maxlon": -6.2446454
+  },
+  "tags": {
+    "name": "Playa de Cueva",
+    "natural": "beach",
+    "surface": "pebblestone",
+    "wikidata": "Q19678652",
+    "wikipedia": "es:Playa de La Cueva"
+  }
+},
+{
+  "type": "way",
+  "id": 516090461,
+  "bounds": {
+    "minlat": 43.5719587,
+    "minlon": -6.2055726,
+    "maxlat": 43.5757419,
+    "maxlon": -6.1978257
+  },
+  "tags": {
+    "name": "Playa de Oleiros",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 516090462,
+  "bounds": {
+    "minlat": 43.5506672,
+    "minlon": -6.3600135,
+    "maxlat": 43.5516081,
+    "maxlon": -6.3540002
+  },
+  "tags": {
+    "name": "Playa de Tablizo",
+    "natural": "beach",
+    "source": "Bing",
+    "wikidata": "Q18224676"
+  }
+},
+{
+  "type": "way",
+  "id": 516108471,
+  "bounds": {
+    "minlat": 43.5528751,
+    "minlon": -6.4243080,
+    "maxlat": 43.5553297,
+    "maxlon": -6.4180274
+  },
+  "tags": {
+    "name": "Playa de la Estaca o Perceberos",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 516108472,
+  "bounds": {
+    "minlat": 43.5553181,
+    "minlon": -6.6042093,
+    "maxlat": 43.5566821,
+    "maxlon": -6.6019303
+  },
+  "tags": {
+    "name": "Playa de Sabugo",
+    "name:es": "Playa de Sabugo",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 516108477,
+  "bounds": {
+    "minlat": 43.5543734,
+    "minlon": -6.9784160,
+    "maxlat": 43.5576870,
+    "maxlon": -6.9726919
+  },
+  "tags": {
+    "name": "Playa de Serantes",
+    "name:es": "Playa de Serantes",
+    "name:gl": "Praia de Serantes",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 516874767,
+  "bounds": {
+    "minlat": 43.6307848,
+    "minlon": -5.8672556,
+    "maxlat": 43.6337190,
+    "maxlon": -5.8655679
+  },
+  "tags": {
+    "name": "Playa de la Cabaña",
+    "natural": "beach",
+    "source": "DigitalGlobe-Premium",
+    "wikidata": "Q19604171"
+  }
+},
+{
+  "type": "way",
+  "id": 517332406,
+  "bounds": {
+    "minlat": 43.5402414,
+    "minlon": -5.6616401,
+    "maxlat": 43.5453045,
+    "maxlon": -5.6441043
+  },
+  "tags": {
+    "dog": "no",
+    "name": "Playa de San Lorenzo",
+    "name:ar": "شاطئ سان لورينزو",
+    "name:ast": "Playa de San Llorienzu",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q9060729"
+  }
+},
+{
+  "type": "way",
+  "id": 520663412,
+  "bounds": {
+    "minlat": 43.4473899,
+    "minlon": -4.8862745,
+    "maxlat": 43.4477498,
+    "maxlon": -4.8856758
+  },
+  "tags": {
+    "alt_name": "Cala de Gulpiyuri",
+    "description": "20 meters of length by 4 meters.Very small",
+    "name": "Playa de Gulpiyuri",
+    "natural": "beach",
+    "surface": "sand",
+    "tourism": "attraction",
+    "wheelchair": "no",
+    "wikidata": "Q3753808",
+    "wikipedia": "es:Playa de Gulpiyuri"
+  }
+},
+{
+  "type": "way",
+  "id": 520990635,
+  "bounds": {
+    "minlat": 43.5875651,
+    "minlon": -6.2446655,
+    "maxlat": 43.5903690,
+    "maxlon": -6.2416422
+  },
+  "tags": {
+    "name": "Playa de Peñadoria",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 534490835,
+  "bounds": {
+    "minlat": 43.5690732,
+    "minlon": -6.2950387,
+    "maxlat": 43.5698236,
+    "maxlon": -6.2942506
+  },
+  "tags": {
+    "name": "Playa La Caladoria",
+    "natural": "beach",
+    "surface": "rocky"
+  }
+},
+{
+  "type": "way",
+  "id": 534536447,
+  "bounds": {
+    "minlat": 43.4441997,
+    "minlon": -4.8610294,
+    "maxlat": 43.4447594,
+    "maxlon": -4.8598391
+  },
+  "tags": {
+    "name": "Playa de Pestaña",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18418167",
+    "wikipedia": "es:Playa de Pestaña"
+  }
+},
+{
+  "type": "way",
+  "id": 550235807,
+  "bounds": {
+    "minlat": 43.4628663,
+    "minlon": -3.4767467,
+    "maxlat": 43.4671437,
+    "maxlon": -3.4523401
+  },
+  "tags": {
+    "name": "Playa de Berria",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q3394182",
+    "wikipedia": "es:Playa de Berria"
+  }
+},
+{
+  "type": "way",
+  "id": 554747277,
+  "bounds": {
+    "minlat": 43.5762683,
+    "minlon": -6.2656379,
+    "maxlat": 43.5788871,
+    "maxlon": -6.2540159
+  },
+  "tags": {
+    "name": "Playa de Vallina o del Gallo",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 567188825,
+  "bounds": {
+    "minlat": 43.5581238,
+    "minlon": -6.7288020,
+    "maxlat": 43.5587790,
+    "maxlon": -6.7281999
+  },
+  "tags": {
+    "name": "Playa de Foxos",
+    "natural": "beach",
+    "source": "PNOA",
+    "source:date": "2017"
+  }
+},
+{
+  "type": "way",
+  "id": 594184761,
+  "bounds": {
+    "minlat": 43.4773659,
+    "minlon": -5.1618587,
+    "maxlat": 43.4776579,
+    "maxlon": -5.1614606
+  },
+  "tags": {
+    "name": "Cala La Huelga o El Portiello",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 594236420,
+  "bounds": {
+    "minlat": 43.2952532,
+    "minlon": -5.1180598,
+    "maxlat": 43.2958456,
+    "maxlon": -5.1176915
+  },
+  "tags": {
+    "name": "Playa Fluvial del Dobra",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 608392326,
+  "bounds": {
+    "minlat": 43.3922376,
+    "minlon": -4.4320313,
+    "maxlat": 43.3936556,
+    "maxlon": -4.4308721
+  },
+  "tags": {
+    "name": "Playa de Fuentes",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q5963447",
+    "wikimedia_commons": "File:Playa y ensenada de Fuentes.jpg",
+    "wikipedia": "es:Playa de La Fuente"
+  }
+},
+{
+  "type": "way",
+  "id": 610288986,
+  "bounds": {
+    "minlat": 43.3912524,
+    "minlon": -4.2655990,
+    "maxlat": 43.3920012,
+    "maxlon": -4.2645365
+  },
+  "tags": {
+    "name": "Playa de Fonfría",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 613591481,
+  "bounds": {
+    "minlat": 43.3927126,
+    "minlon": -4.4530758,
+    "maxlat": 43.3929161,
+    "maxlon": -4.4528962
+  },
+  "tags": {
+    "name": "Playa de La Mina",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 633882674,
+  "bounds": {
+    "minlat": 43.3939774,
+    "minlon": -4.3976994,
+    "maxlat": 43.3942307,
+    "maxlon": -4.3971456
+  },
+  "tags": {
+    "name": "Cala de Liñera",
+    "natural": "beach",
+    "surface": "rock"
+  }
+},
+{
+  "type": "way",
+  "id": 642587768,
+  "bounds": {
+    "minlat": 43.5438613,
+    "minlon": -5.3998113,
+    "maxlat": 43.5455007,
+    "maxlon": -5.3990979
+  },
+  "tags": {
+    "name": "Playa de Tazones",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6079035"
+  }
+},
+{
+  "type": "way",
+  "id": 649310894,
+  "bounds": {
+    "minlat": 43.4269037,
+    "minlon": -4.0958084,
+    "maxlat": 43.4287356,
+    "maxlon": -4.0924124
+  },
+  "tags": {
+    "alt_name": "Playa de Tagle",
+    "name": "Playa El Sable",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 649463736,
+  "bounds": {
+    "minlat": 43.4679513,
+    "minlon": -3.5110242,
+    "maxlat": 43.4746927,
+    "maxlon": -3.4792489
+  },
+  "tags": {
+    "name": "Playa de El Brusco",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 651187034,
+  "bounds": {
+    "minlat": 43.5946420,
+    "minlon": -5.9399397,
+    "maxlat": 43.5955872,
+    "maxlon": -5.9387810
+  },
+  "tags": {
+    "name": "Playa del Arañón",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 651671842,
+  "bounds": {
+    "minlat": 43.5536089,
+    "minlon": -5.6145112,
+    "maxlat": 43.5553282,
+    "maxlon": -5.6131715
+  },
+  "tags": {
+    "name": "Playa de Serin",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 651671845,
+  "bounds": {
+    "minlat": 43.5723717,
+    "minlon": -5.7374833,
+    "maxlat": 43.5746621,
+    "maxlon": -5.7324632
+  },
+  "tags": {
+    "name": "Playa del Tranqueru",
+    "natural": "beach",
+    "wikidata": "Q19314215",
+    "wikipedia": "es:Playa de El Tranquero"
+  }
+},
+{
+  "type": "way",
+  "id": 651679116,
+  "bounds": {
+    "minlat": 43.3930483,
+    "minlon": -4.5096274,
+    "maxlat": 43.3938709,
+    "maxlon": -4.5081468
+  },
+  "tags": {
+    "name": "Playa de la Arenas",
+    "natural": "beach",
+    "wikidata": "Q6079155",
+    "wikipedia": "es:Playa de Las Arenas (Val de San Vicente)"
+  }
+},
+{
+  "type": "way",
+  "id": 651680851,
+  "bounds": {
+    "minlat": 43.4329173,
+    "minlon": -4.0823538,
+    "maxlat": 43.4348301,
+    "maxlon": -4.0811005
+  },
+  "tags": {
+    "name": "Playa de Punta Ballota",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 651680854,
+  "bounds": {
+    "minlat": 43.4366424,
+    "minlon": -4.0491270,
+    "maxlat": 43.4406350,
+    "maxlon": -4.0459892
+  },
+  "tags": {
+    "name": "Playa de los Locos",
+    "natural": "beach",
+    "wikidata": "Q5979921",
+    "wikipedia": "es:Playa de los Locos"
+  }
+},
+{
+  "type": "way",
+  "id": 651680856,
+  "bounds": {
+    "minlat": 43.4239461,
+    "minlon": -4.0990211,
+    "maxlat": 43.4254074,
+    "maxlon": -4.0979737
+  },
+  "tags": {
+    "name": "Playa de Santa Justa",
+    "natural": "beach",
+    "wikidata": "Q6079008"
+  }
+},
+{
+  "type": "way",
+  "id": 651758502,
+  "bounds": {
+    "minlat": 43.4503747,
+    "minlon": -3.9657424,
+    "maxlat": 43.4555202,
+    "maxlon": -3.9572534
+  },
+  "tags": {
+    "name": "Playa de Canallave",
+    "natural": "beach",
+    "wikidata": "Q3966665",
+    "wikipedia": "es:Playa de Canallave"
+  }
+},
+{
+  "type": "way",
+  "id": 656011789,
+  "bounds": {
+    "minlat": 43.5783389,
+    "minlon": -6.1914744,
+    "maxlat": 43.5788402,
+    "maxlon": -6.1899512
+  },
+  "tags": {
+    "name": "Playa del Castro",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656011790,
+  "bounds": {
+    "minlat": 43.5918812,
+    "minlon": -6.2422379,
+    "maxlat": 43.5927403,
+    "maxlon": -6.2392613
+  },
+  "tags": {
+    "name": "Playa de Gradas",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656011794,
+  "bounds": {
+    "minlat": 43.5877503,
+    "minlon": -6.2320863,
+    "maxlat": 43.5884946,
+    "maxlon": -6.2301608
+  },
+  "tags": {
+    "name": "Playa del Sable o de Deiros",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656011795,
+  "bounds": {
+    "minlat": 43.5902231,
+    "minlon": -6.2379196,
+    "maxlat": 43.5916606,
+    "maxlon": -6.2334234
+  },
+  "tags": {
+    "name": "Playa de San Cidiello",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656011796,
+  "bounds": {
+    "minlat": 43.5818512,
+    "minlon": -6.2257959,
+    "maxlat": 43.5840751,
+    "maxlon": -6.2235567
+  },
+  "tags": {
+    "name": "Playa El Castrillón",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q19672842"
+  }
+},
+{
+  "type": "way",
+  "id": 656025073,
+  "bounds": {
+    "minlat": 43.5617265,
+    "minlon": -6.0874671,
+    "maxlat": 43.5621516,
+    "maxlon": -6.0861266
+  },
+  "tags": {
+    "name": "Playa de los Espinos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656025077,
+  "bounds": {
+    "minlat": 43.5669287,
+    "minlon": -6.1683892,
+    "maxlat": 43.5684834,
+    "maxlon": -6.1620132
+  },
+  "tags": {
+    "name": "Playa de las Rubias",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656025083,
+  "bounds": {
+    "minlat": 43.5581821,
+    "minlon": -6.1333939,
+    "maxlat": 43.5588504,
+    "maxlon": -6.1320951
+  },
+  "tags": {
+    "name": "Playa de la Conchiquina",
+    "natural": "beach",
+    "surface": "stone",
+    "wikidata": "Q18649786"
+  }
+},
+{
+  "type": "way",
+  "id": 656028889,
+  "bounds": {
+    "minlat": 43.5723831,
+    "minlon": -6.2789030,
+    "maxlat": 43.5729371,
+    "maxlon": -6.2781468
+  },
+  "tags": {
+    "name": "Playa Salencia",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 656200911,
+  "bounds": {
+    "minlat": 43.5598497,
+    "minlon": -6.6988073,
+    "maxlat": 43.5605110,
+    "maxlon": -6.6981851
+  },
+  "tags": {
+    "name": "Playa del Coedo",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656203710,
+  "bounds": {
+    "minlat": 43.5624896,
+    "minlon": -6.7020034,
+    "maxlat": 43.5626523,
+    "maxlon": -6.7016987
+  },
+  "tags": {
+    "name": "Playa Las Rubías",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 656207504,
+  "bounds": {
+    "minlat": 43.5901271,
+    "minlon": -6.2438190,
+    "maxlat": 43.5922307,
+    "maxlon": -6.2421075
+  },
+  "tags": {
+    "name": "Playa Peñadoiro",
+    "natural": "beach",
+    "surface": "pebblestone",
+    "tidal": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 656212844,
+  "bounds": {
+    "minlat": 43.5859946,
+    "minlon": -6.2269053,
+    "maxlat": 43.5875289,
+    "maxlon": -6.2257834
+  },
+  "tags": {
+    "name": "Puerto Chico",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 672769335,
+  "bounds": {
+    "minlat": 43.5646311,
+    "minlon": -6.0798095,
+    "maxlat": 43.5648819,
+    "maxlon": -6.0792158
+  },
+  "tags": {
+    "name": "Playa el Garruncho",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 676771425,
+  "bounds": {
+    "minlat": 43.6563960,
+    "minlon": -5.8551305,
+    "maxlat": 43.6573269,
+    "maxlon": -5.8525956
+  },
+  "tags": {
+    "name": "Playa El Sabín",
+    "natural": "beach",
+    "surface": "pebblestone"
+  }
+},
+{
+  "type": "way",
+  "id": 678751140,
+  "bounds": {
+    "minlat": 43.4381891,
+    "minlon": -3.4475147,
+    "maxlat": 43.4389716,
+    "maxlon": -3.4433825
+  },
+  "tags": {
+    "name": "Playa de San Martín",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 700899005,
+  "bounds": {
+    "minlat": 43.4939690,
+    "minlon": -3.5443745,
+    "maxlat": 43.4945921,
+    "maxlon": -3.5435227
+  },
+  "tags": {
+    "name": "Cala Los Cuarezos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 723116742,
+  "bounds": {
+    "minlat": 43.4932785,
+    "minlon": -3.5244790,
+    "maxlat": 43.4941400,
+    "maxlon": -3.5228133
+  },
+  "tags": {
+    "name": "Playa de Ris",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes",
+    "wikidata": "Q6078966",
+    "wikipedia": "es:Playa de Ris"
+  }
+},
+{
+  "type": "way",
+  "id": 723116744,
+  "bounds": {
+    "minlat": 43.4871024,
+    "minlon": -3.5159609,
+    "maxlat": 43.4880358,
+    "maxlon": -3.5147728
+  },
+  "tags": {
+    "name": "Playa de Peña Pombera",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 729105674,
+  "bounds": {
+    "minlat": 43.5290813,
+    "minlon": -5.3853512,
+    "maxlat": 43.5298863,
+    "maxlon": -5.3845545
+  },
+  "tags": {
+    "name": "Playina de Rodiles",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 730118149,
+  "bounds": {
+    "minlat": 43.4726251,
+    "minlon": -3.8923572,
+    "maxlat": 43.4729310,
+    "maxlon": -3.8920036
+  },
+  "tags": {
+    "alt_name": "Arenal del Jortín",
+    "dog": "yes",
+    "name": "Playa del Fortín",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 730122052,
+  "bounds": {
+    "minlat": 43.4789697,
+    "minlon": -3.8391108,
+    "maxlat": 43.4792702,
+    "maxlon": -3.8387316
+  },
+  "tags": {
+    "name": "Playa de El Pescador",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 738465184,
+  "bounds": {
+    "minlat": 43.5464250,
+    "minlon": -6.5399228,
+    "maxlat": 43.5479620,
+    "maxlon": -6.5378817
+  },
+  "tags": {
+    "name": "2ª Playa de Luarca",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 755539301,
+  "bounds": {
+    "minlat": 43.5582307,
+    "minlon": -6.3952673,
+    "maxlat": 43.5591572,
+    "maxlon": -6.3901812
+  },
+  "tags": {
+    "name": "Playa de Campiecho",
+    "natural": "beach",
+    "surface": "pebblestone",
+    "wikidata": "Q18170746"
+  }
+},
+{
+  "type": "way",
+  "id": 801864886,
+  "bounds": {
+    "minlat": 43.4721473,
+    "minlon": -3.9120888,
+    "maxlat": 43.4729512,
+    "maxlon": -3.9103045
+  },
+  "tags": {
+    "description": "Arenal con zona especial para la práctica del naturismo, aunque este se suele tolerar en todo el espacio de la playa",
+    "lifeguard": "no",
+    "name": "Playa de Covachos",
+    "name:es": "Playa de Covachos",
+    "natural": "beach",
+    "nudism": "yes",
+    "supervised": "no",
+    "wikidata": "Q6078683"
+  }
+},
+{
+  "type": "way",
+  "id": 823785524,
+  "bounds": {
+    "minlat": 43.4915847,
+    "minlon": -3.5445278,
+    "maxlat": 43.4946460,
+    "maxlon": -3.5351188
+  },
+  "tags": {
+    "name": "Playa Cuarezo",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q24003936"
+  }
+},
+{
+  "type": "way",
+  "id": 824113929,
+  "bounds": {
+    "minlat": 43.4259107,
+    "minlon": -4.7651082,
+    "maxlat": 43.4260938,
+    "maxlon": -4.7647849
+  },
+  "tags": {
+    "name": "Playa La Nao",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 837818754,
+  "bounds": {
+    "minlat": 43.5555548,
+    "minlon": -6.3843294,
+    "maxlat": 43.5568813,
+    "maxlon": -6.3799589
+  },
+  "tags": {
+    "name": "Playa de los Castros",
+    "natural": "beach",
+    "wikidata": "Q18224659",
+    "wikipedia": "es:Playa de Los Castros"
+  }
+},
+{
+  "type": "way",
+  "id": 837818755,
+  "bounds": {
+    "minlat": 43.5520103,
+    "minlon": -6.3486230,
+    "maxlat": 43.5531120,
+    "maxlon": -6.3457690
+  },
+  "tags": {
+    "name": "Playa de Ballota",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 837818756,
+  "bounds": {
+    "minlat": 43.5644497,
+    "minlon": -6.3011400,
+    "maxlat": 43.5653066,
+    "maxlon": -6.2993826
+  },
+  "tags": {
+    "name": "Playa de La Ribera del Molín",
+    "natural": "beach",
+    "wikidata": "Q19678089",
+    "wikipedia": "es:Playa de La Ribera del Molín"
+  }
+},
+{
+  "type": "way",
+  "id": 837829621,
+  "bounds": {
+    "minlat": 43.5696848,
+    "minlon": -6.9485250,
+    "maxlat": 43.5701444,
+    "maxlon": -6.9480603
+  },
+  "tags": {
+    "name": "Playa a Ribeiría",
+    "name:gl": "Praia da Ribeiría",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 837829622,
+  "bounds": {
+    "minlat": 43.5677294,
+    "minlon": -6.9481700,
+    "maxlat": 43.5685448,
+    "maxlon": -6.9472552
+  },
+  "tags": {
+    "alt_name": "Playa de Maleguas",
+    "name": "Playa del Murallón",
+    "name:gl": "Praia del Murallón",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 837829623,
+  "bounds": {
+    "minlat": 43.5689273,
+    "minlon": -6.9482211,
+    "maxlat": 43.5694187,
+    "maxlon": -6.9476993
+  },
+  "tags": {
+    "name": "Playa de Las Furadas",
+    "name:gl": "Praia das Furadas",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 839046533,
+  "bounds": {
+    "minlat": 43.4343984,
+    "minlon": -4.0340904,
+    "maxlat": 43.4371109,
+    "maxlon": -4.0301624
+  },
+  "tags": {
+    "access": "yes",
+    "alt_name": "Playa de Marzán",
+    "lifeguard": "no",
+    "name": "Playa de Cuchía",
+    "natural": "beach",
+    "supervised": "no",
+    "surface": "sand",
+    "wikidata": "Q6078688",
+    "wikipedia": "es:Playa de Cuchía"
+  }
+},
+{
+  "type": "way",
+  "id": 852197513,
+  "bounds": {
+    "minlat": 43.5635165,
+    "minlon": -6.4614612,
+    "maxlat": 43.5659768,
+    "maxlon": -6.4575551
+  },
+  "tags": {
+    "name": "Playa Barchinas",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 852198441,
+  "bounds": {
+    "minlat": 43.5683439,
+    "minlon": -6.4653328,
+    "maxlat": 43.5687014,
+    "maxlon": -6.4618298
+  },
+  "tags": {
+    "name": "Playa Serrón",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 887379060,
+  "bounds": {
+    "minlat": 43.5764546,
+    "minlon": -6.2689861,
+    "maxlat": 43.5778540,
+    "maxlon": -6.2671446
+  },
+  "tags": {
+    "name": "Playa Gancedo",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 896356968,
+  "bounds": {
+    "minlat": 43.5290757,
+    "minlon": -5.3882895,
+    "maxlat": 43.5294066,
+    "maxlon": -5.3870834
+  },
+  "tags": {
+    "name": "Playa del Puntal",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 896652156,
+  "bounds": {
+    "minlat": 43.5237302,
+    "minlon": -5.3942041,
+    "maxlat": 43.5241364,
+    "maxlon": -5.3926075
+  },
+  "tags": {
+    "name": "Playa de Bonhome",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 902267588,
+  "bounds": {
+    "minlat": 43.5319833,
+    "minlon": -5.3673682,
+    "maxlat": 43.5343060,
+    "maxlon": -5.3629203
+  },
+  "tags": {
+    "name": "Playa Conejera",
+    "natural": "beach",
+    "wikidata": "Q18819344",
+    "wikipedia": "es:Playa de Conejera"
+  }
+},
+{
+  "type": "way",
+  "id": 925955626,
+  "bounds": {
+    "minlat": 43.5625329,
+    "minlon": -6.3075644,
+    "maxlat": 43.5630140,
+    "maxlon": -6.3052023
+  },
+  "tags": {
+    "name": "Playa Calabón",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 925955627,
+  "bounds": {
+    "minlat": 43.5627887,
+    "minlon": -6.3052337,
+    "maxlat": 43.5638141,
+    "maxlon": -6.3021038
+  },
+  "tags": {
+    "name": "Playa la Conchona",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 938382956,
+  "bounds": {
+    "minlat": 43.5561578,
+    "minlon": -6.1078701,
+    "maxlat": 43.5598680,
+    "maxlon": -6.1041140
+  },
+  "tags": {
+    "name": "Playas de Xan-Xún y Las Llanas",
+    "natural": "beach",
+    "wikidata": "Q19637042",
+    "wikipedia": "es:Playas de Xan-Xún y Las Llanas"
+  }
+},
+{
+  "type": "way",
+  "id": 961525275,
+  "bounds": {
+    "minlat": 43.4713577,
+    "minlon": -3.7802687,
+    "maxlat": 43.4722337,
+    "maxlon": -3.7775989
+  },
+  "tags": {
+    "name": "Playa de La Concha",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q6078794",
+    "wikimedia_commons": "Category:Playa de la Concha (Santander)",
+    "wikipedia": "es:Playa de La Concha (Santander)"
+  }
+},
+{
+  "type": "way",
+  "id": 961685890,
+  "bounds": {
+    "minlat": 43.5700634,
+    "minlon": -6.0540691,
+    "maxlat": 43.5755130,
+    "maxlon": -6.0435379
+  },
+  "tags": {
+    "leisure": "dog_park",
+    "name": "Playa de Bayas - Zona para perros",
+    "name:en": "Dog zone to the East",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 962344732,
+  "bounds": {
+    "minlat": 43.5496714,
+    "minlon": -6.0803691,
+    "maxlat": 43.5531594,
+    "maxlon": -6.0752471
+  },
+  "tags": {
+    "name": "Playa de La Llama",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 975625898,
+  "bounds": {
+    "minlat": 43.5561643,
+    "minlon": -6.3876970,
+    "maxlat": 43.5571475,
+    "maxlon": -6.3848324
+  },
+  "tags": {
+    "name": "Playa Fontaniecho",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1001998928,
+  "bounds": {
+    "minlat": 43.5812485,
+    "minlon": -6.0180591,
+    "maxlat": 43.5845573,
+    "maxlon": -6.0146054
+  },
+  "tags": {
+    "name": "Playa del Cordial",
+    "name:ast": "Sablera del Cordial",
+    "natural": "beach",
+    "source": "Instituto Geográfico Nacional"
+  }
+},
+{
+  "type": "way",
+  "id": 1003275696,
+  "bounds": {
+    "minlat": 43.5787931,
+    "minlon": -6.0365777,
+    "maxlat": 43.5811172,
+    "maxlon": -6.0343747
+  },
+  "tags": {
+    "name": "Playa de Requexinos",
+    "name:ast": "Sablera de Requexinos",
+    "natural": "beach",
+    "source": "https://www.playasdeasturias.com/playas/playa-de-requexinos/;https://www.lapontiga.com/playas-asturias/i/33069836/playa-los-requexinos;https://www.elcomercio.es/planes/playas/asturias/requexinos-0002379.html",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1023791336,
+  "bounds": {
+    "minlat": 43.5637310,
+    "minlon": -6.8268503,
+    "maxlat": 43.5643556,
+    "maxlon": -6.8259328
+  },
+  "tags": {
+    "name": "Playa de Permenande",
+    "natural": "beach",
+    "wikidata": "Q6078950",
+    "wikipedia": "es:Playa de Pormenande"
+  }
+},
+{
+  "type": "way",
+  "id": 1023800302,
+  "bounds": {
+    "minlat": 43.5555233,
+    "minlon": -6.8182869,
+    "maxlat": 43.5569477,
+    "maxlon": -6.8162494
+  },
+  "tags": {
+    "name": "Playa de Cambaredo",
+    "natural": "beach",
+    "wikidata": "Q17385211",
+    "wikipedia": "es:Playa de Cambaredo"
+  }
+},
+{
+  "type": "way",
+  "id": 1023801369,
+  "bounds": {
+    "minlat": 43.5550102,
+    "minlon": -6.8019977,
+    "maxlat": 43.5561646,
+    "maxlon": -6.7965244
+  },
+  "tags": {
+    "name": "Playa de Armaza",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1023801370,
+  "bounds": {
+    "minlat": 43.5569224,
+    "minlon": -6.7945880,
+    "maxlat": 43.5572308,
+    "maxlon": -6.7930845
+  },
+  "tags": {
+    "name": "Playa del Burro",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1023802666,
+  "bounds": {
+    "minlat": 43.5642256,
+    "minlon": -6.7808590,
+    "maxlat": 43.5656064,
+    "maxlon": -6.7760782
+  },
+  "tags": {
+    "name": "Playa del Aguión",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1056463218,
+  "bounds": {
+    "minlat": 43.5837857,
+    "minlon": -5.9201217,
+    "maxlat": 43.5863571,
+    "maxlon": -5.9182873
+  },
+  "tags": {
+    "name": "Playa de San Balandrán",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1082418340,
+  "bounds": {
+    "minlat": 43.5518746,
+    "minlon": -6.7277469,
+    "maxlat": 43.5545020,
+    "maxlon": -6.7262717
+  },
+  "tags": {
+    "name": "El Doque",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1086217889,
+  "bounds": {
+    "minlat": 43.5418551,
+    "minlon": -7.0309249,
+    "maxlat": 43.5427611,
+    "maxlon": -7.0299576
+  },
+  "tags": {
+    "name": "Playa de Figueras",
+    "name:gl": "Praia das Figueiras",
+    "natural": "beach",
+    "wikidata": "Q17625306",
+    "wikipedia": "es:Playa de Figueras"
+  }
+},
+{
+  "type": "way",
+  "id": 1087726328,
+  "bounds": {
+    "minlat": 43.5319852,
+    "minlon": -5.3358368,
+    "maxlat": 43.5328709,
+    "maxlon": -5.3297332
+  },
+  "tags": {
+    "name": "Playa Bajo de les Mueles",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1106005817,
+  "bounds": {
+    "minlat": 43.6168320,
+    "minlon": -5.7886913,
+    "maxlat": 43.6198270,
+    "maxlon": -5.7867117
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de Luanco",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes",
+    "wikidata": "Q19653511"
+  }
+},
+{
+  "type": "way",
+  "id": 1107387642,
+  "bounds": {
+    "minlat": 43.6132395,
+    "minlon": -5.7920278,
+    "maxlat": 43.6152879,
+    "maxlon": -5.7907042
+  },
+  "tags": {
+    "name": "Playa de la Ribera",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1133595943,
+  "bounds": {
+    "minlat": 43.3770846,
+    "minlon": -3.2134947,
+    "maxlat": 43.3788448,
+    "maxlon": -3.2115396
+  },
+  "tags": {
+    "lifeguard": "only in summer",
+    "name": "Solarium",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1159146265,
+  "bounds": {
+    "minlat": 43.4007700,
+    "minlon": -4.6517658,
+    "maxlat": 43.4019479,
+    "maxlon": -4.6492754
+  },
+  "tags": {
+    "name": "Playa de Bretones",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1159146267,
+  "bounds": {
+    "minlat": 43.3999750,
+    "minlon": -4.6537319,
+    "maxlat": 43.4013274,
+    "maxlon": -4.6517503
+  },
+  "tags": {
+    "name": "Playa de Vidiago",
+    "natural": "beach",
+    "surface": "sand",
+    "wikidata": "Q18759103",
+    "wikipedia": "es:Playa de Vidiago"
+  }
+},
+{
+  "type": "way",
+  "id": 1178309643,
+  "bounds": {
+    "minlat": 43.5935047,
+    "minlon": -5.9313137,
+    "maxlat": 43.5940186,
+    "maxlon": -5.9306344
+  },
+  "tags": {
+    "name": "Playa de El Embayo",
+    "natural": "beach",
+    "wikidata": "Q19346352",
+    "wikipedia": "es:Playa de El Embayo"
+  }
+},
+{
+  "type": "way",
+  "id": 1179664435,
+  "bounds": {
+    "minlat": 43.5832219,
+    "minlon": -6.0329211,
+    "maxlat": 43.5843802,
+    "maxlon": -6.0312678
+  },
+  "tags": {
+    "name": "Playa de la Barca",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1200055447,
+  "bounds": {
+    "minlat": 43.4326114,
+    "minlon": -4.0339490,
+    "maxlat": 43.4344362,
+    "maxlon": -4.0326121
+  },
+  "tags": {
+    "alt_name": "Playa de la Pozona; Playuca de la Cantera",
+    "dog": "yes",
+    "name": "La Playuca",
+    "natural": "beach",
+    "supervised": "no",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1201492286,
+  "bounds": {
+    "minlat": 43.4904425,
+    "minlon": -3.5351736,
+    "maxlat": 43.4946074,
+    "maxlon": -3.5244141
+  },
+  "tags": {
+    "name": "Playa de Ris",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes",
+    "wikidata": "Q6078966",
+    "wikipedia": "es:Playa de Ris"
+  }
+},
+{
+  "type": "way",
+  "id": 1201608329,
+  "bounds": {
+    "minlat": 43.3934870,
+    "minlon": -4.4394677,
+    "maxlat": 43.3937374,
+    "maxlon": -4.4390422
+  },
+  "tags": {
+    "alt_name": "Playa de Barnejo",
+    "loc_name": "Playa de Prellezo",
+    "name": "Playa de Berellín",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1201608330,
+  "bounds": {
+    "minlat": 43.3933740,
+    "minlon": -4.4420062,
+    "maxlat": 43.3938566,
+    "maxlon": -4.4408038
+  },
+  "tags": {
+    "alt_name": "Playa de Barnejo",
+    "loc_name": "Playa de Prellezo",
+    "name": "Playa de Berellín",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1218448330,
+  "bounds": {
+    "minlat": 43.5948315,
+    "minlon": -5.7675206,
+    "maxlat": 43.5951145,
+    "maxlon": -5.7668548
+  },
+  "tags": {
+    "name": "Playa Solfín",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1219684703,
+  "bounds": {
+    "minlat": 43.5558279,
+    "minlon": -6.9784160,
+    "maxlat": 43.5574596,
+    "maxlon": -6.9756515
+  },
+  "tags": {
+    "name": "Playa de Mexota",
+    "name:es": "Playa de Mexota",
+    "name:gl": "Praia da Mixota",
+    "natural": "beach",
+    "wikidata": "Q17266517"
+  }
+},
+{
+  "type": "way",
+  "id": 1228502890,
+  "bounds": {
+    "minlat": 43.6350730,
+    "minlon": -5.8603164,
+    "maxlat": 43.6370833,
+    "maxlon": -5.8584577
+  },
+  "tags": {
+    "name": "Playa Carnera",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1228509530,
+  "bounds": {
+    "minlat": 43.6110728,
+    "minlon": -5.7860721,
+    "maxlat": 43.6118294,
+    "maxlon": -5.7855415
+  },
+  "tags": {
+    "name": "Placa los Boletos",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1283201939,
+  "bounds": {
+    "minlat": 43.4816324,
+    "minlon": -3.8352247,
+    "maxlat": 43.4818432,
+    "maxlon": -3.8348930
+  },
+  "tags": {
+    "name": "Playa de Bañaperros",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 1283201940,
+  "bounds": {
+    "minlat": 43.4818188,
+    "minlon": -3.8358322,
+    "maxlat": 43.4821836,
+    "maxlon": -3.8356343
+  },
+  "tags": {
+    "name": "Playa de los Carabineros",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1302224266,
+  "bounds": {
+    "minlat": 43.4908192,
+    "minlon": -3.5488041,
+    "maxlat": 43.4909803,
+    "maxlon": -3.5485743
+  },
+  "tags": {
+    "name": "Playa de la Cava",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1309128373,
+  "bounds": {
+    "minlat": 43.3898905,
+    "minlon": -4.3872799,
+    "maxlat": 43.3925995,
+    "maxlon": -4.3798732
+  },
+  "tags": {
+    "name": "Playa de El Rosal",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1309954801,
+  "bounds": {
+    "minlat": 43.3917801,
+    "minlon": -4.3896985,
+    "maxlat": 43.3921337,
+    "maxlon": -4.3895215
+  },
+  "tags": {
+    "lifeguard": "no",
+    "name": "Ensenada de la Barra",
+    "natural": "beach",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 1370796081,
+  "bounds": {
+    "minlat": 43.4957381,
+    "minlon": -3.6217987,
+    "maxlat": 43.4980923,
+    "maxlon": -3.6184751
+  },
+  "tags": {
+    "name": "Playa de Antuerta",
+    "natural": "beach",
+    "wikidata": "Q5700523",
+    "wikipedia": "es:Antuerta"
+  }
+},
+{
+  "type": "way",
+  "id": 1414603341,
+  "bounds": {
+    "minlat": 43.5097662,
+    "minlon": -3.5834953,
+    "maxlat": 43.5101297,
+    "maxlon": -3.5828797
+  },
+  "tags": {
+    "lifeguard": "no",
+    "name": "Playa Canal",
+    "natural": "beach",
+    "supervised": "no",
+    "surface": "sand",
+    "wikimedia_commons": "File:Playa Canal junto al Cabo de Ajo, Cantabria, España.jpg"
+  }
+},
+{
+  "type": "way",
+  "id": 1416246959,
+  "bounds": {
+    "minlat": 43.5490226,
+    "minlon": -5.6066704,
+    "maxlat": 43.5492134,
+    "maxlon": -5.6057224
+  },
+  "tags": {
+    "name": "Playa La Cagonera",
+    "natural": "beach"
+  }
+},
+{
+  "type": "way",
+  "id": 1451985756,
+  "bounds": {
+    "minlat": 43.4623130,
+    "minlon": -3.7860733,
+    "maxlat": 43.4632184,
+    "maxlon": -3.7843785
+  },
+  "tags": {
+    "name": "Playa de La Fenómeno",
+    "natural": "beach",
+    "surface": "sand"
+  }
+},
+{
+  "type": "way",
+  "id": 1498130338,
+  "bounds": {
+    "minlat": 43.4333224,
+    "minlon": -4.0578921,
+    "maxlat": 43.4355798,
+    "maxlon": -4.0537367
+  },
+  "tags": {
+    "name": "Playa de la Tablía",
+    "natural": "beach"
+  }
+},
+{
+  "type": "relation",
+  "id": 1245737,
+  "bounds": {
+    "minlat": 43.5454302,
+    "minlon": -7.0367742,
+    "maxlat": 43.5457779,
+    "maxlon": -7.0363522
+  },
+  "tags": {
+    "name": "Praia do Cargadoiro",
+    "name:gl": "Praia do Cargadoiro",
+    "natural": "beach",
+    "type": "multipolygon",
+    "wikidata": "Q12398095",
+    "wikipedia": "gl:Praia do Cargadoiro"
+  }
+},
+{
+  "type": "relation",
+  "id": 1245738,
+  "bounds": {
+    "minlat": 43.5443388,
+    "minlon": -7.0369003,
+    "maxlat": 43.5445002,
+    "maxlon": -7.0367124
+  },
+  "tags": {
+    "name": "Praia das Cabanas",
+    "name:gl": "Praia das Cabanas",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 1380194,
+  "bounds": {
+    "minlat": 43.5490993,
+    "minlon": -6.4768173,
+    "maxlat": 43.5528453,
+    "maxlon": -6.4684624
+  },
+  "tags": {
+    "name": "Playa de Cueva",
+    "natural": "beach",
+    "type": "multipolygon",
+    "wikidata": "Q18224636"
+  }
+},
+{
+  "type": "relation",
+  "id": 1394718,
+  "bounds": {
+    "minlat": 43.5616966,
+    "minlon": -6.9591893,
+    "maxlat": 43.5647793,
+    "maxlon": -6.9550123
+  },
+  "tags": {
+    "name": "Playa de la Paloma",
+    "name:gl": "Praia da Palomba",
+    "natural": "beach",
+    "source": "PNOA",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 1554416,
+  "bounds": {
+    "minlat": 43.4652741,
+    "minlon": -5.0763488,
+    "maxlat": 43.4681004,
+    "maxlon": -5.0615953
+  },
+  "tags": {
+    "name": "Playa de Santa Marina",
+    "natural": "beach",
+    "type": "multipolygon",
+    "wheelchair": "yes",
+    "wikidata": "Q18762206",
+    "wikipedia": "es:Playa de Santa Marina"
+  }
+},
+{
+  "type": "relation",
+  "id": 1563524,
+  "bounds": {
+    "minlat": 43.4544222,
+    "minlon": -4.9834291,
+    "maxlat": 43.4573473,
+    "maxlon": -4.9811521
+  },
+  "tags": {
+    "name": "Playa de Guadamía",
+    "name:ast": "Playa de Aguamía",
+    "natural": "beach",
+    "tidal": "yes",
+    "type": "multipolygon",
+    "wikidata": "Q18713988"
+  }
+},
+{
+  "type": "relation",
+  "id": 1756829,
+  "bounds": {
+    "minlat": 43.3871719,
+    "minlon": -4.2900329,
+    "maxlat": 43.3911400,
+    "maxlon": -4.2795264
+  },
+  "tags": {
+    "name": "Playa de Comillas",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q6078678"
+  }
+},
+{
+  "type": "relation",
+  "id": 1957382,
+  "bounds": {
+    "minlat": 43.5436500,
+    "minlon": -5.4951639,
+    "maxlat": 43.5444150,
+    "maxlon": -5.4930691
+  },
+  "tags": {
+    "name": "Playa de Merón",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q6078902"
+  }
+},
+{
+  "type": "relation",
+  "id": 2129524,
+  "bounds": {
+    "minlat": 43.4998995,
+    "minlon": -3.5864998,
+    "maxlat": 43.5072072,
+    "maxlon": -3.5761692
+  },
+  "tags": {
+    "name": "Playa de la Arena",
+    "natural": "beach",
+    "nudism": "yes",
+    "type": "multipolygon",
+    "wikidata": "Q5962016"
+  }
+},
+{
+  "type": "relation",
+  "id": 2187448,
+  "bounds": {
+    "minlat": 43.4319034,
+    "minlon": -4.8030731,
+    "maxlat": 43.4328908,
+    "maxlon": -4.8011839
+  },
+  "tags": {
+    "access": "yes",
+    "name": "La Nixón",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 2187449,
+  "bounds": {
+    "minlat": 43.4312100,
+    "minlon": -4.8094221,
+    "maxlat": 43.4332342,
+    "maxlon": -4.8070465
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de las Cámaras",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 2187450,
+  "bounds": {
+    "minlat": 43.4315132,
+    "minlon": -4.8075073,
+    "maxlat": 43.4328663,
+    "maxlon": -4.8059688
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de los Curas",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 2187453,
+  "bounds": {
+    "minlat": 43.4309608,
+    "minlon": -4.7989189,
+    "maxlat": 43.4336609,
+    "maxlon": -4.7889312
+  },
+  "tags": {
+    "access": "yes",
+    "name": "San Martín",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 2187455,
+  "bounds": {
+    "minlat": 43.4321437,
+    "minlon": -4.8101625,
+    "maxlat": 43.4343561,
+    "maxlon": -4.8076875
+  },
+  "tags": {
+    "name": "Playa de Palombina",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q18715438"
+  }
+},
+{
+  "type": "relation",
+  "id": 2188032,
+  "bounds": {
+    "minlat": 43.4347277,
+    "minlon": -4.8157593,
+    "maxlat": 43.4373049,
+    "maxlon": -4.8103763
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Playa de Borizu",
+    "name:es": "Playa de Borizo",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q18715411"
+  }
+},
+{
+  "type": "relation",
+  "id": 2190763,
+  "bounds": {
+    "minlat": 43.3912381,
+    "minlon": -4.5794447,
+    "maxlat": 43.3941784,
+    "maxlon": -4.5747831
+  },
+  "tags": {
+    "name": "Playa de la Franca",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q5963423"
+  }
+},
+{
+  "type": "relation",
+  "id": 2324779,
+  "bounds": {
+    "minlat": 43.5431797,
+    "minlon": -5.6952007,
+    "maxlat": 43.5463482,
+    "maxlon": -5.6905880
+  },
+  "tags": {
+    "name": "Playa L'Arbeyal",
+    "name:ast": "Playa L'Arbeyal",
+    "name:es": "Playa del Arbeyal",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wheelchair": "yes",
+    "wikidata": "Q9060803",
+    "wikipedia": "ast:La Playa l'Arbeyal"
+  }
+},
+{
+  "type": "relation",
+  "id": 2401135,
+  "bounds": {
+    "minlat": 43.6135065,
+    "minlon": -5.7919895,
+    "maxlat": 43.6138273,
+    "maxlon": -5.7914521
+  },
+  "tags": {
+    "name": "Playa de La Ribera",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q19653688"
+  }
+},
+{
+  "type": "relation",
+  "id": 2402619,
+  "bounds": {
+    "minlat": 43.5861528,
+    "minlon": -5.7631726,
+    "maxlat": 43.5896305,
+    "maxlon": -5.7598791
+  },
+  "tags": {
+    "name": "Sablera Palmera",
+    "name:en": "Palmera beach",
+    "name:es": "Playa Palmera",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q19013616"
+  }
+},
+{
+  "type": "relation",
+  "id": 3556941,
+  "bounds": {
+    "minlat": 43.5418995,
+    "minlon": -5.6778214,
+    "maxlat": 43.5450188,
+    "maxlon": -5.6687864
+  },
+  "tags": {
+    "name": "Playa de Poniente",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q9060716"
+  }
+},
+{
+  "type": "relation",
+  "id": 3986642,
+  "bounds": {
+    "minlat": 43.6062435,
+    "minlon": -5.7731764,
+    "maxlat": 43.6066862,
+    "maxlon": -5.7720709
+  },
+  "tags": {
+    "alt_name": "Playa del Bigaral",
+    "name": "Playa de Los Cristales",
+    "natural": "beach",
+    "surface": "gravel",
+    "type": "multipolygon",
+    "wikidata": "Q19656829"
+  }
+},
+{
+  "type": "relation",
+  "id": 3986650,
+  "bounds": {
+    "minlat": 43.6094502,
+    "minlon": -5.7864956,
+    "maxlat": 43.6104067,
+    "maxlon": -5.7848984
+  },
+  "tags": {
+    "name": "Playa de El Dique",
+    "natural": "beach",
+    "type": "multipolygon",
+    "wikidata": "Q19614861",
+    "wikipedia": "es:Playa de El Dique"
+  }
+},
+{
+  "type": "relation",
+  "id": 3987682,
+  "bounds": {
+    "minlat": 43.6423544,
+    "minlon": -5.8216642,
+    "maxlat": 43.6434485,
+    "maxlon": -5.8200731
+  },
+  "tags": {
+    "name": "Playa La Isla",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 3987683,
+  "bounds": {
+    "minlat": 43.6283745,
+    "minlon": -5.8121340,
+    "maxlat": 43.6329468,
+    "maxlon": -5.8068960
+  },
+  "tags": {
+    "name": "Playa de Bañugues",
+    "natural": "beach",
+    "surface": "sand",
+    "tidal": "yes",
+    "type": "multipolygon",
+    "wikidata": "Q19595487"
+  }
+},
+{
+  "type": "relation",
+  "id": 3987684,
+  "bounds": {
+    "minlat": 43.6388564,
+    "minlon": -5.8306595,
+    "maxlat": 43.6410239,
+    "maxlon": -5.8239234
+  },
+  "tags": {
+    "name": "Playa de Llumeres",
+    "natural": "beach",
+    "surface": "gravel",
+    "type": "multipolygon",
+    "wikidata": "Q19634156"
+  }
+},
+{
+  "type": "relation",
+  "id": 3987685,
+  "bounds": {
+    "minlat": 43.6292503,
+    "minlon": -5.7946561,
+    "maxlat": 43.6299277,
+    "maxlon": -5.7938746
+  },
+  "tags": {
+    "name": "Playa de Moniello",
+    "natural": "beach",
+    "type": "multipolygon",
+    "wikidata": "Q19653368"
+  }
+},
+{
+  "type": "relation",
+  "id": 3987687,
+  "bounds": {
+    "minlat": 43.6447174,
+    "minlon": -5.8363357,
+    "maxlat": 43.6454213,
+    "maxlon": -5.8352631
+  },
+  "tags": {
+    "name": "Playa Cueva",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 4020892,
+  "bounds": {
+    "minlat": 43.4388789,
+    "minlon": -3.4593447,
+    "maxlat": 43.4393446,
+    "maxlon": -3.4550621
+  },
+  "tags": {
+    "name": "Playa del Pasaje",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 4020893,
+  "bounds": {
+    "minlat": 43.4392605,
+    "minlon": -3.4550350,
+    "maxlat": 43.4394979,
+    "maxlon": -3.4523953
+  },
+  "tags": {
+    "name": "Playa del Pasaje",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 5329406,
+  "bounds": {
+    "minlat": 43.5543875,
+    "minlon": -6.1142974,
+    "maxlat": 43.5559070,
+    "maxlon": -6.1117540
+  },
+  "tags": {
+    "name": "Playa de Xilo - Veneiro",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 6725711,
+  "bounds": {
+    "minlat": 43.5822268,
+    "minlon": -5.7529840,
+    "maxlat": 43.5828143,
+    "maxlon": -5.7509764
+  },
+  "tags": {
+    "name": "Sablera de Güelgues",
+    "name:en": "Güelgues beach",
+    "name:es": "Playa de Güelgues",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 6725712,
+  "bounds": {
+    "minlat": 43.5809326,
+    "minlon": -5.7448152,
+    "maxlat": 43.5813781,
+    "maxlon": -5.7442262
+  },
+  "tags": {
+    "name": "Sablera d'Entrellusa",
+    "name:es": "Playa d'Entrellusa",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 6725713,
+  "bounds": {
+    "minlat": 43.5795420,
+    "minlon": -5.7441267,
+    "maxlat": 43.5798936,
+    "maxlon": -5.7437165
+  },
+  "tags": {
+    "name": "Sablera'l Cura",
+    "name:en": "El Cura beach",
+    "name:es": "Playa del Cura",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 6725714,
+  "bounds": {
+    "minlat": 43.5772601,
+    "minlon": -5.7447890,
+    "maxlat": 43.5788553,
+    "maxlon": -5.7420359
+  },
+  "tags": {
+    "lifeguard": "yes",
+    "name": "Playa de Carranques",
+    "natural": "beach",
+    "supervised": "yes",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q19280235",
+    "wikipedia": "ast:Sablera de Carranques"
+  }
+},
+{
+  "type": "relation",
+  "id": 6727019,
+  "bounds": {
+    "minlat": 43.5755917,
+    "minlon": -5.7394332,
+    "maxlat": 43.5760308,
+    "maxlon": -5.7384733
+  },
+  "tags": {
+    "name": "Morís",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 6755886,
+  "bounds": {
+    "minlat": 43.3634465,
+    "minlon": -3.1896172,
+    "maxlat": 43.3640600,
+    "maxlon": -3.1888149
+  },
+  "tags": {
+    "name": "Playa de La Turbia",
+    "natural": "beach",
+    "supervised": "no",
+    "surface": "gravel",
+    "type": "multipolygon",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "relation",
+  "id": 10191243,
+  "bounds": {
+    "minlat": 43.3929894,
+    "minlon": -4.5771828,
+    "maxlat": 43.3958140,
+    "maxlon": -4.5717930
+  },
+  "tags": {
+    "name": "Playa de la Franca",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 11632813,
+  "bounds": {
+    "minlat": 43.4333782,
+    "minlon": -4.7900671,
+    "maxlat": 43.4342038,
+    "maxlon": -4.7892182
+  },
+  "tags": {
+    "name": "Amenada",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 16215221,
+  "bounds": {
+    "minlat": 43.5506654,
+    "minlon": -6.3727970,
+    "maxlat": 43.5540619,
+    "maxlon": -6.3695031
+  },
+  "tags": {
+    "name": "Playa de Cadavéu",
+    "name:es": "Playa de Cadavedo",
+    "natural": "beach",
+    "surface": "pebblestone",
+    "type": "multipolygon",
+    "wikidata": "Q6078621"
+  }
+},
+{
+  "type": "relation",
+  "id": 16225023,
+  "bounds": {
+    "minlat": 43.3931502,
+    "minlon": -4.5722973,
+    "maxlat": 43.3943792,
+    "maxlon": -4.5711117
+  },
+  "tags": {
+    "name": "Playa del Oso",
+    "natural": "beach",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 18016148,
+  "bounds": {
+    "minlat": 43.4357168,
+    "minlon": -4.8273472,
+    "maxlat": 43.4380659,
+    "maxlon": -4.8239156
+  },
+  "tags": {
+    "name": "Playa de Barro",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q18952502",
+    "wikipedia": "es:Playas de Barro, Xiglu y Sorraos"
+  }
+},
+{
+  "type": "relation",
+  "id": 18016162,
+  "bounds": {
+    "minlat": 43.4398269,
+    "minlon": -4.8406070,
+    "maxlat": 43.4422935,
+    "maxlon": -4.8381468
+  },
+  "tags": {
+    "access": "yes",
+    "name": "Toranda",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon",
+    "wikidata": "Q18844158"
+  }
+},
+{
+  "type": "relation",
+  "id": 18052559,
+  "bounds": {
+    "minlat": 43.5543961,
+    "minlon": -6.1230374,
+    "maxlat": 43.5562056,
+    "maxlon": -6.1153563
+  },
+  "tags": {
+    "dog": "no",
+    "name": "Playa de Aguilar",
+    "natural": "beach",
+    "surface": "sand",
+    "type": "multipolygon"
+  }
+}
+
+  ]
+}
