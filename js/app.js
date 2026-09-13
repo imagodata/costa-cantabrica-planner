@@ -122,6 +122,8 @@
     try { await navigator.clipboard.writeText(url); toast('Lien de la plage copié'); } catch (e) { prompt('Copiez ce lien :', url); }
   }
   function applyRoute() {
+    const mp = location.hash.match(/^#poi=([nwr]\d+)$/);
+    if (mp) { ensurePois().then(() => { const x = poiById(mp[1]); if (x) showPoi(x); }); return 'poi'; }
     const m = location.hash.match(/^#([a-z0-9-]+)$/);
     if (!m) return false;
     const s = spotBySlug(m[1]); if (!s) return false;
@@ -344,7 +346,7 @@
     return L.divIcon({ className: '', html: `<div class="poi-pin ${small ? 'small' : ''}" style="background:${k.color}">${I(k.icon, { size: 13 })}</div>`, iconSize: small ? [12, 12] : [24, 24], iconAnchor: small ? [6, 6] : [12, 12], popupAnchor: [0, small ? -6 : -12] });
   }
   function poiMarker(x, small) {
-    return L.marker([x.lat, x.lon], { icon: poiIcon(x, small), title: x.p.name }).bindPopup(() => poiPopup(x), { maxWidth: 280 });
+    return L.marker([x.lat, x.lon], { icon: poiIcon(x, small), title: x.p.name }).on('click', () => showPoi(x, { pan: false }));
   }
   function renderPois() {
     if (!poiLayer) return;
@@ -376,16 +378,72 @@
     map.on('moveend zoomend', renderPois);
     renderLayerChips(); renderPois();
   }
-  function showPoi(x) {
+  let poiReturn = null;
+  function showPoi(x, { pan = true } = {}) {
     state.poiOn[poiGroupOf(x.p.kind)] = true;
-    const z = Math.max(map.getZoom(), C.poiMinZoom + 2), mobile = window.innerWidth < 900, p = map.project([x.lat, x.lon], z);
-    if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
-    map.setView(map.unproject(p, z), z, { animate: false });
+    const mobile = window.innerWidth < 900;
+    if (pan) {
+      const z = Math.max(map.getZoom(), C.poiMinZoom + 2), p = map.project([x.lat, x.lon], z);
+      if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
+      map.setView(map.unproject(p, z), z, { animate: false });
+    }
     renderPois();
-    const m = poiMarkers.get(x.id) || poiMarker(x, false).addTo(poiLayer);
-    if (!poiMarkers.has(x.id)) poiMarkers.set(x.id, m);
-    m.openPopup();
-    if (mobile && sheet.classList.contains('full')) setSheet('half');
+    map.closePopup();
+    // mémorise d'où l'on vient pour le bouton retour
+    const openPanel = ['panel-detail', 'panel-list', 'panel-wishes', 'panel-trip', 'panel-config'].find((id) => !$('#' + id).hidden);
+    if (openPanel !== 'panel-poi') poiReturn = { panel: openPanel, scroll: $('#panels').scrollTop };
+    for (const id of ['panel-list', 'panel-wishes', 'panel-trip', 'panel-config', 'panel-detail']) $('#' + id).hidden = true;
+    $('#panel-poi').hidden = false; $('#panels').scrollTop = 0;
+    renderPoiPanel(x);
+    if (mobile && sheet.classList.contains('peek')) setSheet('half');
+    buzz(8);
+  }
+  function closePoi() {
+    $('#panel-poi').hidden = true;
+    const back = poiReturn || { panel: 'panel-list', scroll: 0 }; poiReturn = null;
+    if (back.panel === 'panel-detail' && state.selected) { $('#panel-detail').hidden = false; renderDetailHead(); renderDetailDay(detailDay); }
+    else { const v = { 'panel-wishes': 'wishes', 'panel-trip': 'trip', 'panel-config': 'config' }[back.panel] || 'explore'; if (state.selected && back.panel !== 'panel-detail') state.selected = null; state.view = v; setView(v); }
+    $('#panels').scrollTop = back.scroll || 0;
+  }
+  /* Plage à laquelle rattacher un lieu : la fiche ouverte, sinon la plage la plus proche (2 km). */
+  function poiBeach(x) {
+    if (state.selected) return spotById(state.selected);
+    let best = null, bd = 2;
+    for (const s of state.spots) { const d = distKm([x.lat, x.lon], latlng(s)); if (d < bd) { bd = d; best = s; } }
+    return best;
+  }
+  function renderPoiPanel(x) {
+    const p = x.p, k = C.poiKinds[p.kind] || C.poiKinds.tourism, beach = poiBeach(x);
+    const inPlan = beach && (state.plans[beach.properties.id]?.items || []).some((it) => it.poi === x.id);
+    const inTrip = state.trip.days.some((d) => d.stops.some((st) => st.t === 'p' && st.id === x.id));
+    const dist = beach ? distKm([x.lat, x.lon], latlng(beach)) : null;
+    const tel = p.phone && /^[+\d][\d\s().-]{5,20}$/.test(p.phone) ? p.phone.replace(/[^+\d]/g, '') : null;
+    $('#panel-poi').innerHTML = `
+      <div class="poi-head"><button type="button" class="iconbtn" id="poi-back" aria-label="Retour">${I('back', { size: 20 })}</button>
+        <span class="poi-pin" style="background:${k.color}">${I(k.icon, { size: 20 })}</span>
+        <div style="flex:1;min-width:0"><h2>${esc(p.name)}</h2><span class="k" style="color:${k.color}">${esc(k.label)}${p.cuisine ? ' · ' + esc(p.cuisine.split(';').join(', ')) : ''}${p.sub && p.kind !== p.sub && poiGroupOf(p.kind) === 'visit' ? ' · ' + esc(p.sub.replace(/_/g, ' ')) : ''}</span></div></div>
+      <div class="poi-meta">
+        ${beach ? `<span>${I('wave', { size: 14 })}${esc(beach.properties.name)} à ${dist < 1 ? Math.round(dist * 1000) + ' m' : dist.toFixed(1) + ' km'}</span>` : ''}
+        ${p.opening_hours ? `<span>${I('clock', { size: 14 })}${esc(p.opening_hours)}</span>` : ''}
+        ${p.addr_city ? `<span>${I('pin', { size: 14 })}${esc([p.addr_street, p.addr_city].filter(Boolean).join(', '))}</span>` : ''}
+        ${p.outdoor_seating === 'yes' ? `<span>${I('sun', { size: 14 })}Terrasse</span>` : ''}
+      </div>
+      <div class="poi-actions">
+        ${beach ? `<button type="button" class="btn ghost wide ${inPlan ? 'on' : ''}" id="poi-plan">${I(inPlan ? 'check' : 'plus', { size: 16 })}${inPlan ? 'Dans le programme de ' : 'Ajouter au programme de '}${esc(beach.properties.name)}</button>` : ''}
+        <button type="button" class="btn ghost wide ${inTrip ? 'on' : ''}" id="poi-trip">${I('calendar', { size: 16 })}${inTrip ? 'Dans le séjour · ajouter à un autre jour' : 'Ajouter à un jour du séjour'}</button>
+        <a class="btn primary" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" rel="noopener">${I('navigation', { size: 16 })}Itinéraire</a>
+        ${tel ? `<a class="btn ghost" href="tel:${esc(tel)}">${I('users', { size: 16 })}Appeler</a>` : `<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.addr_city || ''))}" target="_blank" rel="noopener">${I('pin', { size: 16 })}Google Maps</a>`}
+        ${safeUrl(p.website) ? `<a class="btn ghost" href="${esc(safeUrl(p.website))}" target="_blank" rel="noopener">${I('link', { size: 16 })}Site web</a>` : ''}
+        <a class="btn ghost" href="${osmUrl(p.id)}" target="_blank" rel="noopener">${I('map', { size: 16 })}OSM</a>
+      </div>`;
+    $('#poi-back').onclick = closePoi;
+    if (beach) $('#poi-plan').onclick = () => {
+      const sid = beach.properties.id, pn = planOf(sid), i = pn.items.findIndex((it) => it.poi === x.id);
+      if (i >= 0) { if (!canEdit(pn.items[i].by)) return toast(`Ajouté par ${state.users[pn.items[i].by].name}`); planRemove(sid, i); toast('Retiré du programme'); }
+      else { planAdd(sid, { poi: x.id }); toast(`Ajouté au programme de ${beach.properties.name}`); buzz(); }
+      renderTabs(); paintMarkers(); renderPoiPanel(x);
+    };
+    $('#poi-trip').onclick = () => pickDayFor({ t: 'p', id: x.id }, x.p.name, () => renderPoiPanel(x));
   }
   function nearbyOf(s, km = C.nearbyKm) {
     const c = latlng(s), sname = s.properties.name.toLowerCase();
@@ -434,7 +492,7 @@
         L.polyline([from, [x.lat, x.lon]], { color: k.color, weight: 1.5, dashArray: '3 4', opacity: .8, interactive: false }).addTo(planLayer);
         const icon = L.divIcon({ className: '', html: `<div class="poi-pin sel" style="background:${k.color};box-shadow:0 0 0 3px ${colBoth},0 1px 4px rgba(0,0,0,.4)">${I(k.icon, { size: 13 })}</div>`, iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -12] });
         L.marker([x.lat, x.lon], { icon, title: x.p.name, zIndexOffset: 900 }).bindTooltip(`${x.p.name} · programme de ${s.properties.name}`, { className: 'spot-tip', direction: 'top', offset: [0, -12] })
-          .bindPopup(() => poiPopup(x), { maxWidth: 280 }).addTo(planLayer);
+          .on('click', () => showPoi(x, { pan: false })).addTo(planLayer);
       }
     }
     if (state.view !== 'trip') state.trip.days.forEach((d, i) => {
@@ -504,7 +562,7 @@
   function setView(v) {
     state.view = v;
     if (state.selected && !$('#panel-detail').hidden) closeDetail();
-    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip'; $('#panel-config').hidden = v !== 'config';
+    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip'; $('#panel-config').hidden = v !== 'config'; $('#panel-poi').hidden = true;
     renderTabs(); paintMarkers();
     if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else if (v === 'config') { renderConfig(); } else { renderList(); }
     if (v === 'config' && window.innerWidth < 900) setSheet('full');
@@ -695,7 +753,7 @@
         if (info.kind === 'spot' && fi >= 0) { const r = scoreOf(info.spot, fi); sc = `<span class="sc"><i style="background:var(--${r.cls})"></i>${r.score ?? '—'}</span>`; }
         const badge = info.kind === 'spot' ? `<span class="n">${k + 1}</span>` : info.kind === 'poi' ? `<span class="n poi" style="background:${info.color}">${I(info.icon, { size: 12 })}</span>` : `<span class="n poi">${I('compass', { size: 12 })}</span>`;
         return `<li data-k="${k}">${badge}<span class="t">${esc(info.name)} <small>· ${esc(info.sub)}</small></span><span class="d">${sc} ${leg}</span>
-          <button type="button" class="ib up" data-k="${k}" ${k === 0 ? 'disabled' : ''} aria-label="Monter">${I('up2', { size: 14 })}</button><button type="button" class="ib rm" data-k="${k}" aria-label="Retirer">${I('x', { size: 14 })}</button></li>`;
+          <button type="button" class="ib menu-btn" data-k="${k}" aria-label="Actions">${I('sliders', { size: 16 })}</button></li>`;
       }).join('');
       let wx = '';
       if (fi >= 0 && d.stops.some((st) => st.t === 's')) { const s0 = spotById(d.stops.find((st) => st.t === 's').id); const dd = F.dayOf(state.bulk, s0, fi); wx = `${wIcon(dd.code, 16)} ${n0(dd.tmax, '°')}`; }
@@ -746,9 +804,8 @@
     el.querySelectorAll('.add-stop').forEach((b) => b.onclick = () => pickStop(+b.dataset.i));
     el.querySelectorAll('.day-card').forEach((card) => {
       const i = +card.dataset.i, d = t.days[i];
-      card.querySelectorAll('.rm').forEach((b) => b.onclick = () => { manualEdit(); d.stops.splice(+b.dataset.k, 1); save(); renderTabs(); renderTrip(); paintMarkers(); });
-      card.querySelectorAll('.up').forEach((b) => b.onclick = () => { const k = +b.dataset.k; if (k > 0) { manualEdit(); [d.stops[k - 1], d.stops[k]] = [d.stops[k], d.stops[k - 1]]; save(); renderTrip(); paintMarkers(); } });
-      card.querySelectorAll('.stops li').forEach((li) => li.onclick = (e) => { if (e.target.closest('button')) return; const st = d.stops[+li.dataset.k]; if (st.t === 's') select(st.id, { pan: true }); else if (st.t === 'p') { const x = poiById(st.id); if (x) showPoi(x); } });
+      card.querySelectorAll('.menu-btn').forEach((b) => b.onclick = (e) => { e.stopPropagation(); stepMenu(i, +b.dataset.k); });
+      card.querySelectorAll('.stops li').forEach((li) => li.onclick = () => stepMenu(i, +li.dataset.k));
     });
   }
   function pickStop(di) {
@@ -770,13 +827,47 @@
     $('#pick-text-add').onclick = () => { const v = $('#pick-text').value.trim(); if (v) { manualEdit(); addStop(di, { t: 'x', text: v }); done(); } };
     dlg.showModal();
   }
-  function pickDayFor(spotId) {
+  function pickDayFor(stopOrId, label, after) {
     ensureTrip();
+    const stop = typeof stopOrId === 'string' ? { t: 's', id: stopOrId } : stopOrId;
     const dlg = $('#dlg-pick');
-    $('#pick-title').textContent = 'Ajouter à quel jour ?';
-    $('#pick-list').innerHTML = state.trip.days.map((d, i) => { const fi = forecastIdx(dayIso(i)); const s = spotById(spotId); const r = fi >= 0 && state.bulk ? scoreOf(s, fi) : null;
-      return `<button type="button" data-i="${i}"><span class="n" style="width:24px;height:24px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span><span>Jour ${i + 1} · ${dayLabel(i)}</span><span class="sub">${d.stops.length} étape${d.stops.length > 1 ? 's' : ''}${r ? ` · <b style="color:var(--${r.cls})">${r.score ?? '—'}</b>` : ''}</span></button>`; }).join('');
-    $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => { manualEdit(); const ok = addStop(+b.dataset.i, { t: 's', id: spotId }); dlg.close(); renderTabs(); paintMarkers(); toast(ok ? `Ajouté au jour ${+b.dataset.i + 1}` : 'Déjà dans ce jour'); if (state.selected === spotId) renderDetailHead(); });
+    $('#pick-title').textContent = `${label ? esc(label) + ' · ' : ''}Ajouter à quel jour ?`;
+    $('#pick-list').innerHTML = `<div class="menu">` + state.trip.days.map((d, i) => { const fi = forecastIdx(dayIso(i)); const s = stop.t === 's' ? spotById(stop.id) : null; const r = s && fi >= 0 && state.bulk ? scoreOf(s, fi) : null;
+      const has = d.stops.some((x) => x.t === stop.t && x.id === stop.id);
+      return `<button type="button" data-i="${i}" ${has ? 'disabled style="opacity:.5"' : ''}><span class="n" style="width:26px;height:26px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span><span>Jour ${i + 1} · ${dayLabel(i)}</span><span class="sub">${has ? 'déjà' : d.stops.length + ' étape' + (d.stops.length > 1 ? 's' : '')}${r ? ` · <b style="color:var(--${r.cls})">${r.score ?? '—'}</b>` : ''}</span></button>`; }).join('') +
+      `<button type="button" data-i="new"><span class="n" style="width:26px;height:26px;border-radius:50%;background:var(--line);display:grid;place-items:center">${I('plus', { size: 14 })}</span><span>Nouveau jour</span></button></div>`;
+    $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => {
+      let i = b.dataset.i === 'new' ? (state.trip.days.push({ stops: [] }), state.trip.days.length - 1) : +b.dataset.i;
+      manualEdit(); const ok = addStop(i, stop); dlg.close(); renderTabs(); paintMarkers(); buzz();
+      toast(ok ? `Ajouté au jour ${i + 1}` : 'Déjà dans ce jour');
+      if (stop.t === 's' && state.selected === stop.id) renderDetailHead();
+      if (state.view === 'trip') renderTrip();
+      if (after) after();
+    });
+    dlg.showModal();
+  }
+  /* Menu d'actions d'une étape (mobile) : voir, monter, descendre, déplacer, retirer. */
+  function stepMenu(di, k) {
+    const t = state.trip, d = t.days[di], st = d.stops[k], info = stopInfo(st); if (!info) return;
+    const dlg = $('#dlg-pick');
+    $('#pick-title').textContent = info.name;
+    const others = t.days.map((_, i) => i).filter((i) => i !== di);
+    $('#pick-list').innerHTML = `<div class="menu">
+      ${info.kind !== 'text' ? `<button type="button" data-a="view">${I(info.kind === 'spot' ? 'wave' : 'pin', { size: 16 })}Voir ${info.kind === 'spot' ? 'la plage' : 'le lieu'}</button>` : ''}
+      <button type="button" data-a="up" ${k === 0 ? 'disabled style="opacity:.4"' : ''}>${I('up2', { size: 16 })}Monter</button>
+      <button type="button" data-a="down" ${k === d.stops.length - 1 ? 'disabled style="opacity:.4"' : ''}>${I('down', { size: 16 })}Descendre</button>
+      ${others.map((i) => `<button type="button" data-a="move" data-i="${i}"><span class="n" style="width:22px;height:22px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span>Déplacer vers le jour ${i + 1}<span class="sub">${dayLabel(i)}</span></button>`).join('')}
+      <button type="button" data-a="rm" class="danger">${I('trash', { size: 16 })}Retirer de ce jour</button></div>`;
+    $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => {
+      const act = b.dataset.a; dlg.close();
+      if (act === 'view') { if (st.t === 's') select(st.id, { pan: true }); else showPoi(poiById(st.id)); return; }
+      manualEdit();
+      if (act === 'up') [d.stops[k - 1], d.stops[k]] = [d.stops[k], d.stops[k - 1]];
+      else if (act === 'down') [d.stops[k + 1], d.stops[k]] = [d.stops[k], d.stops[k + 1]];
+      else if (act === 'move') { d.stops.splice(k, 1); t.days[+b.dataset.i].stops.push(st); }
+      else if (act === 'rm') d.stops.splice(k, 1);
+      save(); renderTabs(); renderTrip(); paintMarkers(); buzz();
+    });
     dlg.showModal();
   }
   function fitTrip() {
@@ -939,7 +1030,7 @@
     }
     nearbyTab = 'all';
     paintMarkers();
-    $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-trip').hidden = true; $('#panel-config').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
+    $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-trip').hidden = true; $('#panel-config').hidden = true; $('#panel-poi').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
     if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
     buzz(8);
     renderDetailHead();
@@ -1347,14 +1438,17 @@
     if (!shared && !routed) showIntro();
     await loadForecast(false);
     if ((shared || routed) && state.selected) select(state.selected, { pan: true }); else state.selected = null;
-    window.addEventListener('hashchange', () => { if (!/^#share=/.test(location.hash) && applyRoute() && state.selected !== (history.state && history.state.spot)) select(state.selected, { pan: true }); });
+    window.addEventListener('hashchange', () => { if (/^#share=/.test(location.hash)) return; const r = applyRoute(); if (r === true && state.selected !== (history.state && history.state.spot)) select(state.selected, { pan: true }); });
     window.addEventListener('popstate', () => {
-      if (applyRoute()) select(state.selected, { pan: true });
+      const r = applyRoute();
+      if (r === true) select(state.selected, { pan: true });
+      else if (r === 'poi') return;
       else if (state.selected && !$('#panel-detail').hidden) closeDetail(true);
     });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       if (document.querySelector('dialog[open]')) return;
+      if (!$('#panel-poi').hidden) { closePoi(); return; }
       if (state.selected && !$('#panel-detail').hidden) closeDetail();
     });
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('sw.js').catch(() => {});

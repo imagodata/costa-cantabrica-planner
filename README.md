@@ -25,6 +25,10 @@ deux listes sur l'autre téléphone.
 - **Deux voyageurs** : prénoms personnalisables, envies ♡ distinctes par personne, filtre
   « envies communes », **partage par lien** (Web Share sur mobile, sinon presse-papiers),
   export GeoJSON des envies.
+- **Lieux sur mobile** : toucher un lieu ouvre sa fiche dans le panneau (horaires, adresse,
+  itinéraire, appel, site, OSM) avec « Ajouter au programme de la plage la plus proche » et
+  « Ajouter à un jour du séjour » ; lien direct `app.html#poi=<id OSM>`. Chaque étape du
+  séjour a un menu d'actions (voir, monter, descendre, déplacer vers un autre jour, retirer).
 - **Mobile et tactile** : panneau glissant qui suit le doigt (trois hauteurs, aimantation selon
   la vitesse du geste), glisser la carte replie le panneau, toucher un repère le rouvre, la
   recherche déploie le panneau au-dessus du clavier, liste rendue par lots au défilement, zones

@@ -165,6 +165,28 @@ button:focus:not(:focus-visible) { outline: none; }
 .auto-chip { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
 .auto-chip.on { color: var(--accent); border-color: var(--accent); }
 
+/* ---------- fiche de lieu (POI) ---------- */
+.poi-panel { padding: 0 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+.poi-head { display: flex; align-items: flex-start; gap: 10px; }
+.poi-head .poi-pin { width: 44px; height: 44px; flex: 0 0 auto; }
+.poi-head .poi-pin svg { width: 20px; height: 20px; }
+.poi-head h2 { margin: 0; font-size: 19px; line-height: 1.2; flex: 1; }
+.poi-head .k { font-size: 13px; font-weight: 600; }
+.poi-meta { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.poi-meta span { display: flex; align-items: center; gap: 6px; }
+.poi-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.poi-actions .btn { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; text-decoration: none; font-size: 14px; }
+.poi-actions .btn.wide { grid-column: 1 / -1; }
+.poi-actions .btn.on { background: var(--both); color: #fff; border-color: var(--both); }
+.stops li { grid-template-columns: 26px minmax(0, 1fr) auto 44px; }
+.stops .ib { width: 44px; height: 44px; }
+.nearby li { grid-template-columns: 28px minmax(0, 1fr) auto 44px; }
+.nearby .add { width: 44px; height: 44px; }
+.menu { display: flex; flex-direction: column; gap: 4px; }
+.menu button { text-align: left; min-height: 48px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 14px; display: flex; align-items: center; gap: 10px; }
+.menu button.danger { color: var(--bad); }
+.menu .sub { color: var(--muted); font-size: 12px; margin-left: auto; }
+
 /* ---------- séjour ---------- */
 .trip { padding: 0 12px 16px; display: flex; flex-direction: column; gap: 12px; }
 .card { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
