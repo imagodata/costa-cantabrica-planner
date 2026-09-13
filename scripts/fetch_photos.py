@@ -34,6 +34,7 @@ GALLERY_MAX = 10
 OPENVERSE = "https://api.openverse.org/v1/images/"   # repli : images sous licence libre (Flickr, etc.), 200 req/jour sans clé
 STOP = {"playa", "de", "del", "la", "el", "los", "las", "praia", "sablera", "cala", "playina", "y", "o", "d", "l", "a"}
 GALLERY_RADIUS = 300
+STRICT_LICENSES = False   # True : n'accepter que les licences autorisant usage commercial et modification
 
 
 class NetworkError(Exception):
@@ -41,6 +42,7 @@ class NetworkError(Exception):
 
 
 def get_json(url, tries=4):
+    last = None
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
@@ -282,7 +284,10 @@ def from_openverse(feature):
     if not toks:
         return None
     q = f"playa {' '.join(toks)} {p.get('province', '')}"
-    r = get_json(OPENVERSE + "?" + urllib.parse.urlencode({"q": q, "page_size": 20, "mature": "false"}))
+    params = {"q": q, "page_size": 20, "mature": "false"}
+    if STRICT_LICENSES:
+        params["license_type"] = "commercial,modification"   # exclut NC et ND
+    r = get_json(OPENVERSE + "?" + urllib.parse.urlencode(params))
     for res in (r or {}).get("results", []):
         hay = (res.get("title") or "").lower() + " " + " ".join(t.get("name", "") for t in res.get("tags") or [])
         hay = unicodedata_fold(hay)

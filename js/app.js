@@ -6,6 +6,14 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const DEFAULT_NAMES = ['Simon', 'Marie'];
 
+  let assetVer = '', poisLoading = null;
+  /* Les lieux (1,3 Mo) ne sont chargés qu'au premier besoin : zoom suffisant, fiche, séjour. */
+  function ensurePois() {
+    if (state.pois.length || poisLoading) return poisLoading || Promise.resolve();
+    poisLoading = fetch('data/pois.geojson?v=' + assetVer).then((r) => (r.ok ? r.json() : { features: [] })).catch(() => ({ features: [] }))
+      .then((pois) => { state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties })); poisLoading = null; });
+    return poisLoading;
+  }
   const state = {
     region: null,
     spots: [], photos: {}, pois: [], bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
@@ -18,7 +26,7 @@
     me: 'a',
   };
   const scoreCache = new Map();
-  let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0;
+  let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0, detailReq = 0, listScroll = 0;
   let poiLayer = null, poiMarkers = new Map(), wishLayer = null, tripLayer = null;
   const DAY_COLORS = ['#0b6e99', '#b45309', '#7c3aed', '#0a9396', '#d64545', '#4361ee', '#f0a202'];
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -29,7 +37,6 @@
     const d = new Date(iso + 'T12:00:00');
     return { lbl: i === 0 ? 'Auj.' : i === 1 ? 'Dem.' : dayNames[d.getDay()], sub: d.getDate() + '/' + (d.getMonth() + 1) };
   }
-  const hm = (d) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: C.timezone });
   const hmIso = (iso) => iso.slice(11, 16);
   const compass = (deg) => deg == null ? '' : ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'][Math.round(deg / 45) % 8];
   const arrow = (deg, size = 13) => deg == null ? '' : I('arrow', { size, rotate: deg });
@@ -45,7 +52,9 @@
   }
   const latlng = (s) => [s.geometry.coordinates[1], s.geometry.coordinates[0]];
   const photoOf = (id) => state.photos[id] || null;
-  const thumbAt = (ph, w) => ph.thumb.includes('/thumb/') ? ph.thumb.replace(/\/\d+px-/, `/${w}px-`) : ph.thumb;
+  const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : null);
+  const thumbAt = (ph, w) => ph.thumb.includes('/thumb/') ? ph.thumb.replace(/\/\d+px-/, `/${w}px-`)
+    : /staticflickr\.com/.test(ph.thumb) ? ph.thumb.replace(/_[bcz]\.jpg$/i, w <= 320 ? '_n.jpg' : '_c.jpg') : ph.thumb;
   const surfaceLbl = (p) => p.surface ? (C.surfaces[p.surface] || p.surface) : null;
   /* Vue aérienne : mosaïque de tuiles satellite centrée sur le point (aucune bibliothèque). */
   const AERIAL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
@@ -70,12 +79,13 @@
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
   function save() {
-    try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort })); } catch (e) { }
+    try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort,
+      poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort })); } catch (e) { }
   }
   function restore() {
     try {
       const j = JSON.parse(localStorage.getItem(LS_STATE) || 'null'); if (!j) return;
-      if (j.users) state.users = j.users;
+      if (j.users) for (const k of ['a', 'b']) if (j.users[k]) state.users[k] = { name: String(j.users[k].name || DEFAULT_NAMES[k === 'a' ? 0 : 1]).slice(0, 14) || DEFAULT_NAMES[k === 'a' ? 0 : 1], wish: Array.isArray(j.users[k].wish) ? j.users[k].wish.filter((x) => typeof x === 'string') : [] };
       if (j.me) state.me = j.me;
       if (j.profile && C.profiles[j.profile]) state.profile = j.profile;
       if (j.filters) Object.assign(state.filters, j.filters);
@@ -117,18 +127,22 @@
     const m = location.hash.match(/#share=([A-Za-z0-9_-]+)/); if (!m) return false;
     try {
       const p = JSON.parse(b64d(m[1]));
-      const merge = (k, list) => { state.users[k].wish = [...new Set([...(state.users[k].wish || []), ...(list || [])])]; };
+      const merge = (k, list) => { state.users[k].wish = [...new Set([...(state.users[k].wish || []), ...(Array.isArray(list) ? list.filter((x) => typeof x === 'string') : [])])].slice(0, 500); };
       merge('a', p.a); merge('b', p.b);
-      if (p.na && DEFAULT_NAMES.includes(state.users.a.name)) state.users.a.name = p.na;
-      if (p.nb && DEFAULT_NAMES.includes(state.users.b.name)) state.users.b.name = p.nb;
+      const cleanName = (v) => String(v).replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 14);
+      if (p.na && DEFAULT_NAMES.includes(state.users.a.name) && cleanName(p.na)) state.users.a.name = cleanName(p.na);
+      if (p.nb && DEFAULT_NAMES.includes(state.users.b.name) && cleanName(p.nb)) state.users.b.name = cleanName(p.nb);
       if (Number.isInteger(p.d)) state.day = Math.max(0, Math.min(C.forecastDays - 1, p.d));
       if (p.p && C.profiles[p.p]) state.profile = p.p;
-      if (p.s) state.selected = p.s;
-      for (const [id, v] of Object.entries(p.pl || {})) {
+      if (typeof p.s === 'string') state.selected = p.s.slice(0, 20);
+      for (const [id, v] of Object.entries(p.pl || {}).slice(0, 300)) {
+        if (!v || typeof v !== 'object' || !/^[nwr]\d+$/.test(id)) continue;
         const pn = planOf(id);
         for (const k of ['a', 'b']) if (v.n && v.n[k] && !pn.notes[k]) pn.notes[k] = String(v.n[k]).slice(0, 500);
-        for (const [ref, by] of v.i || []) {
-          const it = String(ref).startsWith('t:') ? { text: String(ref).slice(2, 82), by } : { poi: String(ref), by };
+        for (const [ref, byRaw] of (Array.isArray(v.i) ? v.i : []).slice(0, 40)) {
+          const by = byRaw === 'b' ? 'b' : 'a';
+          const it = String(ref).startsWith('t:') ? { text: String(ref).slice(2, 82), by } : (/^[nwr]\d+$/.test(String(ref)) ? { poi: String(ref), by } : null);
+          if (!it) continue;
           if (!pn.items.some((x) => (x.poi && x.poi === it.poi) || (x.text && x.text === it.text))) pn.items.push(it);
         }
       }
@@ -208,9 +222,9 @@
   /* ------------------------------------------------------------------ carte */
   function initMap() {
     map = L.map('map', { zoomControl: true, attributionControl: true, tap: true }).setView(C.center, C.zoom);
-    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' });
-    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri' });
-    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '© OpenTopoMap (CC-BY-SA)' });
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · prévisions <a href="https://open-meteo.com/">Open-Meteo</a>' });
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
     osm.addTo(map);
     L.control.layers({ 'Plan': osm, 'Satellite': sat, 'Relief': topo }, null, { position: 'bottomright' }).addTo(map);
     L.control.scale({ imperial: false }).addTo(map);
@@ -239,21 +253,23 @@
     return `<div class="poi-pop"><b>${esc(p.name)}</b><span class="k" style="color:${k.color}">${I(k.icon, { size: 13 })}${esc(k.label)}</span>
       ${meta ? `<div class="m">${esc(meta)}</div>` : ''}${p.opening_hours ? `<div class="m">${I('clock', { size: 12 })} ${esc(p.opening_hours)}</div>` : ''}
       <div class="l"><a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" rel="noopener">${I('navigation', { size: 12 })}Itinéraire</a>
-      ${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener">${I('link', { size: 12 })}Site</a>` : ''}
-      ${p.phone ? `<a href="tel:${esc(p.phone.replace(/\s/g, ''))}">${esc(p.phone)}</a>` : ''}
+      ${safeUrl(p.website) ? `<a href="${esc(safeUrl(p.website))}" target="_blank" rel="noopener">${I('link', { size: 12 })}Site</a>` : ''}
+      ${p.phone && /^[+\d][\d\s().-]{5,20}$/.test(p.phone) ? `<a href="tel:${esc(p.phone.replace(/[^+\d]/g, ''))}">${esc(p.phone)}</a>` : ''}
       <a href="${osmUrl(p.id)}" target="_blank" rel="noopener">${I('map', { size: 12 })}OSM</a></div></div>`;
   }
-  function poiMarker(x, small) {
+  function poiIcon(x, small) {
     const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism;
-    const icon = L.divIcon({ className: '', html: `<div class="poi-pin ${small ? 'small' : ''}" style="background:${k.color}">${I(k.icon, { size: 13 })}</div>`, iconSize: small ? [12, 12] : [24, 24], iconAnchor: small ? [6, 6] : [12, 12], popupAnchor: [0, small ? -6 : -12] });
-    return L.marker([x.lat, x.lon], { icon, title: x.p.name }).bindPopup(() => poiPopup(x), { maxWidth: 280 });
+    return L.divIcon({ className: '', html: `<div class="poi-pin ${small ? 'small' : ''}" style="background:${k.color}">${I(k.icon, { size: 13 })}</div>`, iconSize: small ? [12, 12] : [24, 24], iconAnchor: small ? [6, 6] : [12, 12], popupAnchor: [0, small ? -6 : -12] });
+  }
+  function poiMarker(x, small) {
+    return L.marker([x.lat, x.lon], { icon: poiIcon(x, small), title: x.p.name }).bindPopup(() => poiPopup(x), { maxWidth: 280 });
   }
   function renderPois() {
     if (!poiLayer) return;
-    renderLayerChips();
     const z = map.getZoom(), on = state.poiOn;
     const anyOn = on.food || on.visit;
     if (z < C.poiMinZoom || !anyOn) { poiLayer.clearLayers(); poiMarkers.clear(); return; }
+    if (!state.pois.length) { ensurePois().then(() => renderPois()); return; }
     const b = map.getBounds().pad(0.2), small = z < C.poiMinZoom + 1, keep = new Set();
     let n = 0;
     for (const x of state.pois) {
@@ -262,7 +278,7 @@
       keep.add(x.id);
       const m = poiMarkers.get(x.id);
       if (m && m._small === small) continue;
-      if (m) poiLayer.removeLayer(m);
+      if (m) { m.setIcon(poiIcon(x, small)); m._small = small; continue; }
       const nm = poiMarker(x, small); nm._small = small; nm.addTo(poiLayer); poiMarkers.set(x.id, nm);
     }
     for (const [id, m] of poiMarkers) if (!keep.has(id)) { poiLayer.removeLayer(m); poiMarkers.delete(id); }
@@ -271,12 +287,12 @@
     const z = map.getZoom(), zoomHint = z < C.poiMinZoom;
     const chip = (g, label, colors) => `<button type="button" data-g="${g}" class="${state.poiOn[g] ? 'on' : ''}" title="${zoomHint ? 'Zoomez pour voir les lieux' : ''}">${colors.map((c) => `<i class="sw" style="background:${c}"></i>`).join('')}${label}</button>`;
     $('#layer-chips').innerHTML = chip('food', 'Restos & bars', [C.poiKinds.restaurant.color, C.poiKinds.beach_bar.color]) + chip('visit', 'Visites', [C.poiKinds.culture.color, C.poiKinds.tourism.color]);
-    $('#layer-chips').querySelectorAll('button').forEach((b) => b.onclick = () => { state.poiOn[b.dataset.g] = !state.poiOn[b.dataset.g]; save(); renderPois(); });
+    $('#layer-chips').querySelectorAll('button').forEach((b) => b.onclick = () => { state.poiOn[b.dataset.g] = !state.poiOn[b.dataset.g]; save(); renderLayerChips(); renderPois(); if (state.poiOn[b.dataset.g] && map.getZoom() < C.poiMinZoom) toast('Zoomez sur la carte pour voir les lieux'); });
   }
   function initPois() {
     poiLayer = L.layerGroup().addTo(map);
     map.on('moveend zoomend', renderPois);
-    renderPois();
+    renderLayerChips(); renderPois();
   }
   function showPoi(x) {
     state.poiOn[poiGroupOf(x.p.kind)] = true;
@@ -342,7 +358,7 @@
     $('.close', $('#dlg-pick')).innerHTML = I('x', { size: 18 });
   }
   function renderWho() {
-    $('#who').innerHTML = ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(state.users[k].name[0].toUpperCase())}</span></button>`).join('');
+    $('#who').innerHTML = ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(String(state.users[k].name || '?')[0].toUpperCase())}</span></button>`).join('');
     $('#who').querySelectorAll('button').forEach((b) => { b.onclick = () => { state.me = b.dataset.k; save(); renderWho(); if (state.selected) renderPlanCard(state.selected); toast(`Envies et notes de ${state.users[state.me].name}`); }; });
   }
   function bestDot(i) {
@@ -354,7 +370,7 @@
   }
   function renderDays() {
     const el = $('#days'); el.innerHTML = '';
-    const dates = state.bulk ? state.bulk.dates : Array.from({ length: C.forecastDays }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d.toISOString().slice(0, 10); });
+    const dates = state.bulk ? state.bulk.dates : Array.from({ length: C.forecastDays }, (_, i) => addDays(F.todayLocal(), i));
     dates.forEach((iso, i) => {
       const { lbl, sub } = fmtDay(iso, i), b = document.createElement('button');
       b.className = 'day' + (i === state.day ? ' on' : ''); b.type = 'button';
@@ -384,6 +400,7 @@
     $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip';
     renderTabs(); paintMarkers();
     if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else { renderList(); }
+    if (v !== 'explore' && !state.pois.length) ensurePois().then(() => { if (state.view === v) { v === 'wishes' ? renderWishes() : renderTrip(); paintMarkers(); } });
   }
   function wishList() {
     const who = state.wishWho;
@@ -464,7 +481,7 @@
   }
 
   /* ------------------------------------------------------------------ séjour (jours, étapes, hébergement) */
-  const todayIso = () => (state.bulk ? state.bulk.dates[0] : new Date().toISOString().slice(0, 10));
+  const todayIso = () => (state.bulk ? state.bulk.dates[0] : F.todayLocal());
   const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   function ensureTrip() {
     const t = state.trip;
@@ -670,7 +687,7 @@
     if (state.bulk) for (const s of list) { const c = scoreOf(s).cls; if (c === 'ideal') ideal++; else if (c === 'good') good++; }
     const fetched = state.bulk ? new Date(state.bulk.fetchedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
     $('#summary').innerHTML = (state.bulk ? `<span><b>${ideal} idéale${ideal > 1 ? 's' : ''}</b> · ${good} bonne${good > 1 ? 's' : ''} · ${list.length} spot${list.length > 1 ? 's' : ''}</span>` : `<span>${list.length} spots</span>`) +
-      (fetched ? `<span>prévisions ${fetched}</span>` : `<span class="warn">prévisions indisponibles</span>`);
+      (fetched ? `<span><a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Open-Meteo</a> ${fetched}</span>` : `<span class="warn">prévisions indisponibles</span>`);
     const frag = document.createDocumentFragment();
     for (const s of list) {
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id), ph = photoOf(p.id);
@@ -703,16 +720,23 @@
   const spotById = (id) => state.spots.find((s) => s.properties.id === id);
   async function select(id, { pan = true } = {}) {
     const s = spotById(id); if (!s) return;
+    if (!$('#panel-detail').hidden === false) listScroll = $('#panels').scrollTop;
     state.selected = id; detailDay = state.day; detailData = null;
-    if (s.properties.slug && location.hash !== '#' + s.properties.slug) history.pushState({ spot: id }, '', location.pathname + location.search + '#' + s.properties.slug);
+    const token = ++detailReq;
+    if (s.properties.slug && location.hash !== '#' + s.properties.slug) {
+      const url = location.pathname + location.search + '#' + s.properties.slug;
+      if (history.state && history.state.spot) history.replaceState({ spot: id }, '', url); else history.pushState({ spot: id }, '', url);
+    }
+    nearbyTab = 'all';
     paintMarkers();
     $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-trip').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
     if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
     renderDetailHead();
     $('#detail-body').innerHTML = '<div class="loading">Chargement des prévisions horaires…</div>';
     if (pan) panTo(s);
-    try { detailData = await F.loadDetail(s); renderDetailDay(detailDay); }
-    catch (e) { renderDetailDay(detailDay, `Prévisions horaires indisponibles (${esc(e.message)}).`); }
+    if (!state.pois.length) ensurePois().then(() => { if (state.selected === id) { renderPlanCard(id); renderDetailDay(detailDay); } });
+    try { const d = await F.loadDetail(s); if (token !== detailReq) return; detailData = d; renderDetailDay(detailDay); }
+    catch (e) { if (token !== detailReq) return; renderDetailDay(detailDay, `Prévisions horaires indisponibles (${esc(e.message)}).`); }
   }
   function closeDetail(fromHistory = false) {
     if (!fromHistory && history.state && history.state.spot) { history.back(); return; }
@@ -720,12 +744,13 @@
     if (location.hash && !fromHistory) history.replaceState(null, '', location.pathname + location.search);
     $('#panel-detail').hidden = true;
     if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else if (state.view === 'trip') { $('#panel-trip').hidden = false; renderTrip(); } else { $('#panel-list').hidden = false; renderList(); }
+    $('#panels').scrollTop = listScroll;
   }
   function creditHtml(g, ph) {
     if (!g) return '';
     if (g.aerial) return esc(g.credit);
     const src = ph && String(ph.source || '').startsWith('openverse') ? (ph.source.split(':')[1] === 'flickr' ? 'Flickr' : 'Openverse') : 'Wikimedia Commons';
-    return `${esc(g.credit)}${g.license ? ' · ' + esc(g.license) : ''}${g.page ? ` · <a href="${esc(g.page)}" target="_blank" rel="noopener">${src}</a>` : ''}${ph && ph.source === 'geosearch' && g === (ph.gallery || [])[0] ? ' · photo prise à proximité' : ''}`;
+    return `${esc(g.credit)}${g.license ? ' · ' + esc(g.license) : ''}${safeUrl(g.page) ? ` · <a href="${esc(g.page)}" target="_blank" rel="noopener">${src}</a>` : ''}${ph && ph.source === 'geosearch' && g === (ph.gallery || [])[0] ? ' · photo prise à proximité' : ''}`;
   }
   function renderDetailHead() {
     const s = spotById(state.selected), p = s.properties, w = wishOf(p.id), ph = photoOf(p.id), [lat, lon] = latlng(s);
@@ -770,10 +795,10 @@
           <a href="${commons}" target="_blank" rel="noopener">${I('camera', { size: 14 })}Photos</a>
           <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + p.province)}" target="_blank" rel="noopener">${I('pin', { size: 14 })}Google Maps</a>
           <a href="${esc(p.osm)}" target="_blank" rel="noopener">${I('map', { size: 14 })}OSM</a>
-          ${p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener">${I('link', { size: 14 })}Site</a>` : ''}
+          ${safeUrl(p.website) ? `<a href="${esc(safeUrl(p.website))}" target="_blank" rel="noopener">${I('link', { size: 14 })}Site</a>` : ''}
         </div>
       </div>`;
-    $('#btn-close').onclick = closeDetail;
+    $('#btn-close').onclick = () => closeDetail();
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
     if (gal.length > 1) {
@@ -802,7 +827,7 @@
       ${items.length ? `<ul class="plan-items">${items.map((it, k) => { const x = it.poi && poiById(it.poi); const kd = x ? (C.poiKinds[x.p.kind] || C.poiKinds.tourism) : null;
         return `<li>${kd ? `<span class="poi-pin" style="background:${kd.color}">${I(kd.icon, { size: 12 })}</span>` : `<span class="poi-pin" style="background:var(--accent)">${I('compass', { size: 12 })}</span>`}
           <span class="t">${esc(x ? x.p.name : it.text)}${x ? ` <small>· ${esc(kd.label)}${x.p.cuisine ? ', ' + esc(x.p.cuisine.split(';')[0]) : ''}</small>` : ' <small>· activité</small>'}</span>
-          <span class="who ${it.by}" title="${esc(state.users[it.by]?.name || '')}">${esc((state.users[it.by]?.name || '?')[0].toUpperCase())}</span>
+          <span class="who ${it.by === 'b' ? 'b' : 'a'}" title="${esc(state.users[it.by === 'b' ? 'b' : 'a'].name)}">${esc(String(state.users[it.by === 'b' ? 'b' : 'a'].name || '?')[0].toUpperCase())}</span>
           <button type="button" class="rm" data-k="${k}" aria-label="Retirer">${I('trash', { size: 15 })}</button></li>`; }).join('')}</ul>`
         : `<span class="hint">Ajoutez un resto, un monument ou une activité : bouton ${I('plus', { size: 12 })} dans « À proximité » ci-dessous, ou une activité libre ici.</span>`}
       <div class="plan-add"><input type="text" id="plan-text" maxlength="80" placeholder="Activité libre : surf, kayak, coucher de soleil…"><button type="button" id="plan-add-btn" aria-label="Ajouter">${I('plus', { size: 18 })}</button></div>
@@ -857,15 +882,15 @@
     if (!detailData) { return html + `<div class="loading" style="padding:8px">${hourlyError ? esc(hourlyError) : 'Chargement…'}</div></div>`; }
     const M = detailData.marine, date = d.date;
     const mIdx = M.time.map((t, k) => t.startsWith(date) ? k : -1).filter((k) => k >= 0);
-    const tides = detailData.tides.filter((t) => t.time.toLocaleDateString('sv-SE', { timeZone: C.timezone }) === date);
+    const tides = detailData.tides.filter((t) => t.iso.slice(0, 10) === date);
     const sst = mIdx.map((k) => M.sea_surface_temperature?.[k]).filter((v) => v != null);
     if (M.sea_level_height_msl) html += spark(mIdx.map((k) => M.sea_level_height_msl[k]), tides, date);
     html += `<div class="cond" style="flex-wrap:wrap;font-size:12.5px">` + (tides.length
-      ? tides.map((t) => `<span class="${t.type === 'PM' ? 'sea' : 'mu'}">${I(t.type === 'PM' ? 'up' : 'down', { size: 14 })}${t.type} ${hm(t.time)} · ${t.height >= 0 ? '+' : ''}${t.height.toFixed(1)} m</span>`).join('')
+      ? tides.map((t) => `<span class="${t.type === 'PM' ? 'sea' : 'mu'}">${I(t.type === 'PM' ? 'up' : 'down', { size: 14 })}${t.type} ${hmIso(t.iso)} · ${t.height >= 0 ? '+' : ''}${t.height.toFixed(1)} m</span>`).join('')
       : '<span class="mu">niveau de mer indisponible</span>') +
       (sst.length ? `<span>${I('thermo', { size: 14 })}eau ${n1(sst.reduce((a, b) => a + b, 0) / sst.length, ' °C')}</span>` : '') + '</div>';
     if (p.tidal === 'yes' && tides.some((t) => t.type === 'PM')) {
-      const win = tides.filter((t) => t.type === 'PM').map((t) => { const a = new Date(t.time.getTime() - 90 * 60000), b = new Date(t.time.getTime() + 90 * 60000); return `${hm(a)}–${hm(b)}`; });
+      const win = tides.filter((t) => t.type === 'PM').map((t) => `${hmIso(F.shiftIso(t.iso, -90))}–${hmIso(F.shiftIso(t.iso, 90))}`);
       html += `<div class="advice">${I('clock', { size: 16 })}<span><b>Ce spot dépend de la marée haute</b> : viser ${win.join(' ou ')}.</span></div>`;
     }
     return html + '</div>';
@@ -905,18 +930,19 @@
       const mi = M.time.indexOf(H.time[i]), night = h < 8 || h > 20;
       html += `<tr class="${night ? 'night' : ''}"><td>${String(h).padStart(2, '0')}h</td><td>${wIcon(H.weather_code[i], 15)}</td><td>${n0(H.temperature_2m[i], '°')}</td>
         <td>${n0(H.precipitation_probability?.[i], ' %')}</td><td>${n0(H.wind_speed_10m[i])} ${arrow(H.wind_direction_10m[i], 12)}</td>
-        <td>${mi >= 0 ? n1(M.wave_height[mi], ' m') + ' · ' + n0(M.wave_period[mi], ' s') : '—'}</td><td>${n1(H.uv_index?.[i])}</td></tr>`;
+        <td>${mi >= 0 && M.wave_height ? n1(M.wave_height[mi], ' m') + ' · ' + n0(M.wave_period?.[mi], ' s') : '—'}</td><td>${n1(H.uv_index?.[i])}</td></tr>`;
     }
     return html + '</tbody></table></div></div>';
   }
   function spark(vals, tides, date) {
-    const v = vals.map((x) => x ?? 0); if (!v.length) return '';
-    const min = Math.min(...v), max = Math.max(...v), W = 366, Hh = 64, pad = 4, top = 8;
-    const x = (i) => pad + (i / (v.length - 1)) * (W - 2 * pad), y = (val) => Hh - 14 - ((val - min) / ((max - min) || 1)) * (Hh - 14 - top);
-    const pts = v.map((val, i) => `${x(i).toFixed(1)},${y(val).toFixed(1)}`).join(' ');
-    const now = new Date(), isToday = now.toLocaleDateString('sv-SE', { timeZone: C.timezone }) === date;
-    const hNow = now.getHours() + now.getMinutes() / 60;
-    const labels = tides.map((t) => { const h = t.time.getHours() + t.time.getMinutes() / 60; return `<text x="${x(h).toFixed(1)}" y="${Hh - 2}" font-size="10" text-anchor="middle" fill="currentColor" opacity=".7">${hm(t.time)}</text>`; }).join('');
+    const known = vals.filter((x) => x != null); if (!known.length) return '';
+    const min = Math.min(...known), max = Math.max(...known), W = 366, Hh = 64, pad = 4, top = 8;
+    const x = (h) => pad + (h / 24) * (W - 2 * pad), y = (val) => Hh - 14 - ((val - min) / ((max - min) || 1)) * (Hh - 14 - top);
+    const pts = vals.map((val, i) => val == null ? null : `${x(i).toFixed(1)},${y(val).toFixed(1)}`).filter(Boolean).join(' ');
+    const isToday = F.todayLocal() === date;
+    const nowParts = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: C.timezone }).split(':');
+    const hNow = +nowParts[0] + (+nowParts[1] || 0) / 60;
+    const labels = tides.map((t) => { const h = +t.iso.slice(11, 13) + (+t.iso.slice(14, 16)) / 60; return `<text x="${x(h).toFixed(1)}" y="${Hh - 2}" font-size="10" text-anchor="middle" fill="currentColor" opacity=".7">${hmIso(t.iso)}</text>`; }).join('');
     return `<svg class="spark" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>
       ${isToday ? `<line x1="${x(hNow)}" x2="${x(hNow)}" y1="${top}" y2="${Hh - 14}" stroke="currentColor" opacity=".3" stroke-dasharray="3 3"/>` : ''}${labels}</svg>`;
   }
@@ -983,7 +1009,8 @@
     document.querySelectorAll('dialog .close').forEach((b) => b.onclick = () => b.closest('dialog').close());
     document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
 
-    $('#q').oninput = (e) => { state.filters.q = e.target.value; renderList(); paintMarkers(); };
+    let qTimer = null;
+    $('#q').oninput = (e) => { state.filters.q = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { renderList(); paintMarkers(); }, 150); };
     $('#btn-share').onclick = share;
     $('#btn-locate').onclick = locate;
     $('#btn-filters').classList.toggle('on', filtersActive());
@@ -992,7 +1019,7 @@
     const feats = state.spots.filter((s) => { const w = wishOf(s.properties.id); return w.a || w.b; })
       .map((s) => { const w = wishOf(s.properties.id), pn = state.plans[s.properties.id];
         const plan = pn ? { notes: pn.notes, items: pn.items.map((it) => ({ by: state.users[it.by]?.name, name: it.text || poiById(it.poi)?.p.name, kind: it.poi ? poiById(it.poi)?.p.kind : 'activity', osm: it.poi ? osmUrl(it.poi) : undefined })) } : undefined;
-        return { ...s, properties: { ...s.properties, [state.users.a.name]: w.a, [state.users.b.name]: w.b, plan } }; });
+        return { ...s, properties: { ...s.properties, wish: { [state.users.a.name === state.users.b.name ? 'a' : state.users.a.name]: w.a, [state.users.a.name === state.users.b.name ? 'b' : state.users.b.name]: w.b }, plan } }; });
     if (!feats.length) return toast('Aucune envie marquée');
     const blob = new Blob([JSON.stringify({ type: 'FeatureCollection', features: feats }, null, 1)], { type: 'application/geo+json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'envies-costa-cantabrica.geojson'; a.click();
@@ -1036,13 +1063,14 @@
   function showBanner(text, retry) {
     const b = $('#banner'); $('#banner-text').textContent = text; b.hidden = false;
     $('#banner-retry').hidden = !retry; $('#banner-retry').onclick = () => { b.hidden = true; retry && retry(); };
+    $('#banner-close').onclick = () => { b.hidden = true; };
   }
   async function loadForecast(force) {
     $('#summary').innerHTML = '<span>Chargement des prévisions…</span>';
     if (!state.bulk) $('#list').innerHTML = `<ul class="skeleton">${'<li><i class="sq"></i><i class="ph"></i><div><i class="ln m"></i><i class="ln s"></i></div></li>'.repeat(6)}</ul>`;
     try { state.bulk = await F.loadBulk(state.spots, { force }); scoreCache.clear(); $('#banner').hidden = true; }
     catch (e) { console.error(e); showBanner(navigator.onLine === false ? 'Hors ligne : prévisions indisponibles, la liste reste consultable.' : 'Prévisions indisponibles pour le moment (' + e.message + ').', () => loadForecast(true)); }
-    renderDays(); if (state.view === 'wishes') renderWishes(); else renderList(); paintMarkers();
+    renderDays(); if (state.view === 'wishes') renderWishes(); else if (state.view === 'trip') renderTrip(); else renderList(); paintMarkers();
     if (state.selected) renderDetailDay(detailDay);
   }
   async function init() {
@@ -1066,8 +1094,10 @@
     renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
     if (state.view === 'wishes' || state.view === 'trip') setView(state.view);
     $('#q').value = state.filters.q;
+    if (!shared && !routed) showIntro();
     await loadForecast(false);
     if ((shared || routed) && state.selected) select(state.selected, { pan: true }); else state.selected = null;
+    window.addEventListener('hashchange', () => { if (!/^#share=/.test(location.hash) && applyRoute() && state.selected !== (history.state && history.state.spot)) select(state.selected, { pan: true }); });
     window.addEventListener('popstate', () => {
       if (applyRoute()) select(state.selected, { pan: true });
       else if (state.selected && !$('#panel-detail').hidden) closeDetail(true);
@@ -1077,7 +1107,7 @@
       if (document.querySelector('dialog[open]')) return;
       if (state.selected && !$('#panel-detail').hidden) closeDetail();
     });
-    if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('sw.js').catch(() => {});
     window.addEventListener('online', () => { if (!state.bulk) loadForecast(false); });
     if (!shared && !routed) showIntro();
   }

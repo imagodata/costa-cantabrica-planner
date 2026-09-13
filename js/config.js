@@ -5,13 +5,13 @@ CCP.CONFIG = {
   center: [43.45, -5.0],
   zoom: 8,
   forecastDays: 7,
-  cacheTtlMin: 60,
+  cacheTtlMin: 180,
   timezone: 'Europe/Madrid',
   weatherApi: 'https://api.open-meteo.com/v1/forecast',
   marineApi: 'https://marine-api.open-meteo.com/v1/marine',
   // Regroupement des points pour limiter les appels API (degrés)
-  weatherStep: 0.02,
-  marineStep: 0.05,
+  weatherStep: 0.05,
+  marineStep: 0.1,
 
   profiles: {
     plage:   { icon: 'sun',   label: 'Plage & baignade', short: 'Plage' },

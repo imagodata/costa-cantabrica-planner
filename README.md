@@ -10,7 +10,7 @@ deux listes sur l'autre téléphone.
 
 ## Fonctionnalités
 
-- **~170 plages et criques** issues d'OpenStreetMap (nom, type, surface, taille estimée,
+- **362 plages et criques** issues d'OpenStreetMap (nom, type, surface, taille estimée,
   surveillance, naturisme, chiens, Wikipédia, accès).
 - **Score 0–100 par jour et par profil** : *Plage & baignade*, *Famille (calme)*, *Surf*,
   *Balade & photo*. Le score combine pluie, ciel, température, vent, rafales et hauteur de
@@ -166,6 +166,8 @@ sw.js                         service worker (hors-ligne)
 
 ```
 index.html                    page unique
+vendor/leaflet/               Leaflet 1.9.4 hébergé localement (hors-ligne)
+data/slugs.json               slugs attribués (stables entre exécutions)
 css/style.css                 mobile-first, panneau glissant, mode sombre
 js/config.js                  sources, profils, codes météo
 js/forecast.js                appels Open-Meteo, cache, score, marées
@@ -191,7 +193,15 @@ Makefile                      spots, refresh, serve, preview, publish-map
 - La houle affichée est celle de la cellule marine la plus proche (au large) ; une crique
   orientée est ou abritée par un cap peut être bien plus calme.
 - Le score est un indicateur, pas une garantie : vérifier drapeaux et consignes sur place.
-- Pas de mode hors-ligne complet (les tuiles et l'API nécessitent le réseau).
+- Hors ligne : l'application, Leaflet, les données et les tuiles déjà vues restent disponibles ;
+  les prévisions et les photos nécessitent le réseau.
+- Photos : 21 images Openverse sont sous licence Creative Commons NC ou ND (usage non commercial,
+  sans modification) : adapté à ce site personnel, à exclure via `STRICT_LICENSES = True` dans
+  `scripts/fetch_photos.py` pour un usage commercial.
+- Imagerie Esri (fond satellite et vues aériennes) via le service public sans clé : soumis aux
+  conditions d'Esri, jamais mis en cache par le service worker.
+- Open-Meteo (gratuit, non commercial) limite le débit par adresse IP : les prévisions sont
+  regroupées par cellules (~60 météo, ~30 marine) et mises en cache 3 h.
 
 ## Licence
 

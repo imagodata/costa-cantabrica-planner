@@ -2,6 +2,8 @@
 (function () {
   const C = CCP.CONFIG;
   const LS_BULK = 'ccp:bulk:v' + C.version;
+  const assetVer = () => (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
+  const todayLocal = () => new Date().toLocaleDateString('sv-SE', { timeZone: C.timezone });
   const detailCache = new Map();
 
   const snap = (v, step) => (Math.round(v / step) * step).toFixed(3);
@@ -27,7 +29,13 @@
         timezone: C.timezone,
         forecast_days: C.forecastDays,
       });
-      let res = await fetchJson(base + '?' + q.toString());
+      let res;
+      try { res = await fetchJson(base + '?' + q.toString()); }
+      catch (e) {
+        if (!/429/.test(e.message)) throw e;
+        await new Promise((r) => setTimeout(r, 2500));       // limitation de débit : un second essai
+        res = await fetchJson(base + '?' + q.toString());
+      }
       if (!Array.isArray(res)) res = [res];
       out.push(...res);
     }
@@ -50,7 +58,7 @@
   /* Prévisions journalières pour tous les spots (météo + état de la mer). */
   async function loadBulk(spots, { force = false } = {}) {
     const cached = force ? null : readCache(LS_BULK, C.cacheTtlMin);
-    if (cached && cached.n === spots.length) return cached;
+    if (cached && cached.n === spots.length && cached.ver === assetVer() && cached.dates && cached.dates[0] === todayLocal()) return cached;
 
     const wKeys = new Map(), mKeys = new Map();
     for (const s of spots) {
@@ -62,7 +70,7 @@
 
     const [w, m] = await Promise.all([
       multi(C.weatherApi, wList.map((e) => e[1]), {
-        daily: ['weather_code', 'temperature_2m_max', 'temperature_2m_min', 'apparent_temperature_max',
+        daily: ['weather_code', 'temperature_2m_max', 'temperature_2m_min',
           'precipitation_sum', 'precipitation_probability_max', 'wind_speed_10m_max', 'wind_gusts_10m_max',
           'wind_direction_10m_dominant', 'uv_index_max', 'sunshine_duration', 'sunrise', 'sunset'].join(','),
         wind_speed_unit: 'kmh',
@@ -74,7 +82,8 @@
       }),
     ]);
 
-    const bulk = { fetchedAt: Date.now(), n: spots.length, weather: {}, marine: {}, dates: w[0].daily.time };
+    if (!w.length || !w[0].daily) throw new Error('réponse météo vide');
+    const bulk = { fetchedAt: Date.now(), n: spots.length, ver: assetVer(), weather: {}, marine: {}, dates: w[0].daily.time };
     wList.forEach(([k], i) => { bulk.weather[k] = w[i].daily; });
     mList.forEach(([k], i) => { bulk.marine[k] = m[i].daily; });
     writeCache(LS_BULK, bulk);
@@ -90,7 +99,7 @@
     return {
       date: bulk.dates[i],
       code: g(w, 'weather_code'), tmax: g(w, 'temperature_2m_max'), tmin: g(w, 'temperature_2m_min'),
-      tapp: g(w, 'apparent_temperature_max'), psum: g(w, 'precipitation_sum'),
+      psum: g(w, 'precipitation_sum'),
       pprob: g(w, 'precipitation_probability_max'), wind: g(w, 'wind_speed_10m_max'),
       gust: g(w, 'wind_gusts_10m_max'), wdir: g(w, 'wind_direction_10m_dominant'),
       uv: g(w, 'uv_index_max'), sun: g(w, 'sunshine_duration'),
@@ -131,9 +140,9 @@
 
     // Vent
     const wind = d.wind ?? 0, gust = d.gust ?? 0;
-    const windMax = profile === 'famille' ? 35 : profile === 'surf' ? 20 : 30;
-    pen(lin(wind, 15, 45, windMax), `vent ${Math.round(wind)} km/h`);
-    if (gust > 60) pen(10, `rafales ${Math.round(gust)}`);
+    const windMax = profile === 'famille' ? 45 : profile === 'surf' ? 25 : 40;
+    pen(lin(wind, 15, 60, windMax), `vent ${Math.round(wind)} km/h`);
+    if (gust > 60) pen(Math.min(25, (gust - 60) / 2 + 10), `rafales ${Math.round(gust)}`);
 
     // Vagues
     const wave = d.wave;
@@ -151,11 +160,17 @@
         /* la houle ne gêne pas la balade */
       } else {
         const lim = profile === 'famille' ? 0.6 : 0.9;
-        pen(lin(wave, lim, lim + 1.6, profile === 'famille' ? 45 : 35), `houle ${wave.toFixed(1)} m`);
+        pen(lin(wave, lim, 4, profile === 'famille' ? 70 : 60), `houle ${wave.toFixed(1)} m`);
       }
     }
 
     s = Math.max(0, Math.min(100, Math.round(s)));
+    // bornes dures : conditions dangereuses jamais « Bon », données de mer inconnues jamais « Idéal »
+    let capLabel = null;
+    if (profile !== 'surf' && wave != null && wave > 3) { s = Math.min(s, 30); capLabel = 'mer forte'; }
+    if (profile !== 'rando' && (gust > 85 || wind > 60)) { s = Math.min(s, 30); capLabel = 'tempête'; }
+    if (wave == null && profile !== 'rando') { s = Math.min(s, 74); reasons.push([1, 'houle inconnue']); }
+    if (capLabel) reasons.unshift([99, capLabel]);
     const cls = C.scoreClasses.find((c) => s >= c.min);
     reasons.sort((a, b) => b[0] - a[0]);
     return { score: s, cls: cls.key, label: cls.label, reasons: reasons.slice(0, 3).map((r) => r[1]) };
@@ -184,7 +199,9 @@
     return d;
   }
 
-  /* Marées : extrema locaux du niveau de la mer horaire, affinés par interpolation parabolique. */
+  /* Marées : extrema locaux du niveau de la mer horaire, affinés par interpolation parabolique.
+     Les heures restent des chaînes ISO en heure locale de la région (jamais converties via Date,
+     qui appliquerait le fuseau du navigateur). */
   function tides(times, levels) {
     const out = [];
     if (!levels) return out;
@@ -196,12 +213,15 @@
       const denom = a - 2 * b + c;
       const off = denom === 0 ? 0 : (a - c) / (2 * denom); // heures, dans [-0.5, 0.5]
       const h = b - (a - c) * off / 4;
-      const t = new Date(times[i]);
-      t.setMinutes(t.getMinutes() + Math.round(off * 60));
-      out.push({ time: t, height: h, type: isMax ? 'PM' : 'BM' });
+      out.push({ iso: shiftIso(times[i], Math.round(off * 60)), height: h, type: isMax ? 'PM' : 'BM' });
     }
     return out;
   }
+  /* Décale une chaîne « YYYY-MM-DDTHH:MM » de n minutes, en arithmétique pure. */
+  function shiftIso(iso, minutes) {
+    const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10), +iso.slice(11, 13), +iso.slice(14, 16)) + minutes * 60000);
+    return d.toISOString().slice(0, 16);
+  }
 
-  CCP.forecast = { loadBulk, dayOf, score, loadDetail, tides, keyOf };
+  CCP.forecast = { loadBulk, dayOf, score, loadDetail, tides, keyOf, shiftIso, todayLocal };
 })();

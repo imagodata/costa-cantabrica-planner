@@ -61,6 +61,8 @@ def main():
     region = json.loads(REGION.read_text(encoding="utf-8")) if REGION.exists() else {"name": "Plages"}
     spots = json.loads((ROOT / "data" / "spots.geojson").read_text(encoding="utf-8"))["features"]
     photos = json.loads((ROOT / "data" / "photos.json").read_text(encoding="utf-8")) if (ROOT / "data" / "photos.json").exists() else {}
+    if not spots:
+        raise SystemExit("Aucun spot : pages de partage conservées")
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
@@ -78,7 +80,7 @@ def main():
         title = f"{p['name']} · {region['name']}"
         app_url = f"{base}index.html#{slug}"
         ctx = dict(site=html.escape(region["name"] + " · plages & criques"), title=html.escape(title), title_plain=html.escape(p["name"]), desc=html.escape(desc),
-                   page_url=f"{base}s/{slug}.html", app_url=html.escape(app_url), app_url_js=json.dumps(app_url),
+                   page_url=f"{base}s/{slug}.html", app_url=html.escape(app_url), app_url_js=json.dumps(app_url).replace("<", "\\u003c"),
                    og_image=f'<meta property="og:image" content="{html.escape(ph["thumb"])}">' if ph.get("thumb") else "",
                    card="summary_large_image" if ph.get("thumb") else "summary",
                    img_html=f'<img src="{html.escape(ph["thumb"])}" alt="">' if ph.get("thumb") else "")

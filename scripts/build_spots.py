@@ -39,24 +39,27 @@ def slugify(text):
     return t or "plage"
 
 
+SLUGS_FILE = ROOT / "data" / "slugs.json"
+
+
 def assign_slugs(features):
-    """Slug lisible et unique par spot : nom, puis -province, puis -2, -3… (ordre stable par id)."""
-    by_slug = {}
+    """Slug lisible, unique et STABLE : un slug déjà attribué à un id (data/slugs.json) ne change
+    jamais, même si un homonyme apparaît ; un nouvel id prend le nom, puis -province, puis -id."""
+    known = json.loads(SLUGS_FILE.read_text(encoding="utf-8")) if SLUGS_FILE.exists() else {}
+    used = set(known.values())
     for f in sorted(features, key=lambda f: f["properties"]["id"]):
-        by_slug.setdefault(slugify(f["properties"]["name"]), []).append(f)
-    for base, group in by_slug.items():
-        if len(group) == 1:
-            group[0]["properties"]["slug"] = base
+        p = f["properties"]
+        if p["id"] in known:
+            p["slug"] = known[p["id"]]
             continue
-        seen = set()
-        for f in group:
-            cand = f"{base}-{f['properties']['province'].lower()}"
-            n = 2
-            while cand in seen:
-                cand = f"{base}-{f['properties']['province'].lower()}-{n}"
-                n += 1
-            seen.add(cand)
-            f["properties"]["slug"] = cand
+        base = slugify(p["name"])
+        for cand in (base, f"{base}-{(p.get('province') or '').lower()}".rstrip("-"), f"{base}-{p['id']}"):
+            if cand and cand not in used:
+                break
+        used.add(cand)
+        known[p["id"]] = cand
+        p["slug"] = cand
+    SLUGS_FILE.write_text(json.dumps(dict(sorted(known.items())), ensure_ascii=False, indent=0), encoding="utf-8")
 
 
 def find_gispulse(explicit):

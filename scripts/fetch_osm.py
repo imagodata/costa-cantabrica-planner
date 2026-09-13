@@ -66,8 +66,11 @@ def overpass(query, timeout=300):
                 req = urllib.request.Request(ep, data=query.encode(), headers={"User-Agent": "costa-cantabrica-planner"})
                 with urllib.request.urlopen(req, timeout=timeout) as r:
                     data = json.loads(r.read().decode("utf-8"))
-                if "elements" in data:
+                if data.get("remark"):
+                    raise RuntimeError(f"Overpass : {data['remark'][:120]}")
+                if data.get("elements"):
                     return data
+                raise RuntimeError("Overpass : réponse vide")
             except Exception as exc:  # réponse tronquée, HTML de limitation de débit, délai…
                 last = exc
                 print(f"Overpass {ep} (essai {attempt + 1}) : {exc}", file=sys.stderr)
@@ -140,6 +143,8 @@ def fetch_areas(region, refresh):
         if not data.get("features"):
             raise SystemExit(f"Nominatim : zone introuvable « {area['query']} »")
         f = data["features"][0]
+        if f["geometry"]["type"] not in ("Polygon", "MultiPolygon"):
+            raise SystemExit(f"Nominatim : « {area['query']} » n'a pas de polygone ({f['geometry']['type']}) ; précisez la requête")
         feats.append({"type": "Feature", "geometry": f["geometry"], "properties": {"province": area["name"]}})
         time.sleep(1.1)
     fc = {"type": "FeatureCollection", "features": feats}
@@ -178,6 +183,8 @@ def fetch_pois(bbox, refresh):
         if lat is None:
             continue
         name = tags.get("name")
+        if not name:
+            continue
         lname = name.lower()
         kind = poi_kind(tags)
         if kind in ("bar", "restaurant", "cafe") and ("chiringuito" in lname or "xiringuitu" in lname or "beach bar" in lname or tags.get("beach_bar") == "yes"):
@@ -187,6 +194,11 @@ def fetch_pois(bbox, refresh):
         for k in POI_TAGS:
             if k in tags:
                 props[k.replace(":", "_")] = tags[k]
+        for k in ("website", "contact_website"):  # seules les URL http(s) absolues sont conservées
+            if k in props and not props[k].lower().startswith(("http://", "https://")):
+                props[k] = "https://" + props[k] if "." in props[k] and " " not in props[k] and ":" not in props[k] else None
+                if not props[k]:
+                    del props[k]
         feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]}, "properties": props})
     fc = {"type": "FeatureCollection", "features": feats}
     (RAW / "pois_osm.geojson").write_text(json.dumps(fc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
