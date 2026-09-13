@@ -11,6 +11,7 @@
     spots: [], photos: {}, pois: [], bulk: null, day: 0, profile: 'plage', selected: null, userPos: null,
     poiOn: { food: true, visit: true },
     view: 'explore', wishWho: 'all', wishSort: 'coast', plans: {},
+    trip: { base: null, start: null, days: [] }, pickBase: false,
     filters: { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' },
     sort: 'score',
     users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } },
@@ -18,7 +19,8 @@
   };
   const scoreCache = new Map();
   let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0;
-  let poiLayer = null, poiMarkers = new Map(), wishLayer = null;
+  let poiLayer = null, poiMarkers = new Map(), wishLayer = null, tripLayer = null;
+  const DAY_COLORS = ['#0b6e99', '#b45309', '#7c3aed', '#0a9396', '#d64545', '#4361ee', '#f0a202'];
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   /* ------------------------------------------------------------------ utilitaires */
@@ -82,6 +84,7 @@
       if (j.plans) state.plans = j.plans;
       if (j.wishWho) state.wishWho = j.wishWho;
       if (j.wishSort) state.wishSort = j.wishSort;
+      if (j.trip && Array.isArray(j.trip.days)) state.trip = j.trip;
     } catch (e) { }
   }
 
@@ -91,7 +94,9 @@
   function shareUrl() {
     const pl = {};
     for (const [id, pn] of Object.entries(state.plans)) if (pn.items.length || pn.notes.a || pn.notes.b) pl[id] = { n: pn.notes, i: pn.items.map((it) => [it.poi || ('t:' + it.text), it.by]) };
-    const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, d: state.day, p: state.profile, s: state.selected, pl };
+    const tr = state.trip.days.some((d) => d.stops.length) || state.trip.base
+      ? { b: state.trip.base, s: state.trip.start, d: state.trip.days.map((d) => d.stops.map((st) => [st.t, st.id || st.text])) } : undefined;
+    const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, d: state.day, p: state.profile, s: state.selected, pl, tr };
     return location.origin + location.pathname + '#share=' + b64e(JSON.stringify(p));
   }
   const spotBySlug = (slug) => state.spots.find((s) => s.properties.slug === slug);
@@ -127,7 +132,13 @@
           if (!pn.items.some((x) => (x.poi && x.poi === it.poi) || (x.text && x.text === it.text))) pn.items.push(it);
         }
       }
+      if (p.tr && Array.isArray(p.tr.d) && !state.trip.days.some((d) => d.stops.length)) {
+        state.trip = { base: p.tr.b && Number.isFinite(p.tr.b.lat) && Number.isFinite(p.tr.b.lon) ? { name: String(p.tr.b.name || 'Hébergement').slice(0, 60), lat: p.tr.b.lat, lon: p.tr.b.lon } : state.trip.base,
+          start: typeof p.tr.s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.tr.s) ? p.tr.s : null,
+          days: p.tr.d.slice(0, 14).map((stops) => ({ stops: (stops || []).slice(0, 30).map(([t, v]) => t === 'x' ? { t: 'x', text: String(v).slice(0, 80) } : { t: t === 'p' ? 'p' : 's', id: String(v) }) })) };
+      }
       if ((p.a && p.a.length) || (p.b && p.b.length)) state.view = 'wishes';
+      if (p.tr && Array.isArray(p.tr.d) && p.tr.d.some((d) => d && d.length)) state.view = 'trip';
       history.replaceState(null, '', location.pathname + location.search);
       save(); toast('Sélection partagée importée'); return true;
     } catch (e) { return false; }
@@ -209,6 +220,12 @@
         .on('click', () => select(s.properties.id, { pan: false }));
       m.addTo(map); markers.set(s.properties.id, m);
     }
+    map.on('click', (e) => {
+      if (!state.pickBase) return;
+      state.pickBase = false; ensureTrip();
+      state.trip.base = { name: `Hébergement (${e.latlng.lat.toFixed(3)}, ${e.latlng.lng.toFixed(3)})`, lat: +e.latlng.lat.toFixed(5), lon: +e.latlng.lng.toFixed(5) };
+      save(); renderTrip(); paintMarkers(); if (window.innerWidth < 900) setSheet('half'); toast('Hébergement placé');
+    });
     fitAll();
     $('#legend').innerHTML = C.scoreClasses.map((c) => `<span><i style="background:var(--${c.key})"></i>${c.label}</span>`).join('');
   }
@@ -293,8 +310,9 @@
       if (!vis.has(id)) { if (map.hasLayer(m)) map.removeLayer(m); continue; }
       if (!map.hasLayer(m)) m.addTo(map);
       const r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(id), sel = state.selected === id;
-      if (state.view === 'wishes') {
-        if (w.a || w.b) { map.removeLayer(m); continue; }
+      if (state.view === 'wishes' || state.view === 'trip') {
+        if (state.view === 'wishes' && (w.a || w.b)) { map.removeLayer(m); continue; }
+        if (state.view === 'trip' && tripHasSpot(id)) { map.removeLayer(m); continue; }
         m.setStyle({ fillColor: cssVar('--' + r.cls), radius: 4, color: '#fff', weight: 1, fillOpacity: .45 });
         continue;
       }
@@ -302,7 +320,7 @@
         color: sel ? '#111' : w.a && w.b ? colBoth : w.a ? colA : w.b ? colB : '#fff', weight: sel ? 3 : (w.a || w.b ? 3 : 2) });
       if (sel) m.bringToFront();
     }
-    paintWishLayer();
+    paintWishLayer(); paintTripLayer();
   }
   function panTo(s) {
     const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = window.innerWidth < 900, p = map.project(latlng(s), z);
@@ -321,6 +339,7 @@
     $('#btn-share').innerHTML = I('share', { size: 20 });
     $('#search-ic').innerHTML = I('search', { size: 18 });
     $('.close', $('#dlg-settings')).innerHTML = I('x', { size: 18 });
+    $('.close', $('#dlg-pick')).innerHTML = I('x', { size: 18 });
   }
   function renderWho() {
     $('#who').innerHTML = ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(state.users[k].name[0].toUpperCase())}</span></button>`).join('');
@@ -353,17 +372,18 @@
 
   /* ------------------------------------------------------------------ onglets & vue Envies */
   function renderTabs() {
-    const n = wishedIds().length;
+    const n = wishedIds().length, nt = state.trip.days.reduce((k, d) => k + d.stops.length, 0);
     $('#tabs').innerHTML = `<button type="button" role="tab" aria-selected="${state.view === 'explore'}" data-v="explore" class="${state.view === 'explore' ? 'on' : ''}">${I('compass', { size: 16 })}Explorer</button>
-      <button type="button" role="tab" aria-selected="${state.view === 'wishes'}" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Nos envies${n ? `<b>${n}</b>` : ''}</button>`;
+      <button type="button" role="tab" aria-selected="${state.view === 'wishes'}" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Envies${n ? `<b>${n}</b>` : ''}</button>
+      <button type="button" role="tab" aria-selected="${state.view === 'trip'}" data-v="trip" class="${state.view === 'trip' ? 'on' : ''}">${I('calendar', { size: 16 })}Séjour${nt ? `<b>${nt}</b>` : ''}</button>`;
     $('#tabs').querySelectorAll('button').forEach((b) => b.onclick = () => setView(b.dataset.v));
   }
   function setView(v) {
     state.view = v;
     if (state.selected && !$('#panel-detail').hidden) closeDetail();
-    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes';
+    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip';
     renderTabs(); paintMarkers();
-    if (v === 'wishes') { renderWishes(); fitWishes(); } else { renderList(); }
+    if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else { renderList(); }
   }
   function wishList() {
     const who = state.wishWho;
@@ -443,6 +463,206 @@
     });
   }
 
+  /* ------------------------------------------------------------------ séjour (jours, étapes, hébergement) */
+  const todayIso = () => (state.bulk ? state.bulk.dates[0] : new Date().toISOString().slice(0, 10));
+  const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  function ensureTrip() {
+    const t = state.trip;
+    if (!t.start) t.start = todayIso();
+    if (!t.days.length) t.days = [{ stops: [] }, { stops: [] }, { stops: [] }];
+  }
+  const dayIso = (i) => addDays(state.trip.start, i);
+  const dayColor = (i) => DAY_COLORS[i % DAY_COLORS.length];
+  const dayLabel = (i) => { const d = new Date(dayIso(i) + 'T12:00:00'); return `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}`; };
+  const forecastIdx = (iso) => (state.bulk ? state.bulk.dates.indexOf(iso) : -1);
+  const tripHasSpot = (id) => state.trip.days.some((d) => d.stops.some((st) => st.t === 's' && st.id === id));
+  function stopInfo(st) {
+    if (st.t === 's') { const s = spotById(st.id); if (!s) return null; const [lat, lon] = latlng(s); return { name: s.properties.name, lat, lon, kind: 'spot', sub: s.properties.type === 'cala' ? 'crique' : 'plage', spot: s }; }
+    if (st.t === 'p') { const x = poiById(st.id); if (!x) return null; const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism; return { name: x.p.name, lat: x.lat, lon: x.lon, kind: 'poi', icon: k.icon, color: k.color, sub: k.label, poi: x }; }
+    return { name: st.text, kind: 'text', sub: 'activité' };
+  }
+  function addStop(di, st, { withPlan = true } = {}) {
+    ensureTrip();
+    const day = state.trip.days[di]; if (!day) return;
+    const key = (x) => x.t + ':' + (x.id || x.text);
+    if (day.stops.some((x) => key(x) === key(st))) return false;
+    day.stops.push(st);
+    if (withPlan && st.t === 's') for (const it of (state.plans[st.id]?.items || [])) {
+      const extra = it.poi ? { t: 'p', id: it.poi } : { t: 'x', text: it.text };
+      if (!day.stops.some((x) => key(x) === key(extra))) day.stops.push(extra);
+    }
+    save(); return true;
+  }
+  function dayRoute(day) {
+    const pts = day.stops.map(stopInfo).filter((x) => x && x.lat != null).map((x) => [x.lat, x.lon]);
+    const b = state.trip.base ? [state.trip.base.lat, state.trip.base.lon] : null;
+    const seq = b ? [b, ...pts, b] : pts;
+    let km = 0; for (let i = 1; i < seq.length; i++) km += distKm(seq[i - 1], seq[i]);
+    let url = null;
+    if (seq.length >= 2) {
+      const o = seq[0], d = seq[seq.length - 1], mid = seq.slice(1, -1).slice(0, 9);
+      url = `https://www.google.com/maps/dir/?api=1&origin=${o.join(',')}&destination=${d.join(',')}${mid.length ? '&waypoints=' + mid.map((x) => x.join(',')).join('|') : ''}`;
+    } else if (seq.length === 1) url = `https://www.google.com/maps/dir/?api=1&destination=${seq[0].join(',')}`;
+    return { km: km * 1.3, url, pts, seq };
+  }
+  function proposeTrip() {
+    ensureTrip();
+    const t = state.trip, n = t.days.length;
+    let cands = wishedIds().map(spotById);
+    if (!cands.length) cands = state.spots.slice();
+    if (!state.bulk) { toast('Prévisions nécessaires pour proposer un planning'); return; }
+    const base = t.base ? [t.base.lat, t.base.lon] : null;
+    const perDay = Math.max(1, Math.min(3, Math.ceil(cands.length / n)));
+    // score jour × spot ; pénalité de distance à l'hébergement ; 2 à 3 plages par jour maximum
+    const scored = [];
+    for (const s of cands) for (let i = 0; i < n; i++) {
+      const fi = forecastIdx(dayIso(i)); if (fi < 0) continue;
+      const sc = scoreOf(s, fi).score; if (sc == null) continue;
+      const pen = base ? Math.min(20, distKm(base, latlng(s)) / 5) : 0;
+      scored.push({ s, i, v: sc - pen });
+    }
+    scored.sort((a, b) => b.v - a.v);
+    const used = new Set(), counts = Array(n).fill(0);
+    t.days.forEach((d) => { d.stops = []; });
+    const wished = wishedIds().length > 0;
+    for (const { s, i } of scored) {
+      if (used.has(s.properties.id) || counts[i] >= perDay) continue;
+      if (!wished && counts.reduce((a, b) => a + b, 0) >= n * 2) break;
+      used.add(s.properties.id); counts[i]++;
+      t.days[i].stops.push({ t: 's', id: s.properties.id });
+    }
+    t.days.forEach((d) => {
+      d.stops.sort((x, y) => (spotById(x.id)?.geometry.coordinates[0] ?? 0) - (spotById(y.id)?.geometry.coordinates[0] ?? 0));
+      const spots = d.stops.slice(); d.stops = [];
+      for (const st of spots) addStop(t.days.indexOf(d), st);
+    });
+    save(); renderTabs(); renderTrip(); paintMarkers(); fitTrip();
+    toast(wished ? 'Planning proposé à partir de vos envies' : 'Planning proposé avec les meilleures plages');
+  }
+  function renderTrip() {
+    ensureTrip();
+    const t = state.trip, el = $('#trip');
+    const baseHtml = t.base
+      ? `<div class="base-name"><span class="home">${I('home', { size: 16 })}</span><span>${esc(t.base.name)}</span><button type="button" class="linkbtn" id="base-clear" style="margin-left:auto">Changer</button></div>`
+      : `<span class="hint">Définissez votre hébergement : chaque journée part de là et y revient.</span>
+         <div class="base-search"><input type="search" id="base-q" placeholder="Rechercher un lieu, un village, une plage…" autocomplete="off"><button type="button" class="iconbtn" id="base-geo" title="Ma position" aria-label="Ma position">${I('locate', { size: 18 })}</button><button type="button" class="iconbtn ${state.pickBase ? 'on' : ''}" id="base-map" title="Choisir sur la carte" aria-label="Choisir sur la carte">${I('pin', { size: 18 })}</button></div>
+         <div class="sugg" id="base-sugg" hidden></div>`;
+    const daysHtml = t.days.map((d, i) => {
+      const fi = forecastIdx(dayIso(i)), route = dayRoute(d);
+      const stops = d.stops.map((st, k) => {
+        const info = stopInfo(st); if (!info) return '';
+        const prev = k > 0 ? stopInfo(d.stops[k - 1]) : (t.base ? { lat: t.base.lat, lon: t.base.lon } : null);
+        const leg = info.lat != null && prev && prev.lat != null ? `${(distKm([prev.lat, prev.lon], [info.lat, info.lon]) * 1.3).toFixed(0)} km` : '';
+        let sc = '';
+        if (info.kind === 'spot' && fi >= 0) { const r = scoreOf(info.spot, fi); sc = `<span class="sc"><i style="background:var(--${r.cls})"></i>${r.score ?? '—'}</span>`; }
+        const badge = info.kind === 'spot' ? `<span class="n">${k + 1}</span>` : info.kind === 'poi' ? `<span class="n poi" style="background:${info.color}">${I(info.icon, { size: 12 })}</span>` : `<span class="n poi">${I('compass', { size: 12 })}</span>`;
+        return `<li data-k="${k}">${badge}<span class="t">${esc(info.name)} <small>· ${esc(info.sub)}</small></span><span class="d">${sc} ${leg}</span>
+          <button type="button" class="ib up" data-k="${k}" ${k === 0 ? 'disabled' : ''} aria-label="Monter">${I('up2', { size: 14 })}</button><button type="button" class="ib rm" data-k="${k}" aria-label="Retirer">${I('x', { size: 14 })}</button></li>`;
+      }).join('');
+      let wx = '';
+      if (fi >= 0 && d.stops.some((st) => st.t === 's')) { const s0 = spotById(d.stops.find((st) => st.t === 's').id); const dd = F.dayOf(state.bulk, s0, fi); wx = `${wIcon(dd.code, 16)} ${n0(dd.tmax, '°')}`; }
+      return `<div class="card day-card" style="--dc:${dayColor(i)}" data-i="${i}">
+        <div class="h"><div><b>Jour ${i + 1}</b> <small>· ${dayLabel(i)}</small></div><span style="display:flex;align-items:center;gap:6px">${wx}</span></div>
+        ${stops ? `<ul class="stops">${stops}</ul>` : '<span class="hint">Aucune étape. Ajoutez une plage : son programme (resto, visite…) suit automatiquement.</span>'}
+        <div class="day-foot">
+          <button type="button" class="linkbtn add-stop" data-i="${i}">${I('plus', { size: 14 })} Ajouter une étape</button>
+          ${route.url ? `<span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
+        </div></div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="card"><div class="h"><h3>${I('home', { size: 13 })} Hébergement</h3></div>${baseHtml}</div>
+      <div class="card"><div class="h"><h3>${I('calendar', { size: 13 })} Jours</h3>
+        <div class="stepper"><button type="button" id="days-minus" aria-label="Un jour de moins">${I('minus', { size: 16 })}</button><b>${t.days.length}</b><button type="button" id="days-plus" aria-label="Un jour de plus">${I('plus', { size: 16 })}</button></div></div>
+        <div class="row" style="align-items:center;gap:8px;font-size:13px"><span>Premier jour</span><input type="date" id="trip-start" value="${t.start}" style="flex:1;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 8px;background:var(--panel);color:var(--text)"></div>
+        <button type="button" class="btn ghost" id="trip-propose" style="display:flex;align-items:center;justify-content:center;gap:8px">${I('wand', { size: 16 })}Proposer un planning selon la météo</button></div>
+      ${daysHtml}
+      <div class="row"><button type="button" class="btn ghost" id="trip-share" style="flex:1">Partager le séjour</button><button type="button" class="btn ghost" id="trip-clear" style="flex:1">Tout effacer</button></div>`;
+    // hébergement
+    $('#base-clear') && ($('#base-clear').onclick = () => { t.base = null; save(); renderTrip(); paintMarkers(); });
+    const q = $('#base-q');
+    if (q) {
+      q.oninput = () => {
+        const v = q.value.trim().toLowerCase(), box = $('#base-sugg');
+        if (v.length < 2) { box.hidden = true; return; }
+        const hits = [...state.spots.filter((s) => s.properties.name.toLowerCase().includes(v)).slice(0, 4).map((s) => ({ name: s.properties.name, sub: s.properties.type === 'cala' ? 'crique' : 'plage', lat: latlng(s)[0], lon: latlng(s)[1], icon: 'wave' })),
+          ...state.pois.filter((x) => x.p.name.toLowerCase().includes(v)).slice(0, 6).map((x) => ({ name: x.p.name, sub: (C.poiKinds[x.p.kind] || C.poiKinds.tourism).label + (x.p.addr_city ? ' · ' + x.p.addr_city : ''), lat: x.lat, lon: x.lon, icon: (C.poiKinds[x.p.kind] || C.poiKinds.tourism).icon }))];
+        box.hidden = !hits.length;
+        box.innerHTML = hits.map((h, k) => `<button type="button" data-k="${k}">${I(h.icon, { size: 14 })}<span>${esc(h.name)}</span><small>${esc(h.sub)}</small></button>`).join('');
+        box.querySelectorAll('button').forEach((b) => b.onclick = () => { const h = hits[+b.dataset.k]; t.base = { name: h.name, lat: h.lat, lon: h.lon }; save(); renderTrip(); paintMarkers(); fitTrip(); });
+      };
+      $('#base-geo').onclick = () => navigator.geolocation?.getCurrentPosition((pos) => { t.base = { name: 'Ma position', lat: +pos.coords.latitude.toFixed(5), lon: +pos.coords.longitude.toFixed(5) }; save(); renderTrip(); paintMarkers(); fitTrip(); }, () => toast('Position introuvable'));
+      $('#base-map').onclick = () => { state.pickBase = !state.pickBase; renderTrip(); toast(state.pickBase ? 'Touchez la carte pour placer l\'hébergement' : 'Sélection annulée'); if (state.pickBase && window.innerWidth < 900) setSheet('peek'); };
+    }
+    // jours
+    $('#days-minus').onclick = () => { if (t.days.length > 1) { t.days.pop(); save(); renderTabs(); renderTrip(); paintMarkers(); } };
+    $('#days-plus').onclick = () => { if (t.days.length < 14) { t.days.push({ stops: [] }); save(); renderTrip(); } };
+    $('#trip-start').onchange = (e) => { if (e.target.value) { t.start = e.target.value; save(); renderTrip(); } };
+    $('#trip-propose').onclick = () => { if (!t.days.some((d) => d.stops.length) || confirm('Remplacer les étapes actuelles par une proposition ?')) proposeTrip(); };
+    $('#trip-share').onclick = share;
+    $('#trip-clear').onclick = () => { if (confirm('Effacer hébergement et étapes ?')) { state.trip = { base: null, start: null, days: [] }; save(); renderTabs(); renderTrip(); paintMarkers(); } };
+    el.querySelectorAll('.add-stop').forEach((b) => b.onclick = () => pickStop(+b.dataset.i));
+    el.querySelectorAll('.day-card').forEach((card) => {
+      const i = +card.dataset.i, d = t.days[i];
+      card.querySelectorAll('.rm').forEach((b) => b.onclick = () => { d.stops.splice(+b.dataset.k, 1); save(); renderTabs(); renderTrip(); paintMarkers(); });
+      card.querySelectorAll('.up').forEach((b) => b.onclick = () => { const k = +b.dataset.k; if (k > 0) { [d.stops[k - 1], d.stops[k]] = [d.stops[k], d.stops[k - 1]]; save(); renderTrip(); paintMarkers(); } });
+      card.querySelectorAll('.stops li').forEach((li) => li.onclick = (e) => { if (e.target.closest('button')) return; const st = d.stops[+li.dataset.k]; if (st.t === 's') select(st.id, { pan: true }); else if (st.t === 'p') { const x = poiById(st.id); if (x) showPoi(x); } });
+    });
+  }
+  function pickStop(di) {
+    const dlg = $('#dlg-pick'), day = state.trip.days[di], fi = forecastIdx(dayIso(di));
+    const inDay = new Set(day.stops.map((st) => st.t + ':' + (st.id || st.text)));
+    $('#pick-title').textContent = `Ajouter au jour ${di + 1} · ${dayLabel(di)}`;
+    const scoreTag = (s) => { if (fi < 0 || !state.bulk) return ''; const r = scoreOf(s, fi); return `<span class="sub" style="color:var(--${r.cls});font-weight:700">${r.score ?? '—'}</span>`; };
+    const wish = wishedIds().map(spotById).filter((s) => !inDay.has('s:' + s.properties.id));
+    const best = state.bulk && fi >= 0 ? state.spots.filter((s) => !inDay.has('s:' + s.properties.id) && !wish.includes(s)).sort((a, b) => (scoreOf(b, fi).score ?? -1) - (scoreOf(a, fi).score ?? -1)).slice(0, 8) : [];
+    const last = [...day.stops].reverse().map(stopInfo).find((x) => x && x.lat != null);
+    const near = last ? state.pois.map((x) => ({ x, d: distKm([last.lat, last.lon], [x.lat, x.lon]) })).filter((o) => o.d < 2 && !inDay.has('p:' + o.x.id)).sort((a, b) => a.d - b.d).slice(0, 8) : [];
+    const row = (s) => `<button type="button" data-t="s" data-id="${esc(s.properties.id)}">${I('wave', { size: 14 })}<span>${esc(s.properties.name)}</span>${scoreTag(s)}</button>`;
+    $('#pick-list').innerHTML = (wish.length ? `<h4>Vos envies</h4>${wish.map(row).join('')}` : '') +
+      (best.length ? `<h4>Meilleures plages ce jour-là</h4>${best.map(row).join('')}` : '') +
+      (near.length ? `<h4>Autour de ${esc(last.name)}</h4>${near.map((o) => { const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism; return `<button type="button" data-t="p" data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color};width:22px;height:22px">${I(k.icon, { size: 12 })}</span><span>${esc(o.x.p.name)}</span><span class="sub">${esc(k.label)} · ${Math.round(o.d * 1000)} m</span></button>`; }).join('')}` : '') +
+      `<h4>Autre</h4><div class="plan-add"><input type="text" id="pick-text" maxlength="80" placeholder="Étape libre : marché, pause café…"><button type="button" id="pick-text-add" aria-label="Ajouter">${I('plus', { size: 18 })}</button></div>`;
+    const done = () => { dlg.close(); save(); renderTabs(); renderTrip(); paintMarkers(); };
+    $('#pick-list').querySelectorAll('button[data-t]').forEach((b) => b.onclick = () => { addStop(di, { t: b.dataset.t, id: b.dataset.id }); done(); });
+    $('#pick-text-add').onclick = () => { const v = $('#pick-text').value.trim(); if (v) { addStop(di, { t: 'x', text: v }); done(); } };
+    dlg.showModal();
+  }
+  function pickDayFor(spotId) {
+    ensureTrip();
+    const dlg = $('#dlg-pick');
+    $('#pick-title').textContent = 'Ajouter à quel jour ?';
+    $('#pick-list').innerHTML = state.trip.days.map((d, i) => { const fi = forecastIdx(dayIso(i)); const s = spotById(spotId); const r = fi >= 0 && state.bulk ? scoreOf(s, fi) : null;
+      return `<button type="button" data-i="${i}"><span class="n" style="width:24px;height:24px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span><span>Jour ${i + 1} · ${dayLabel(i)}</span><span class="sub">${d.stops.length} étape${d.stops.length > 1 ? 's' : ''}${r ? ` · <b style="color:var(--${r.cls})">${r.score ?? '—'}</b>` : ''}</span></button>`; }).join('');
+    $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => { const ok = addStop(+b.dataset.i, { t: 's', id: spotId }); dlg.close(); renderTabs(); paintMarkers(); toast(ok ? `Ajouté au jour ${+b.dataset.i + 1}` : 'Déjà dans ce jour'); if (state.selected === spotId) renderDetailHead(); });
+    dlg.showModal();
+  }
+  function fitTrip() {
+    const pts = [];
+    if (state.trip.base) pts.push([state.trip.base.lat, state.trip.base.lon]);
+    for (const d of state.trip.days) for (const st of d.stops) { const x = stopInfo(st); if (x && x.lat != null) pts.push([x.lat, x.lon]); }
+    if (!pts.length) return;
+    const mobile = window.innerWidth < 900, bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
+    map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 });
+  }
+  function paintTripLayer() {
+    if (!tripLayer) tripLayer = L.layerGroup().addTo(map);
+    tripLayer.clearLayers();
+    if (state.view !== 'trip') return;
+    const t = state.trip;
+    if (t.base) L.marker([t.base.lat, t.base.lon], { icon: L.divIcon({ className: '', html: `<div class="home-pin">${I('home', { size: 15 })}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }), title: t.base.name, zIndexOffset: 1200 }).bindTooltip(t.base.name, { className: 'spot-tip', direction: 'top', offset: [0, -14] }).addTo(tripLayer);
+    t.days.forEach((d, i) => {
+      const route = dayRoute(d);
+      if (route.seq.length > 1) L.polyline(route.seq, { color: dayColor(i), weight: 3, opacity: .75, dashArray: t.base ? null : '4 6' }).addTo(tripLayer);
+      let n = 0;
+      d.stops.forEach((st) => { const x = stopInfo(st); if (!x || x.lat == null) return;
+        const isSpot = x.kind === 'spot'; if (isSpot) n++;
+        const icon = L.divIcon({ className: '', html: `<div class="day-pin ${isSpot ? '' : 'poi'}" style="background:${isSpot ? dayColor(i) : x.color}">${isSpot ? n : I(x.icon, { size: 10 })}</div>`, iconSize: isSpot ? [26, 26] : [18, 18], iconAnchor: isSpot ? [13, 13] : [9, 9] });
+        L.marker([x.lat, x.lon], { icon, title: x.name, zIndexOffset: 1000 }).bindTooltip(`J${i + 1} · ${x.name}`, { className: 'spot-tip', direction: 'top', offset: [0, -12] })
+          .on('click', () => { if (isSpot) select(st.id, { pan: false }); else showPoi(x.poi); }).addTo(tripLayer);
+      });
+    });
+  }
+
   /* ------------------------------------------------------------------ liste */
   function renderList() {
     const ul = $('#list'), list = sorted(filtered());
@@ -486,7 +706,7 @@
     state.selected = id; detailDay = state.day; detailData = null;
     if (s.properties.slug && location.hash !== '#' + s.properties.slug) history.pushState({ spot: id }, '', location.pathname + location.search + '#' + s.properties.slug);
     paintMarkers();
-    $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
+    $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-trip').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
     if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
     renderDetailHead();
     $('#detail-body').innerHTML = '<div class="loading">Chargement des prévisions horaires…</div>';
@@ -499,7 +719,7 @@
     state.selected = null; paintMarkers();
     if (location.hash && !fromHistory) history.replaceState(null, '', location.pathname + location.search);
     $('#panel-detail').hidden = true;
-    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else { $('#panel-list').hidden = false; renderList(); }
+    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else if (state.view === 'trip') { $('#panel-trip').hidden = false; renderTrip(); } else { $('#panel-list').hidden = false; renderList(); }
   }
   function creditHtml(g, ph) {
     if (!g) return '';
@@ -540,6 +760,7 @@
           <button type="button" class="pill a ${w.a ? 'on' : ''}" data-who="a">${I('heart', { size: 15, fill: w.a })}${esc(state.users.a.name)}</button>
           <button type="button" class="pill b ${w.b ? 'on' : ''}" data-who="b">${I('heart', { size: 15, fill: w.b })}${esc(state.users.b.name)}</button>
           <span class="spacer"></span>
+          <button type="button" class="pill ${tripHasSpot(p.id) ? 'primary' : ''}" id="btn-trip-add" title="Ajouter à un jour du séjour">${I('calendar', { size: 15 })}${tripHasSpot(p.id) ? 'Au séjour' : 'Séjour'}</button>
           <a class="pill primary" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving" target="_blank" rel="noopener">${I('navigation', { size: 16 })}Itinéraire</a>
         </div>
         <div id="plan-slot"></div>
@@ -554,6 +775,7 @@
       </div>`;
     $('#btn-close').onclick = closeDetail;
     $('#btn-share-spot').onclick = () => shareSpot(s);
+    $('#btn-trip-add').onclick = () => pickDayFor(p.id);
     if (gal.length > 1) {
       const slides = $('#slides'), dots = $('#dots').children;
       const go = (i) => slides.scrollTo({ left: i * slides.clientWidth, behavior: 'smooth' });
@@ -794,7 +1016,7 @@
     const steps = [
       { icon: 'compass', title: 'Explorer', text: `Choisissez le jour et votre profil (plage, famille, surf, balade) : chaque plage reçoit un score selon la météo, le vent et la houle. Touchez un point de la carte ou la liste pour la fiche complète : marées, heure par heure, photos, lieux à proximité.` },
       { icon: 'heart', title: 'À deux', text: `${esc(state.users.a.name)} et ${esc(state.users.b.name)} marquent chacun leurs envies avec le cœur de leur couleur. L'onglet « Nos envies » réunit les listes, numérote les plages d'ouest en est et prépare l'itinéraire.` },
-      { icon: 'note', title: 'Programmer', text: `Dans une fiche, ajoutez un resto, un monument ou une activité au programme de la plage, avec une note pour l'autre. Le bouton partager envoie tout cela par lien, sans compte ni application.` },
+      { icon: 'calendar', title: 'Programmer', text: `Dans une fiche, ajoutez un resto, un monument ou une activité au programme de la plage. L'onglet « Séjour » place votre hébergement, répartit les plages sur les jours selon la météo et prépare chaque trajet aller-retour dans Google Maps. Tout se partage par lien.` },
     ];
     const dlg = $('#dlg-intro'); let i = 0;
     const render = () => {
@@ -842,7 +1064,7 @@
     routed = !shared && applyRoute();
     state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
     renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
-    if (state.view === 'wishes') setView('wishes');
+    if (state.view === 'wishes' || state.view === 'trip') setView(state.view);
     $('#q').value = state.filters.q;
     await loadForecast(false);
     if ((shared || routed) && state.selected) select(state.selected, { pan: true }); else state.selected = null;

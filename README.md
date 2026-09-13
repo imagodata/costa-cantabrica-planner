@@ -42,6 +42,12 @@ deux listes sur l'autre téléphone.
   multi-étapes, partage et export.
 - **Programme par plage** : note de chaque voyageur, compléments ajoutés depuis « À proximité »
   (resto, monument…) ou activités libres, visibles sur la carte et dans le lien partagé.
+- **Séjour** : hébergement (recherche d'un lieu, position, ou point sur la carte), jours datés,
+  étapes ordonnées (plage, resto, visite, étape libre) avec distance par tronçon et aller-retour
+  estimé, ajout d'une plage avec son programme en bloc, « Proposer un planning selon la météo »
+  (répartit les envies sur les jours selon le score, en pénalisant l'éloignement de
+  l'hébergement), lien Google Maps par jour avec départ et retour à l'hébergement, tout
+  partagé par lien.
 - **Liens courts par plage** : `index.html#<slug>` ouvre la fiche ; `s/<slug>.html` est une page
   de partage avec aperçu (titre, photo) qui redirige vers la fiche. Le bouton « partager » d'une
   fiche copie ce lien.
