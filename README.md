@@ -81,9 +81,17 @@ Les prévisions sont mises en cache dans le navigateur pendant 60 min.
 
 ## Utilisation
 
-Hébergée sur GitHub Pages : ouvrir la page, choisir le jour et le profil, parcourir la liste
-classée ou toucher un point de la carte. Vues directes : `index.html#view=trip`,
-`#view=config`, `#view=wishes` ; fiche : `#<slug>`.
+Hébergée sur GitHub Pages :
+
+- `index.html` : page d'accueil publique (présentation, « Entrer avec mon prénom », « Tester
+  sans compte (à zéro) »).
+- `login.html` : connexion par voyageur (prénom et couleur mémorisés sur l'appareil, code ou lien
+  de séjour à coller pour retrouver envies, programmes et séjour, « Repartir de zéro »).
+- `app.html` : l'application. Vues directes : `app.html#view=trip`, `#view=config`,
+  `#view=wishes` ; fiche : `#<slug>` ; `#reset` repart d'un état vierge.
+
+Il n'y a pas de serveur : l'identité et les données restent sur l'appareil, la synchronisation
+entre deux voyageurs passe par le lien de partage.
 
 En local :
 
@@ -176,7 +184,10 @@ sw.js                         service worker (hors-ligne)
 
 
 ```
-index.html                    page unique
+index.html                    accueil public
+login.html                    connexion par voyageur
+app.html                      l'application
+css/site.css                  styles des pages publiques
 vendor/leaflet/               Leaflet 1.9.4 hébergé localement (hors-ligne)
 data/slugs.json               slugs attribués (stables entre exécutions)
 css/style.css                 mobile-first, panneau glissant, mode sombre

@@ -112,7 +112,8 @@
     return location.origin + location.pathname + '#share=' + b64e(JSON.stringify(p));
   }
   const spotBySlug = (slug) => state.spots.find((s) => s.properties.slug === slug);
-  const spotUrl = (s) => location.origin + location.pathname.replace(/index\.html$/, '') + 's/' + s.properties.slug + '.html';
+  const APP_DIR = location.pathname.replace(/[^/]*$/, '');
+  const spotUrl = (s) => location.origin + APP_DIR + 's/' + s.properties.slug + '.html';
   async function shareSpot(s) {
     const url = spotUrl(s), p = s.properties, r = state.bulk ? scoreOf(s) : null;
     const text = `${p.name} (${p.type === 'cala' ? 'crique' : 'plage'}, ${p.province})${r && r.score != null ? ` · ${r.score}/100 ${r.label} ${fmtDay(state.bulk.dates[state.day], state.day).lbl.toLowerCase()}` : ''}`;
@@ -745,7 +746,8 @@
       <div class="card"><div class="h"><h3>${I('users', { size: 13 })} Voyageurs</h3></div>
         <div class="two"><label class="f"><span style="color:var(--a)">Voyageur 1</span><input type="text" id="c-a" maxlength="14" value="${esc(state.users.a.name)}"></label>
         <label class="f"><span style="color:var(--b)">Voyageur 2</span><input type="text" id="c-b" maxlength="14" value="${esc(state.users.b.name)}"></label></div>
-        <label class="f">Sur cet appareil, je suis<div class="seg" id="c-me"></div></label></div>
+        <label class="f">Sur cet appareil, je suis<div class="seg" id="c-me"></div></label>
+        <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('users', { size: 14 })} Changer de voyageur / code séjour</a></div></div>
       <div class="card"><div class="h"><h3>${I('home', { size: 13 })} Résidence / hébergement</h3></div>
         ${t.base ? `<div class="base-name"><span class="home">${I('home', { size: 16 })}</span><span>${esc(t.base.name)}</span></div><span class="coords">${t.base.lat.toFixed(5)}, ${t.base.lon.toFixed(5)} · <a href="https://www.google.com/maps/search/?api=1&query=${t.base.lat},${t.base.lon}" target="_blank" rel="noopener">voir</a></span>` : '<span class="hint">Aucune résidence définie. Les journées partent et reviennent de ce point.</span>'}
         <div class="base-search"><input type="search" id="c-base-q" placeholder="Rechercher un village, un lieu, une plage…" autocomplete="off"></div>
@@ -1200,6 +1202,10 @@
     autoReplan();
   }
   async function init() {
+    if (/[#&]reset\b/.test(location.hash)) {          // app.html#reset : repartir de zéro (version de test publique)
+      try { localStorage.removeItem(LS_STATE); localStorage.removeItem('ccp:intro'); } catch (e) { }
+      history.replaceState(null, '', location.pathname + location.search + location.hash.replace(/[#&]reset\b/, '').replace(/^&/, '#'));
+    }
     restore();
     const shared = applyShare();
     let routed = false;

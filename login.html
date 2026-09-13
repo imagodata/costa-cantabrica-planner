@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Connexion · Costa Cantábrica</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0b6e99">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/site.css?v=202609132119">
+</head>
+<body>
+<div class="wrap" style="max-width:520px">
+  <a class="brand" href="./"><span class="mark"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;stroke-width:2"><path d="M2 12c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 17c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg></span><span><b>Costa Cantábrica</b><small>plages &amp; criques</small></span></a>
+
+  <section class="hero" style="margin-bottom:8px">
+    <h1 style="font-size:28px">Qui êtes-vous ?</h1>
+    <p>Choisissez votre prénom : vos envies, notes et compléments porteront votre couleur sur cet appareil.</p>
+  </section>
+
+  <form id="f" onsubmit="return false">
+    <div class="travelers">
+      <button type="button" class="traveler a" id="t-a"><span class="av" id="av-a">S</span><input type="text" id="n-a" maxlength="14" value="Simon" aria-label="Prénom du voyageur 1"></button>
+      <button type="button" class="traveler b" id="t-b"><span class="av" id="av-b">M</span><input type="text" id="n-b" maxlength="14" value="Marie" aria-label="Prénom du voyageur 2"></button>
+    </div>
+    <label class="f">Code séjour ou lien partagé (facultatif)
+      <textarea id="code" placeholder="Collez ici le lien reçu de l'autre voyageur (…app.html#share=…) pour retrouver envies, programmes et séjour."></textarea>
+    </label>
+    <p class="err" id="err" hidden></p>
+    <div class="cta">
+      <button type="button" class="btn" id="go" style="flex:1">Entrer</button>
+      <button type="button" class="btn ghost" id="reset" title="Efface envies, programmes et séjour enregistrés sur cet appareil">Repartir de zéro</button>
+    </div>
+    <p class="small">Sans serveur ni mot de passe : l'identité est mémorisée sur cet appareil. Pour se synchroniser, on s'envoie le lien de partage depuis l'application.</p>
+  </form>
+  <footer><a href="./">Retour à l'accueil</a></footer>
+</div>
+<script>
+(function () {
+  const KEY = 'ccp:state:v1', $ = (s) => document.querySelector(s);
+  let me = 'a', st = null;
+  try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { }
+  if (st && st.users) { $('#n-a').value = (st.users.a && st.users.a.name) || 'Simon'; $('#n-b').value = (st.users.b && st.users.b.name) || 'Marie'; me = st.me === 'b' ? 'b' : 'a'; }
+  const initial = (v, d) => (v.trim() || d)[0].toUpperCase();
+  const paint = () => { $('#t-a').classList.toggle('on', me === 'a'); $('#t-b').classList.toggle('on', me === 'b');
+    $('#av-a').textContent = initial($('#n-a').value, 'S'); $('#av-b').textContent = initial($('#n-b').value, 'M'); };
+  $('#t-a').onclick = () => { me = 'a'; paint(); }; $('#t-b').onclick = () => { me = 'b'; paint(); };
+  $('#n-a').oninput = paint; $('#n-b').oninput = paint;
+  $('#n-a').onclick = (e) => { e.stopPropagation(); me = 'a'; paint(); }; $('#n-b').onclick = (e) => { e.stopPropagation(); me = 'b'; paint(); };
+  paint();
+  const clean = (v, d) => (String(v || '').replace(/[<>]/g, '').trim().slice(0, 14) || d);
+  $('#go').onclick = () => {
+    const base = st && st.users ? st : { users: { a: { name: 'Simon', wish: [] }, b: { name: 'Marie', wish: [] } } };
+    base.users.a = Object.assign({ wish: [] }, base.users.a || {}, { name: clean($('#n-a').value, 'Simon') });
+    base.users.b = Object.assign({ wish: [] }, base.users.b || {}, { name: clean($('#n-b').value, 'Marie') });
+    base.me = me;
+    try { localStorage.setItem(KEY, JSON.stringify(base)); } catch (e) { }
+    const code = $('#code').value.trim();
+    let hash = '';
+    if (code) {
+      const m = code.match(/share=([A-Za-z0-9_-]+)/) || code.match(/^([A-Za-z0-9_-]{16,})$/);
+      if (!m) { $('#err').textContent = 'Code non reconnu : collez le lien complet reçu de l\'autre voyageur.'; $('#err').hidden = false; return; }
+      hash = '#share=' + m[1];
+    }
+    location.href = 'app.html' + hash;
+  };
+  $('#reset').onclick = () => {
+    if (!confirm('Effacer envies, programmes, séjour et préférences enregistrés sur cet appareil ?')) return;
+    try { localStorage.removeItem(KEY); localStorage.removeItem('ccp:intro'); localStorage.removeItem('ccp:bulk:v1'); } catch (e) { }
+    st = null; $('#n-a').value = 'Simon'; $('#n-b').value = 'Marie'; me = 'a'; paint(); $('#code').value = '';
+    $('#err').hidden = false; $('#err').style.color = 'var(--accent)'; $('#err').textContent = 'Appareil remis à zéro. Choisissez votre prénom puis « Entrer ».';
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 /* Service worker : coquille hors-ligne, données en cache (stale-while-revalidate, clés versionnées),
    tuiles OSM en cache avec expiration ; API météo et imagerie Esri toujours en réseau. */
-const VERSION = 'v202609132109';
-const SHELL = ['./', './index.html', './css/style.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js',
+const VERSION = 'v202609132119';
+const SHELL = ['./', './index.html', './app.html', './login.html', './css/style.css', './css/site.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js',
   './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
   './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 const TILE_MAX_AGE = 7 * 24 * 3600 * 1000, TILE_MAX = 600, PAGE_MAX = 80;
@@ -19,7 +19,7 @@ self.addEventListener('fetch', (e) => {
 });
 async function navigate(req) {
   try { const res = await fetch(req); if (res.ok) { const c = await caches.open(VERSION); if (/\/s\/[^/]+\.html$/.test(new URL(req.url).pathname)) { c.put(req, res.clone()); trim(c, PAGE_MAX, /\/s\//); } } return res; }
-  catch (e) { const c = await caches.open(VERSION); return (await c.match(req)) || (await c.match('./index.html')) || new Response('Hors ligne', { status: 503 }); }
+  catch (e) { const c = await caches.open(VERSION); return (await c.match(req)) || (await c.match('./app.html')) || (await c.match('./index.html')) || new Response('Hors ligne', { status: 503 }); }
 }
 async function staleWhileRevalidate(req) {
   const cache = await caches.open(VERSION);

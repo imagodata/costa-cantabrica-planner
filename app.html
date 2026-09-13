@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Costa Cantábrica · plages & criques</title>
+  <meta name="description" content="Sélecteur de plages et criques des Asturies et de Cantabrie, avec prévisions météo, houle et marées pour planifier vos sorties.">
+  <meta name="theme-color" content="#0b6e99">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.min.css">
+  <link rel="stylesheet" href="css/style.css?v=202609132119">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark" id="brand-mark"></span><span class="brand-text"><b id="brand-name">Costa</b><small id="brand-sub">plages &amp; criques</small></span></div>
+    <div class="who" id="who" title="Qui marque ses envies ? (appui long : réglages)"></div>
+    <button class="iconbtn" id="btn-settings" title="Voyageurs, partage, export" aria-label="Voyageurs, partage, export"></button>
+    <button class="iconbtn" id="btn-filters" title="Filtres & tri" aria-label="Filtres et tri"></button>
+  </header>
+
+  <div id="map" aria-label="Carte des plages"></div>
+  <div class="map-tools">
+    <button class="iconbtn float" id="btn-locate" title="Ma position" aria-label="Ma position"></button>
+    <button class="iconbtn float" id="btn-share" title="Partager la sélection" aria-label="Partager la sélection"></button>
+  </div>
+  <div class="layer-chips" id="layer-chips"></div>
+  <div class="legend" id="legend"></div>
+
+  <aside id="sheet" class="sheet half">
+    <div class="handle" id="handle" aria-label="Agrandir ou réduire le panneau"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="panel" id="panels">
+      <section id="panel-wishes" hidden>
+        <div class="wtools">
+          <div class="seg" id="w-who"></div>
+          <div class="seg" id="w-sort"></div>
+        </div>
+        <div class="summary" id="w-summary"></div>
+        <ul class="list" id="w-list"></ul>
+        <div class="wfoot" id="w-foot"></div>
+      </section>
+      <section id="panel-config" hidden>
+        <div class="config" id="config"></div>
+      </section>
+      <section id="panel-trip" hidden>
+        <div class="trip" id="trip"></div>
+      </section>
+      <section id="panel-list">
+        <div class="days" id="days" aria-label="Choix du jour"></div>
+        <div class="seg profiles-seg" id="profile-seg" role="tablist" aria-label="Profil d'activité"></div>
+        <label class="search"><span id="search-ic"></span><input id="q" type="search" placeholder="Rechercher une plage…" autocomplete="off"></label>
+        <div class="summary" id="summary"></div>
+        <ul class="list" id="list"><li class="loading">Chargement…</li></ul>
+      </section>
+      <section id="panel-detail" class="detail" hidden>
+        <div id="detail-head"></div>
+        <div id="detail-body"></div>
+      </section>
+    </div>
+  </aside>
+
+  <dialog id="dlg-filters" class="bottom">
+    <form method="dialog" class="dlg" onsubmit="return false">
+      <div class="dlg-head"><h2>Filtres &amp; tri</h2><button class="linkbtn" id="f-reset" type="button">Réinitialiser</button></div>
+      <div class="field"><span class="lbl">Province</span><div class="seg" id="f-province"></div></div>
+      <div class="field"><span class="lbl">Type</span><div class="seg" id="f-type"></div></div>
+      <div class="field"><span class="lbl">Caractéristiques</span><div class="chips" id="f-chips"></div></div>
+      <div class="field"><span class="lbl">Envies</span><div class="seg" id="f-wish"></div></div>
+      <div class="field"><div class="lbl-row"><span class="lbl">Score minimum</span><b id="f-min-out"></b></div><input id="f-min" type="range" min="0" max="90" step="5" value="0"></div>
+      <div class="field"><span class="lbl">Tri</span><div class="seg" id="f-sort"></div></div>
+      <button class="btn primary big" id="f-apply" type="button">Appliquer</button>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-settings">
+    <form method="dialog" class="dlg" onsubmit="return false">
+      <div class="dlg-head"><h2>Voyageurs</h2><button class="iconbtn close" type="button" aria-label="Fermer"></button></div>
+      <div class="user-row"><span class="dot a"></span><input type="text" id="u-a" maxlength="14" placeholder="Prénom 1"></div>
+      <div class="user-row"><span class="dot b"></span><input type="text" id="u-b" maxlength="14" placeholder="Prénom 2"></div>
+      <p class="hint">Chacun marque ses envies ; le lien de partage fusionne les deux listes sur l'autre téléphone.</p>
+      <p class="hint">Données © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · prévisions <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) · photos Wikimedia Commons, Flickr et Openverse (licences indiquées) · imagerie Esri.</p>
+      <div class="row wrap">
+        <button class="btn ghost" id="u-share" type="button">Partager le lien</button>
+        <button class="btn ghost" id="u-export" type="button">Exporter (GeoJSON)</button>
+        <button class="btn ghost" id="u-refresh" type="button">Rafraîchir les prévisions</button>
+      </div>
+      <button class="btn primary big" id="u-save" type="button">Enregistrer</button>
+    </form>
+  </dialog>
+
+  <div class="banner" id="banner" hidden><span id="banner-text"></span><button type="button" class="linkbtn" id="banner-retry">Réessayer</button><button type="button" class="linkbtn" id="banner-close" aria-label="Fermer">✕</button></div>
+
+  <dialog id="dlg-pick">
+    <div class="dlg"><div class="dlg-head"><h2 id="pick-title">Ajouter</h2><button class="iconbtn close" type="button" aria-label="Fermer"></button></div><div class="pick" id="pick-list"></div></div>
+  </dialog>
+
+  <dialog id="dlg-intro">
+    <div class="dlg intro">
+      <div class="intro-steps" id="intro-steps"></div>
+      <div class="row"><button type="button" class="btn ghost" id="intro-skip">Passer</button><button type="button" class="btn primary" id="intro-next" style="flex:1">Suivant</button></div>
+    </div>
+  </dialog>
+
+  <div id="toast" role="status"></div>
+
+  <script src="vendor/leaflet/leaflet.min.js"></script>
+  <script src="js/config.js?v=202609132119"></script>
+  <script src="js/icons.js?v=202609132119"></script>
+  <script src="js/forecast.js?v=202609132119"></script>
+  <script src="js/app.js?v=202609132119"></script>
+</body>
+</html>

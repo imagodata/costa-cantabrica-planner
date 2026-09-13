@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Génère une page de partage par plage : s/<slug>.html (aperçu OpenGraph pour WhatsApp,
-Signal, iMessage…), qui redirige vers l'application sur la fiche du spot (index.html#<slug>).
+Signal, iMessage…), qui redirige vers l'application sur la fiche du spot (app.html#<slug>).
 
 Usage : python3 scripts/build_pages.py [--base https://imagodata.github.io/costa-cantabrica-planner/]
 """
@@ -78,7 +78,7 @@ def main():
         if not ph.get("thumb"):
             ph = {"thumb": aerial_tile(lat, lon)}
         title = f"{p['name']} · {region['name']}"
-        app_url = f"{base}index.html#{slug}"
+        app_url = f"{base}app.html#{slug}"
         ctx = dict(site=html.escape(region["name"] + " · plages & criques"), title=html.escape(title), title_plain=html.escape(p["name"]), desc=html.escape(desc),
                    page_url=f"{base}s/{slug}.html", app_url=html.escape(app_url), app_url_js=json.dumps(app_url).replace("<", "\\u003c"),
                    og_image=f'<meta property="og:image" content="{html.escape(ph["thumb"])}">' if ph.get("thumb") else "",

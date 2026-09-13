@@ -27,7 +27,7 @@ pages:            ## régénère les pages de partage s/<slug>.html (aperçu Wha
 	python3 scripts/build_pages.py
 
 bump:             ## invalide le cache navigateur (versionne css/js/data dans index.html)
-	sed -i "s/?v=[0-9]*/?v=$$(date +%Y%m%d%H%M)/g" index.html
+	sed -i "s/?v=[0-9]*/?v=$$(date +%Y%m%d%H%M)/g" app.html login.html index.html
 	sed -i "s/const VERSION = 'v[0-9]*'/const VERSION = 'v$$(date +%Y%m%d%H%M)'/" sw.js
 
 serve:            ## sert l'application en local
