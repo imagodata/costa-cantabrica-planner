@@ -14,10 +14,10 @@ CCP.CONFIG = {
   marineStep: 0.05,
 
   profiles: {
-    plage:   { icon: '🏖️', label: 'Plage & baignade' },
-    famille: { icon: '👨‍👩‍👧', label: 'Famille (calme)' },
-    surf:    { icon: '🏄', label: 'Surf' },
-    rando:   { icon: '🥾', label: 'Balade & photo' },
+    plage:   { icon: 'sun',   label: 'Plage & baignade', short: 'Plage' },
+    famille: { icon: 'users', label: 'Famille (calme)',  short: 'Famille' },
+    surf:    { icon: 'wave',  label: 'Surf',             short: 'Surf' },
+    rando:   { icon: 'boot',  label: 'Balade & photo',   short: 'Balade' },
   },
 
   scoreClasses: [
@@ -28,16 +28,16 @@ CCP.CONFIG = {
   ],
 
   weatherCodes: {
-    0: ['☀️', 'Ciel dégagé'], 1: ['🌤️', 'Plutôt dégagé'], 2: ['⛅', 'Partiellement nuageux'],
-    3: ['☁️', 'Couvert'], 45: ['🌫️', 'Brouillard'], 48: ['🌫️', 'Brouillard givrant'],
-    51: ['🌦️', 'Bruine légère'], 53: ['🌦️', 'Bruine'], 55: ['🌧️', 'Bruine dense'],
-    56: ['🌧️', 'Bruine verglaçante'], 57: ['🌧️', 'Bruine verglaçante'],
-    61: ['🌧️', 'Pluie faible'], 63: ['🌧️', 'Pluie'], 65: ['🌧️', 'Pluie forte'],
-    66: ['🌧️', 'Pluie verglaçante'], 67: ['🌧️', 'Pluie verglaçante'],
-    71: ['🌨️', 'Neige'], 73: ['🌨️', 'Neige'], 75: ['🌨️', 'Neige forte'], 77: ['🌨️', 'Grésil'],
-    80: ['🌦️', 'Averses légères'], 81: ['🌧️', 'Averses'], 82: ['⛈️', 'Averses violentes'],
-    85: ['🌨️', 'Averses de neige'], 86: ['🌨️', 'Averses de neige'],
-    95: ['⛈️', 'Orage'], 96: ['⛈️', 'Orage avec grêle'], 99: ['⛈️', 'Orage avec grêle'],
+    0: ['sun', 'Ciel dégagé'], 1: ['sun-cloud', 'Plutôt dégagé'], 2: ['sun-cloud', 'Partiellement nuageux'],
+    3: ['cloud', 'Couvert'], 45: ['fog', 'Brouillard'], 48: ['fog', 'Brouillard givrant'],
+    51: ['drizzle', 'Bruine légère'], 53: ['drizzle', 'Bruine'], 55: ['rain', 'Bruine dense'],
+    56: ['rain', 'Bruine verglaçante'], 57: ['rain', 'Bruine verglaçante'],
+    61: ['rain', 'Pluie faible'], 63: ['rain', 'Pluie'], 65: ['rain', 'Pluie forte'],
+    66: ['rain', 'Pluie verglaçante'], 67: ['rain', 'Pluie verglaçante'],
+    71: ['snow', 'Neige'], 73: ['snow', 'Neige'], 75: ['snow', 'Neige forte'], 77: ['snow', 'Grésil'],
+    80: ['drizzle', 'Averses légères'], 81: ['rain', 'Averses'], 82: ['storm', 'Averses violentes'],
+    85: ['snow', 'Averses de neige'], 86: ['snow', 'Averses de neige'],
+    95: ['storm', 'Orage'], 96: ['storm', 'Orage avec grêle'], 99: ['storm', 'Orage avec grêle'],
   },
 
   surfaces: { sand: 'sable', pebblestone: 'galets', gravel: 'graviers', fine_gravel: 'gravier fin',
