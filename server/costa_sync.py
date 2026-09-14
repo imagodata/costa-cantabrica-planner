@@ -11,7 +11,7 @@ Deux modes d'identité, utilisables ensemble :
 
 Routes (JSON) :
   POST /api/auth/register {email,name,password} → {token,user}      POST /api/auth/login {email,password}
-  POST /api/auth/logout                                              GET  /api/me → {user, workspaces}
+  POST /api/auth/logout    POST /api/auth/password {password,newPassword}   GET  /api/me → {user, workspaces}
   POST /api/workspaces {name} → {workspace}                          POST /api/workspaces/join {code} → {workspace}
   GET  /api/w/<id> → workspace   PUT /api/w/<id> {name}              POST /api/w/<id>/leave
   GET  /api/w/<id>/state  PUT /api/w/<id>/state (écriture partielle fusionnée, If-Match obligatoire ; 409 sinon)
@@ -416,6 +416,8 @@ class H(BaseHTTPRequestHandler):
             body = self._body() if method in ("PUT", "POST") and path not in ("/api/auth/logout",) else None   # lu hors verrou
             if path in ("/api/auth/register", "/api/auth/login") and method == "POST":   # hachage scrypt hors verrou global
                 return self._register(body) if path.endswith("register") else self._login(body)
+            if path == "/api/auth/password" and method == "POST":
+                return self._password(body)
             with LOCK, db() as con:
                 m = re.match(r"^/api/w/([A-Za-z0-9_-]{1,32})(/state|/leave)?$", path)
                 if path == "/api/state":
@@ -474,6 +476,24 @@ class H(BaseHTTPRequestHandler):
             RATE.pop(("account", row["id"]), None)
             token = self._session(con, row["id"])
         self._send(200, {"token": token, "user": {"id": row["id"], "email": row["email"], "name": row["name"]}})
+
+    def _password(self, b):
+        with LOCK, db() as con:
+            user = self._account(con)
+            if not user:
+                raise Http(401, {"error": "connexion requise"})
+            row = con.execute("SELECT pw FROM users WHERE id = ?", (user["id"],)).fetchone()
+        new = str(b.get("newPassword") or "")
+        if len(new) < 8 or len(new) > 200:
+            raise Http(400, {"error": "nouveau mot de passe : 8 caractères au moins"})
+        if not check_pw(str(b.get("password") or ""), row["pw"]):
+            raise Http(401, {"error": "mot de passe actuel incorrect"})
+        new_hash = hash_pw(new)
+        token = (self.headers.get("Authorization") or "")[7:].strip()
+        with LOCK, db() as con:
+            con.execute("UPDATE users SET pw = ? WHERE id = ?", (new_hash, user["id"]))
+            con.execute("DELETE FROM sessions WHERE user_id = ? AND token != ?", (user["id"], token))   # les autres appareils se reconnectent
+        self._send(200, {"ok": True})
 
     def _session(self, con, uid):
         token = secrets.token_urlsafe(32)

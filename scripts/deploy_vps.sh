@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Déploie la version protégée par mot de passe sur le VPS (Caddy, basic_auth).
 #   scripts/deploy_vps.sh                    # déploiement (fichiers suivis par git + pages de partage)
+#   scripts/deploy_vps.sh --open             # (re)crée le bloc Caddy SANS mot de passe : connexion par compte dans l'application
 #   VPS=root@1.2.3.4 HOST=costa.example.com scripts/deploy_vps.sh
 # Le bloc Caddy est (re)créé avec : scripts/deploy_vps.sh --init utilisateur:motdepasse [utilisateur2:motdepasse2 …]
 # L'utilisateur connecté est exposé sur /whoami (l'application choisit le voyageur correspondant).
@@ -48,6 +49,35 @@ $USERS	}
 # --- /Costa ---
 CADDY
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy && echo 'Caddy rechargé'"
+fi
+
+if [ "${1:-}" = "--open" ]; then
+  # Site ouvert : plus de mot de passe Caddy, l'identité est celle des comptes de l'application ;
+  # l'en-tête X-User d'un client est retiré (le mode hérité /api/state ne peut plus être usurpé).
+  ssh "$VPS" "mkdir -p $DIR && cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-costa-\$(date +%s) \
+    && awk '/^# --- Costa Cantábrica/{skip=1} /^# --- \/Costa ---/{skip=0; next} !skip' /etc/caddy/Caddyfile > /etc/caddy/Caddyfile.new && mv /etc/caddy/Caddyfile.new /etc/caddy/Caddyfile \
+    && cat >> /etc/caddy/Caddyfile <<'CADDY'
+# --- Costa Cantábrica (comptes dans l'application) : $HOST ---
+$HOST {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8095 {
+			header_up -X-User
+		}
+	}
+	root * $DIR
+	file_server
+	header Cache-Control \"no-cache\"
+	handle_errors {
+		@404 expression {http.error.status_code} == 404
+		rewrite @404 /index.html
+		file_server
+	}
+}
+# --- /Costa ---
+CADDY
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy && echo 'Caddy rechargé : site ouvert, connexion par compte'"
+  shift
 fi
 
 # Caddy déjà en place : les routes à jeton (comptes, séjours) sortent de basic_auth pour être joignables

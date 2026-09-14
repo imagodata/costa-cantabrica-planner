@@ -113,6 +113,15 @@ try:
     c, r = call('POST', None, {}, path='/api/auth/logout', token=tb)
     c, r = call('GET', None, path='/api/me', token=tb)
     check(c == 401, 'déconnexion : jeton invalidé')
+    c, r = call('POST', None, {'password': 'faux', 'newPassword': 'nouveaumdp9'}, path='/api/auth/password', token=ta)
+    check(c == 401, 'mot de passe : l\'actuel est vérifié')
+    c, r = call('POST', None, {'email': 'ana@example.org', 'password': 'motdepasse1'}, path='/api/auth/login'); ta2 = r['token']
+    c, r = call('POST', None, {'password': 'motdepasse1', 'newPassword': 'nouveaumdp9'}, path='/api/auth/password', token=ta)
+    check(c == 200, 'mot de passe changé')
+    c, r = call('GET', None, path='/api/me', token=ta2)
+    check(c == 401, 'mot de passe changé : les autres sessions sont fermées')
+    c, r = call('POST', None, {'email': 'ana@example.org', 'password': 'nouveaumdp9'}, path='/api/auth/login')
+    check(c == 200, 'connexion avec le nouveau mot de passe')
     c, r = call('GET', None, path=f"/api/w/{ws['id']}", token=ta)
     check(c == 200 and r['workspace']['members'][1]['name'] == 'Bo', 'fiche du séjour')
     old_inv = r['workspace']['invite']

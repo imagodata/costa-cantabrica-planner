@@ -165,13 +165,17 @@ avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
   Caddy avec un compte par voyageur (sauvegarde du Caddyfile, validation, rechargement) puis
   synchronise. L'application lit `/whoami` au démarrage et active automatiquement le voyageur
   correspondant (`simon` → voyageur 1, `marie` → voyageur 2, ou le prénom configuré).
+- Site ouvert (connexion par compte dans l'application, plus de mot de passe Caddy) :
+  `scripts/deploy_vps.sh --open` réécrit le bloc Caddy sans `basic_auth` et retire l'en-tête `X-User`
+  d'un client ; le mode hérité `/api/state` n'est alors plus utilisable, chaque voyageur rejoint le
+  séjour `legacy` avec son compte (prénom Simon ou Marie) et le code d'invitation.
 - Déploiements suivants : `make deploy` (rsync des fichiers suivis par git, sans sources ni
   données brutes, et pages de partage régénérées avec l'URL du serveur).
 - Changer un mot de passe : relancer `--init` avec tous les comptes ; l'ancien bloc est
   remplacé automatiquement.
 - **Comptes et séjours partagés** : `server/costa_sync.py` (service systemd `costa-sync`,
   bibliothèque standard, SQLite dans `/opt/costa-data/costa.db`, port local 8095) gère des
-  comptes (`POST /api/auth/register`, `/api/auth/login`, `/api/auth/logout`, mot de passe haché
+  comptes (`POST /api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/password`, mot de passe haché
   scrypt, jeton de session 180 jours), des séjours (`POST /api/workspaces`, `POST
   /api/workspaces/join {code}`, `GET /api/me`, `GET|PUT /api/w/<id>`, `POST /api/w/<id>/leave`)
   et l'état de chaque séjour (`GET|PUT /api/w/<id>/state`). Chaque séjour a deux places (a, b)
