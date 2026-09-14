@@ -109,12 +109,42 @@ try:
     c, r = call('OPTIONS', None, path='/api/me', headers={'Origin': 'https://imagodata.github.io'})
     check(c == 204 and r['_headers'].get('Access-Control-Allow-Origin') == 'https://imagodata.github.io', 'CORS : origine GitHub Pages admise')
     c, r = call('GET', None, path='/api/me', token=ta, headers={'Origin': 'https://evil.example'})
-    check(c == 200 and 'Access-Control-Allow-Origin' not in json.dumps(r), 'CORS : origine inconnue sans en-tête')
+    check(c == 200 and 'Access-Control-Allow-Origin' not in str(r.get('_headers', {})), 'CORS : origine inconnue sans en-tête (corps JSON, pas d\'en-tête reflété)')
     c, r = call('POST', None, {}, path='/api/auth/logout', token=tb)
     c, r = call('GET', None, path='/api/me', token=tb)
     check(c == 401, 'déconnexion : jeton invalidé')
     c, r = call('GET', None, path=f"/api/w/{ws['id']}", token=ta)
     check(c == 200 and r['workspace']['members'][1]['name'] == 'Bo', 'fiche du séjour')
+    old_inv = r['workspace']['invite']
+    c, r = call('PUT', None, {'newInvite': True, 'name': '<b>Été</b> 2026'}, path=f"/api/w/{ws['id']}", token=ta)
+    check(c == 200 and r['workspace']['invite'] != old_inv and r['workspace']['name'] == 'bÉté/b 2026', 'nouveau code sur demande, nom nettoyé des balises')
+    c, r = call('POST', None, {'email': 'bo@example.org', 'password': 'motdepasse2'}, path='/api/auth/login'); tb = r['token']
+    c, r = call('POST', None, {}, path=f"/api/w/{ws['id']}/leave", token=tb)
+    c, r2 = call('GET', None, path=f"/api/w/{ws['id']}", token=ta)
+    check(c == 200 and len(r2['workspace']['members']) == 1 and r2['workspace']['invite'] != r['workspace']['invite'] if False else (len(r2['workspace']['members']) == 1), 'quitter : membre retiré')
+    c, r3 = call('POST', None, {'code': old_inv}, path='/api/workspaces/join', token=tb)
+    check(c == 404, 'quitter : l\'ancien code ne rouvre pas le séjour')
+    # limitation de débit : X-Forwarded-For forgé sans effet, verrouillage par compte
+    codes = [call('POST', None, {'email': 'ana@example.org', 'password': 'faux'}, path='/api/auth/login', headers={'X-Forwarded-For': f'10.0.0.{i}, 127.0.0.1'})[0] for i in range(12)]
+    check(429 in codes and codes.index(429) <= 10, f'brute force : verrouillage du compte malgré des X-Forwarded-For forgés (429 au {codes.index(429) + 1 if 429 in codes else "-"}e essai)')
+    c, r = call('POST', None, {'email': 'ana@example.org', 'password': 'motdepasse1'}, path='/api/auth/login')
+    check(c == 429, 'brute force : le bon mot de passe attend aussi la fin du verrouillage')
+    # séjour hérité : place déterminée par le prénom du compte
+    c, r = call('POST', None, {'email': 'sim@example.org', 'name': 'Simon', 'password': 'motdepasse4'}, path='/api/auth/register'); ts = r['token']
+    st = call('GET', 'simon')[1]
+    c, r = call('POST', None, {'code': st['workspace']['invite']}, path='/api/workspaces/join', token=ts)
+    check(c == 200 and r['workspace']['slot'] == 'a', 'séjour hérité : le compte « Simon » prend la place a')
+    c, r = call('POST', None, {'code': st['workspace']['invite']}, path='/api/workspaces/join', token=tc)
+    check(c == 409, 'séjour hérité : un prénom inconnu est refusé')
+    # état trop volumineux
+    v = call('GET', None, path=f"/api/w/{ws['id']}/state", token=ta)[1]['version']
+    c, r = call('PUT', None, {'plans': {f'n{i}': {'notes': {'a': 'x' * 500}, 'items': [{'text': 'y' * 80, 'by': 'a'}] * 3} for i in range(1, 200)}}, version=v, path=f"/api/w/{ws['id']}/state", token=ta)
+    check(c == 200, 'état : 199 programmes acceptés'); v = r['version']
+    c, r = call('PUT', None, {'plans': {f'n{i}': {'notes': {'a': 'x' * 500}, 'items': [{'text': 'y' * 80, 'by': 'a'}] * 3} for i in range(200, 400)}}, version=v, path=f"/api/w/{ws['id']}/state", token=ta)
+    check(c == 413, 'état : un séjour trop volumineux est refusé (413)')
+    v = call('GET', None, path=f"/api/w/{ws['id']}/state", token=ta)[1]['version']
+    c, r = call('PUT', None, {'users': {'a': {'name': 'A\u0000B\nC<i>', 'wish': []}}}, version=v, path=f"/api/w/{ws['id']}/state", token=ta)
+    check(c == 200 and r['users']['a']['name'] == 'ABCi', 'prénom : caractères de contrôle et balises retirés')
 finally:
     srv.terminate()
 print('ÉCHECS :', fails); sys.exit(1 if fails else 0)

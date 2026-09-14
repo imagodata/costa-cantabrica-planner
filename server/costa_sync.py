@@ -55,7 +55,10 @@ ID_RE = re.compile(r"^[nwr]\d+$")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 EMPTY = {"users": {"a": {"name": "Voyageur 1", "wish": [], "suggest": []}, "b": {"name": "Voyageur 2", "wish": [], "suggest": []}},
          "plans": {}, "trip": {"base": None, "start": None, "days": [], "auto": False, "autoBy": None}, "prefs": None, "log": []}
-RATE = defaultdict(deque)   # limitation des tentatives de connexion par adresse
+RATE = defaultdict(deque)   # limitation des tentatives par (type, adresse) et par compte
+STATE_MAX = 256 * 1024      # taille sérialisée maximale d'un séjour
+DUMMY_HASH = None           # hachage factice pour égaliser le temps de réponse d'une connexion sur compte inconnu
+CTRL_RE = re.compile(r"[<>\x00-\x1f\x7f]")
 
 
 # ------------------------------------------------------------------ base de données
@@ -78,23 +81,30 @@ def init_db():
         """)
         if not con.execute("SELECT 1 FROM workspaces WHERE id = ?", (LEGACY_WS,)).fetchone():
             st = fresh_state()
-            try:   # migration de l'état hérité (state.json) dans le séjour « legacy »
+            version = 0
+            if LEGACY_JSON.exists():   # migration de l'état hérité : un fichier illisible fait refuser le démarrage, jamais un état vide
                 old = json.loads(LEGACY_JSON.read_text(encoding="utf-8"))
+                if not isinstance(old, dict) or not isinstance(old.get("users"), dict):
+                    raise SystemExit(f"{LEGACY_JSON} : état hérité inattendu, migration refusée")
                 for k in ("users", "plans", "trip", "prefs", "log"):
                     if k in old:
                         st[k] = old[k]
                 version = int(old.get("version") or 0)
                 print(f"état hérité migré depuis {LEGACY_JSON} (version {version})", flush=True)
-            except Exception:
-                version = 0
+            else:
                 for u, slot in USERS.items():   # sans état hérité : prénoms des comptes Caddy
                     if slot in ("a", "b"):
                         st["users"][slot]["name"] = u[:1].upper() + u[1:14]
             st = normalize(st)
             con.execute("INSERT INTO workspaces (id, name, invite, created, state, version, updated, by) VALUES (?,?,?,?,?,?,?,?)",
                         (LEGACY_WS, "Costa Cantábrica", new_invite(con), int(time.time()), json.dumps(st, ensure_ascii=False), version, int(time.time()), None))
-        inv = con.execute("SELECT invite FROM workspaces WHERE id = ?", (LEGACY_WS,)).fetchone()[0]
-        print(f"séjour hérité « {LEGACY_WS} » : code d'invitation {inv}", flush=True)
+            con.commit()
+            if LEGACY_JSON.exists():
+                try:
+                    LEGACY_JSON.rename(LEGACY_JSON.with_suffix(".json.migre"))   # la base fait foi désormais
+                except OSError:
+                    pass
+        print(f"séjour hérité « {LEGACY_WS} » prêt (code d'invitation dans Réglages)", flush=True)
 
 
 def fresh_state():
@@ -110,7 +120,14 @@ def normalize(st):
     for k in ("a", "b"):
         if not isinstance(base["users"].get(k), dict):
             base["users"][k] = fresh_state()["users"][k]
-        base["users"][k].setdefault("suggest", [])
+        u = base["users"][k]
+        if not isinstance(u.get("name"), str) or not u["name"].strip():
+            u["name"] = fresh_state()["users"][k]["name"]
+        for f in ("wish", "suggest"):
+            if not isinstance(u.get(f), list):
+                u[f] = []
+    if not isinstance(base["trip"].get("days"), list):
+        base["trip"]["days"] = []
     if not isinstance(base.get("log"), list):
         base["log"] = []
     return base
@@ -129,6 +146,13 @@ def hash_pw(pw):
     return f"scrypt${salt.hex()}${h.hex()}"
 
 
+def dummy_hash():
+    global DUMMY_HASH
+    if DUMMY_HASH is None:
+        DUMMY_HASH = hash_pw(secrets.token_hex(8))
+    return DUMMY_HASH
+
+
 def check_pw(pw, stored):
     try:
         _, salt, h = stored.split("$")
@@ -138,8 +162,16 @@ def check_pw(pw, stored):
         return False
 
 
-def rate_ok(ip, limit=20, window=600):
-    q = RATE[ip]
+def clean_text(v, n):
+    """Texte affiché (prénom, nom de séjour, journal) : sans balises ni caractères de contrôle."""
+    return CTRL_RE.sub("", str(v or "")).strip()[:n]
+
+
+def rate_ok(key, limit=20, window=600):
+    if len(RATE) > 5000:   # purge des files vides ou anciennes
+        for k in [k for k, q in RATE.items() if not q or q[-1] < time.time() - window]:
+            RATE.pop(k, None)
+    q = RATE[key]
     now = time.time()
     while q and q[0] < now - window:
         q.popleft()
@@ -204,7 +236,7 @@ def clean_days(days):
     return out
 
 
-def apply_partial(st, body, k, by_name, version):
+def apply_partial(st, body, k, version):
     """Fusionne un corps partiel dans st ; renvoie True si quelque chose a changé."""
     other = "b" if k == "a" else "a"
     before = json.dumps({x: st[x] for x in ("users", "plans", "trip", "prefs")}, sort_keys=True)
@@ -217,12 +249,12 @@ def apply_partial(st, body, k, by_name, version):
             keep = set(clean_list(me.get("suggest"), 100))
             sugg = [x for x in sugg if x in keep]
         wish = clean_list(me.get("wish")) if "wish" in me else cur.get("wish", [])
-        st["users"][k] = {"name": str(me.get("name") or cur["name"]).strip()[:14] or cur["name"], "wish": wish,
+        st["users"][k] = {"name": clean_text(me.get("name"), 14) or cur["name"], "wish": wish,
                           "suggest": [x for x in sugg if x not in wish]}
     oth = users.get(other) if isinstance(users.get(other), dict) else {}
     oname = oth.get("name")
-    if isinstance(oname, str) and oname.strip():
-        st["users"][other]["name"] = oname.strip()[:14]
+    if isinstance(oname, str) and clean_text(oname, 14):
+        st["users"][other]["name"] = clean_text(oname, 14)
     if "suggest" in oth:
         st["users"][other]["suggest"] = [x for x in clean_list(oth.get("suggest"), 100) if ID_RE.match(x) and x not in st["users"][other].get("wish", [])]
     plans = body.get("plans")
@@ -263,7 +295,7 @@ def apply_partial(st, body, k, by_name, version):
     for e in (body.get("log") if isinstance(body.get("log"), list) else [])[:6]:
         text = e.get("text") if isinstance(e, dict) else None
         if isinstance(text, str) and text.strip():
-            st["log"].append({"by": k, "name": st["users"][k]["name"], "t": now, "v": version + 1, "text": text.strip()[:160]})
+            st["log"].append({"by": k, "name": st["users"][k]["name"], "t": now, "v": version + 1, "text": clean_text(text, 160)})
             logged = True
     st["log"] = st["log"][-LOG_MAX:]
     after = json.dumps({x: st[x] for x in ("users", "plans", "trip", "prefs")}, sort_keys=True)
@@ -287,13 +319,15 @@ def ws_meta(con, ws_id):
 
 class H(BaseHTTPRequestHandler):
     server_version = "costa-sync/3"
+    protocol_version = "HTTP/1.1"
+    timeout = 20   # délai socket : un client muet ne retient rien
 
     # --- réponses
     def _cors(self):
         origin = self.headers.get("Origin")
+        self.send_header("Vary", "Origin")
         if origin and origin in ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
-            self.send_header("Vary", "Origin")
             self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type, If-Match")
             self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
             self.send_header("Access-Control-Max-Age", "600")
@@ -315,9 +349,20 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _body(self):
-        n = int(self.headers.get("Content-Length") or 0)
-        if n <= 0 or n > MAX_BODY:
-            raise Http(413, {"error": "corps invalide"})
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            raise Http(400, {"error": "Content-Length invalide"})
+        if n <= 0:
+            raise Http(400, {"error": "corps requis"})
+        if n > MAX_BODY:   # on consomme (borné) avant de refuser, pour que le client reçoive bien le 413
+            left = min(n, 4 * MAX_BODY)
+            while left > 0:
+                chunk = self.rfile.read(min(65536, left))
+                if not chunk:
+                    break
+                left -= len(chunk)
+            raise Http(413, {"error": "corps trop volumineux"})
         try:
             body = json.loads(self.rfile.read(n).decode("utf-8"))
             assert isinstance(body, dict)
@@ -326,7 +371,8 @@ class H(BaseHTTPRequestHandler):
             raise Http(400, {"error": "JSON invalide"})
 
     def _ip(self):
-        return self.headers.get("X-Forwarded-For", self.address_string()).split(",")[0].strip()
+        xff = self.headers.get("X-Forwarded-For")   # Caddy ajoute l'adresse réelle en dernier ; le début est contrôlé par le client
+        return xff.split(",")[-1].strip() if xff else self.address_string()
 
     # --- identité
     def _account(self, con):
@@ -334,10 +380,11 @@ class H(BaseHTTPRequestHandler):
         if not auth.lower().startswith("bearer "):
             return None
         token = auth[7:].strip()
-        row = con.execute("SELECT u.id, u.email, u.name, s.created FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?", (token,)).fetchone()
+        row = con.execute("SELECT u.id, u.email, u.name, s.created, s.seen FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?", (token,)).fetchone()
         if not row or row["created"] < time.time() - SESSION_DAYS * 86400:
             raise Http(401, {"error": "session expirée"})
-        con.execute("UPDATE sessions SET seen = ? WHERE token = ?", (int(time.time()), token))
+        if row["seen"] < time.time() - 3600:
+            con.execute("UPDATE sessions SET seen = ? WHERE token = ?", (int(time.time()), token))
         return {"id": row["id"], "email": row["email"], "name": row["name"]}
 
     def _legacy(self):
@@ -366,60 +413,66 @@ class H(BaseHTTPRequestHandler):
     def _route(self, method):
         path = self.path.split("?")[0].rstrip("/") or "/"
         try:
+            body = self._body() if method in ("PUT", "POST") and path not in ("/api/auth/logout",) else None   # lu hors verrou
+            if path in ("/api/auth/register", "/api/auth/login") and method == "POST":   # hachage scrypt hors verrou global
+                return self._register(body) if path.endswith("register") else self._login(body)
             with LOCK, db() as con:
                 m = re.match(r"^/api/w/([A-Za-z0-9_-]{1,32})(/state|/leave)?$", path)
                 if path == "/api/state":
-                    return self._state_legacy(con, method)
+                    return self._state_legacy(con, method, body)
                 if m:
-                    return self._workspace(con, method, m.group(1), m.group(2) or "")
-                if path == "/api/auth/register" and method == "POST":
-                    return self._register(con)
-                if path == "/api/auth/login" and method == "POST":
-                    return self._login(con)
+                    return self._workspace(con, method, m.group(1), m.group(2) or "", body)
                 if path == "/api/auth/logout" and method == "POST":
                     return self._logout(con)
                 if path == "/api/me" and method == "GET":
                     return self._me(con)
                 if path == "/api/workspaces" and method == "POST":
-                    return self._create_ws(con)
+                    return self._create_ws(con, body)
                 if path == "/api/workspaces/join" and method == "POST":
-                    return self._join_ws(con)
+                    return self._join_ws(con, body)
                 raise Http(404, {"error": "not found"})
         except Http as e:
             self._send(e.code, e.obj)
-        except Exception as e:   # jamais de connexion coupée sans réponse
-            self._send(500, {"error": "erreur interne", "detail": str(e)[:120]})
+        except Exception as e:   # jamais de connexion coupée sans réponse ; le détail reste dans le journal
+            print(f"erreur interne {method} {path} : {e!r}", flush=True)
+            self._send(500, {"error": "erreur interne"})
 
     # --- comptes
-    def _register(self, con):
-        if not rate_ok(self._ip()):
+    def _register(self, b):
+        if not rate_ok(("register", self._ip())):
             raise Http(429, {"error": "trop de tentatives, réessayez plus tard"})
-        b = self._body()
         email = str(b.get("email") or "").strip().lower()
-        name = str(b.get("name") or "").strip()[:14]
+        name = clean_text(b.get("name"), 14)
         pw = str(b.get("password") or "")
         if not EMAIL_RE.match(email) or len(email) > 120:
             raise Http(400, {"error": "adresse e-mail invalide"})
         if not name:
             raise Http(400, {"error": "prénom requis"})
-        if len(pw) < 8:
+        if len(pw) < 8 or len(pw) > 200:
             raise Http(400, {"error": "mot de passe : 8 caractères au moins"})
-        if con.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
-            raise Http(409, {"error": "un compte existe déjà avec cette adresse"})
-        uid = secrets.token_urlsafe(9)
-        con.execute("INSERT INTO users (id, email, name, pw, created) VALUES (?,?,?,?,?)", (uid, email, name, hash_pw(pw), int(time.time())))
-        token = self._session(con, uid)
+        pw_hash = hash_pw(pw)   # coûteux : hors verrou
+        with LOCK, db() as con:
+            if con.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+                raise Http(409, {"error": "inscription impossible avec cette adresse"})
+            uid = secrets.token_urlsafe(9)
+            con.execute("INSERT INTO users (id, email, name, pw, created) VALUES (?,?,?,?,?)", (uid, email, name, pw_hash, int(time.time())))
+            token = self._session(con, uid)
         self._send(201, {"token": token, "user": {"id": uid, "email": email, "name": name}})
 
-    def _login(self, con):
-        if not rate_ok(self._ip()):
+    def _login(self, b):
+        if not rate_ok(("login", self._ip())):
             raise Http(429, {"error": "trop de tentatives, réessayez plus tard"})
-        b = self._body()
         email = str(b.get("email") or "").strip().lower()
-        row = con.execute("SELECT id, email, name, pw FROM users WHERE email = ?", (email,)).fetchone()
-        if not row or not check_pw(str(b.get("password") or ""), row["pw"]):
+        with LOCK, db() as con:
+            row = con.execute("SELECT id, email, name, pw FROM users WHERE email = ?", (email,)).fetchone()
+        if row and not rate_ok(("account", row["id"]), limit=10, window=900):   # verrouillage temporaire du compte visé
+            raise Http(429, {"error": "trop de tentatives, réessayez plus tard"})
+        ok = check_pw(str(b.get("password") or ""), row["pw"] if row else dummy_hash())   # même coût qu'un compte existe ou non
+        if not row or not ok:
             raise Http(401, {"error": "adresse ou mot de passe incorrect"})
-        token = self._session(con, row["id"])
+        with LOCK, db() as con:
+            RATE.pop(("account", row["id"]), None)
+            token = self._session(con, row["id"])
         self._send(200, {"token": token, "user": {"id": row["id"], "email": row["email"], "name": row["name"]}})
 
     def _session(self, con, uid):
@@ -449,15 +502,17 @@ class H(BaseHTTPRequestHandler):
         self._send(200, {"user": user, "workspaces": wss})
 
     # --- séjours
-    def _create_ws(self, con):
+    def _create_ws(self, con, b):
         user = self._account(con)
         if not user:
             raise Http(401, {"error": "connexion requise"})
-        b = self._body()
-        name = str(b.get("name") or "Notre séjour").strip()[:40] or "Notre séjour"
+        name = clean_text(b.get("name"), 40) or "Notre séjour"
         if con.execute("SELECT COUNT(*) FROM members WHERE user_id = ?", (user["id"],)).fetchone()[0] >= 20:
             raise Http(400, {"error": "20 séjours au plus par compte"})
-        ws_id = secrets.token_urlsafe(8).replace("_", "x").replace("-", "y")
+        while True:
+            ws_id = secrets.token_hex(6)
+            if not con.execute("SELECT 1 FROM workspaces WHERE id = ?", (ws_id,)).fetchone():
+                break
         st = fresh_state()
         st["users"]["a"]["name"] = user["name"][:14]
         now = int(time.time())
@@ -468,13 +523,12 @@ class H(BaseHTTPRequestHandler):
         w["slot"] = "a"
         self._send(201, {"workspace": w})
 
-    def _join_ws(self, con):
+    def _join_ws(self, con, b):
         user = self._account(con)
         if not user:
             raise Http(401, {"error": "connexion requise"})
-        if not rate_ok(self._ip(), limit=30):
+        if not rate_ok(("join", self._ip()), limit=30):
             raise Http(429, {"error": "trop de tentatives, réessayez plus tard"})
-        b = self._body()
         code = re.sub(r"[^A-Z0-9]", "", str(b.get("code") or "").upper())
         w = con.execute("SELECT id, state FROM workspaces WHERE invite = ?", (code,)).fetchone()
         if not w:
@@ -485,7 +539,14 @@ class H(BaseHTTPRequestHandler):
             slot = existing["slot"]
         else:
             taken = {m["slot"] for m in con.execute("SELECT slot FROM members WHERE ws_id = ?", (ws_id,)).fetchall()}
-            slot = "a" if "a" not in taken else "b" if "b" not in taken else None
+            if ws_id == LEGACY_WS:   # séjour hérité : la place est celle du compte Caddy du même prénom (simon → a, marie → b)
+                slot = USERS.get(user["name"].lower()) or USERS.get(user["email"].split("@")[0].lower())
+                if slot not in ("a", "b"):
+                    raise Http(409, {"error": "pour ce séjour, le prénom du compte doit être " + " ou ".join(u.capitalize() for u in USERS)})
+                if slot in taken:
+                    raise Http(409, {"error": "cette place est déjà occupée par un autre compte"})
+            else:
+                slot = "a" if "a" not in taken else "b" if "b" not in taken else None
             if not slot:
                 raise Http(409, {"error": "ce séjour a déjà deux voyageurs"})
             now = int(time.time())
@@ -499,38 +560,40 @@ class H(BaseHTTPRequestHandler):
         meta["slot"] = slot
         self._send(200, {"workspace": meta})
 
-    def _workspace(self, con, method, ws_id, sub):
+    def _workspace(self, con, method, ws_id, sub, body):
         user = self._account(con)
         if not user:
             raise Http(401, {"error": "connexion requise"})
         slot = self._member_slot(con, ws_id, user)
         if sub == "/state":
-            return self._state(con, method, ws_id, slot, user["name"])
+            return self._state(con, method, ws_id, slot, user["name"], body)
         if sub == "/leave" and method == "POST":
             con.execute("DELETE FROM members WHERE ws_id = ? AND user_id = ?", (ws_id, user["id"]))
+            con.execute("UPDATE workspaces SET invite = ? WHERE id = ?", (new_invite(con), ws_id))   # l'ancien code ne rouvre pas la porte
             return self._send(200, {"ok": True})
         if sub == "" and method == "GET":
             meta = ws_meta(con, ws_id)
             meta["slot"] = slot
             return self._send(200, {"workspace": meta})
         if sub == "" and method == "PUT":
-            b = self._body()
-            name = str(b.get("name") or "").strip()[:40]
+            name = clean_text(body.get("name"), 40)
             if name:
                 con.execute("UPDATE workspaces SET name = ? WHERE id = ?", (name, ws_id))
+            if body.get("newInvite") is True:
+                con.execute("UPDATE workspaces SET invite = ? WHERE id = ?", (new_invite(con), ws_id))
             meta = ws_meta(con, ws_id)
             meta["slot"] = slot
             return self._send(200, {"workspace": meta})
         raise Http(404, {"error": "not found"})
 
-    def _state_legacy(self, con, method):
+    def _state_legacy(self, con, method, body):
         u, k = self._legacy()
         if not k:
             raise Http(403, {"error": "utilisateur inconnu", "user": u})
-        return self._state(con, method, LEGACY_WS, k, u)
+        return self._state(con, method, LEGACY_WS, k, u, body)
 
     # --- état partagé
-    def _state(self, con, method, ws_id, k, by_name):
+    def _state(self, con, method, ws_id, k, by_name, body=None):
         w = con.execute("SELECT state, version, updated, by FROM workspaces WHERE id = ?", (ws_id,)).fetchone()
         if not w:
             raise Http(404, {"error": "séjour inconnu"})
@@ -545,7 +608,8 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, payload(w["version"], w["updated"], w["by"]))
         if method != "PUT":
             raise Http(405, {"error": "méthode non permise"})
-        body = self._body()
+        if body is None:
+            raise Http(400, {"error": "corps requis"})
         try:
             expected = int(self.headers.get("If-Match") or -1)
         except ValueError:
@@ -553,14 +617,17 @@ class H(BaseHTTPRequestHandler):
         if expected != w["version"]:
             return self._send(409, payload(w["version"], w["updated"], w["by"]))
         try:
-            changed = apply_partial(st, body, k, by_name, w["version"])
+            changed = apply_partial(st, body, k, w["version"])
         except Exception as e:
-            raise Http(400, {"error": "corps invalide", "detail": str(e)[:120]})
+            raise Http(400, {"error": "corps invalide"})
         version, updated, by = w["version"], w["updated"], w["by"]
         if changed:
+            data = json.dumps(st, ensure_ascii=False)
+            if len(data.encode("utf-8")) > STATE_MAX:
+                raise Http(413, {"error": "séjour trop volumineux : retirez des programmes ou des notes"})
             version, updated, by = w["version"] + 1, int(time.time()), by_name
             con.execute("UPDATE workspaces SET state = ?, version = ?, updated = ?, by = ? WHERE id = ?",
-                        (json.dumps(st, ensure_ascii=False), version, updated, by, ws_id))
+                        (data, version, updated, by, ws_id))
         self._send(200, payload(version, updated, by))
 
     def log_message(self, fmt, *args):  # journal concis

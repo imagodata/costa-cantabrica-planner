@@ -166,13 +166,14 @@
   const api = (p) => (C.apiBase ? C.apiBase.replace(/\/$/, '') + '/' + p : p);
   const authHeaders = () => (auth && auth.token ? { Authorization: 'Bearer ' + auth.token } : {});
   function restoreAuth() {
-    try { const j = JSON.parse(localStorage.getItem(LS_AUTH) || 'null'); if (j && typeof j.token === 'string' && j.user && j.ws && j.ws.id) auth = j; } catch (e) { }
+    try { const j = JSON.parse(localStorage.getItem(LS_AUTH) || 'null'); if (j && typeof j.token === 'string' && j.user && j.ws && j.ws.id) auth = j; else if (j && typeof j.token === 'string' && j.user && !/[#&]reset\b/.test(location.hash)) { location.replace('login.html'); return; } } catch (e) { }   // connecté sans séjour choisi : retour au choix
     const suffix = auth ? ':' + auth.ws.id : '';
     LS_STATE = 'ccp:state:v' + C.version + suffix; LS_SYNC = 'ccp:sync:v' + C.version + suffix;
   }
   const saveAuth = () => { try { if (auth) localStorage.setItem(LS_AUTH, JSON.stringify(auth)); else localStorage.removeItem(LS_AUTH); } catch (e) { } };
   async function logout() {
     try { if (auth) await fetch(api('api/auth/logout'), { method: 'POST', headers: authHeaders() }); } catch (e) { }
+    try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); } catch (e) { }   // l'état du séjour ne reste pas sur un appareil partagé
     auth = null; saveAuth(); location.href = 'login.html';
   }
   const sync = { on: false, version: null, timer: null, pushing: false, dirty: false, poll: null, base: null, err: false, at: 0, log: [], pending: 0 };
@@ -264,7 +265,8 @@
   }
   const syncUrl = () => (auth ? api('api/w/' + auth.ws.id + '/state') : api('api/state'));
   const fetchSync = (opts = {}) => fetch(syncUrl(), { cache: 'no-store', ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) }, ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(15000) } : {}) });
-  const cleanUser = (u, fallback) => ({ name: String((u && u.name) || fallback.name).slice(0, 14), wish: ((u && u.wish) || []).filter((x) => typeof x === 'string'), suggest: ((u && u.suggest) || []).filter((x) => typeof x === 'string') });
+  const arr = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []);
+  const cleanUser = (u, fallback) => ({ name: String((u && u.name) || fallback.name).slice(0, 14), wish: arr(u && u.wish), suggest: arr(u && u.suggest) });
   const syncApply = (st) => {
     const me = state.me, other = me === 'a' ? 'b' : 'a';
     const known = new Set(sync.base ? (sync.base.users[other].wish || []) : (st.users[other].wish || []));   // sans base connue : rien n'est « nouveau »
@@ -323,7 +325,10 @@
         const late = syncDiff(sync.base);
         syncApply(st); applyDiff(late); persistLocal(); rerenderAll({ soft: true }); syncPush(); return;
       }
-      if (r.status === 403) { sync.on = false; sync.err = true; toast('Ce compte n\'est pas connu du serveur de synchronisation'); return; }
+      if (r.status === 401) { sync.on = false; sync.err = true; sync.dirty = true; if (auth) { auth = null; saveAuth(); toast('Session expirée : reconnectez-vous'); setTimeout(() => { location.href = 'login.html'; }, 1500); } return; }   // rien n'est perdu : la différence attend
+      if (r.status === 429) { sync.err = true; sync.dirty = true; return; }   // réessai au prochain sondage
+      if (r.status === 403) { sync.on = false; sync.err = true; toast(auth ? 'Vous ne faites plus partie de ce séjour' : 'Ce compte n\'est pas connu du serveur de synchronisation'); return; }
+      if (r.status === 413) { sync.err = true; sync.dirty = true; toast('Séjour trop volumineux : retirez des programmes ou des notes'); return; }
       if (r.status >= 400 && r.status < 500) { sync.base = diff.cur; toast('Modification refusée par le serveur'); return; }   // définitif : on n'insiste pas
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const st = await r.json();
@@ -388,7 +393,7 @@
         if (r.ok) {
           const me = await r.json(); auth.user = me.user;
           const w = (me.workspaces || []).find((x) => x.id === auth.ws.id);
-          if (!w) { auth = null; saveAuth(); toast('Ce séjour n\'est plus accessible : choisissez-en un autre'); setTimeout(() => { location.href = 'login.html'; }, 1500); return; }
+          if (!w) { auth.ws = null; saveAuth(); toast('Ce séjour n\'est plus accessible : choisissez-en un autre'); setTimeout(() => { location.href = 'login.html'; }, 1500); return; }
           auth.ws = { ...auth.ws, ...w }; saveAuth();
         }
       } catch (e) { /* hors ligne : on continue avec la session mémorisée */ }
@@ -511,6 +516,7 @@
   let viewBounds = null, progAt = 0;
   const progMove = (fn) => { progAt = performance.now(); fn(); };   // déplacement programmé : les moveend qui suivent de près sont ignorés
   function liveBounds() {
+    if (is3d()) { const b = gl.getBounds(); return L.latLngBounds([b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]); }
     const size = map.getSize(); let h = size.y;
     if (isMobile() && !sheet.classList.contains('full')) h = Math.max(60, sheet.getBoundingClientRect().top - map.getContainer().getBoundingClientRect().top);
     return L.latLngBounds(map.containerPointToLatLng([0, h]), map.containerPointToLatLng([size.x, 0]));
@@ -634,7 +640,7 @@
     const z = map.getZoom(), zoomHint = z < C.poiMinZoom;
     const chip = (g, label, colors) => `<button type="button" data-g="${g}" class="${state.poiOn[g] ? 'on' : ''}" title="${zoomHint ? 'Zoomez pour voir les lieux' : ''}">${colors.map((c) => `<i class="sw" style="background:${c}"></i>`).join('')}${label}</button>`;
     $('#layer-chips').innerHTML = chip('food', 'Restos & bars', [C.poiKinds.restaurant.color, C.poiKinds.beach_bar.color]) + chip('visit', 'Visites', [C.poiKinds.culture.color, C.poiKinds.tourism.color]);
-    $('#layer-chips').querySelectorAll('button').forEach((b) => b.onclick = () => { state.poiOn[b.dataset.g] = !state.poiOn[b.dataset.g]; save(); renderLayerChips(); renderPois(); if (state.poiOn[b.dataset.g] && map.getZoom() < C.poiMinZoom) toast('Zoomez sur la carte pour voir les lieux'); });
+    $('#layer-chips').querySelectorAll('button').forEach((b) => b.onclick = () => { state.poiOn[b.dataset.g] = !state.poiOn[b.dataset.g]; save(); renderLayerChips(); renderPois(); paint3dPois(); if (state.poiOn[b.dataset.g] && map.getZoom() < C.poiMinZoom) toast('Zoomez sur la carte pour voir les lieux'); });
   }
   function initPois() {
     poiLayer = L.layerGroup().addTo(map);
@@ -652,6 +658,7 @@
       const z = Math.max(map.getZoom(), C.poiMinZoom + 2), p = map.project([x.lat, x.lon], z);
       if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
       progMove(() => map.setView(map.unproject(p, z), z, { animate: false }));
+      if (is3d()) progMove(() => gl.jumpTo({ center: [x.lon, x.lat], zoom: Math.max(gl.getZoom(), 14), offset: glOffset() }));
     }
     renderPois();
     map.closePopup();
@@ -738,71 +745,165 @@
   /* Fond satellite centré sur la plage : accès, parking, rochers se lisent mieux qu'en vue fixe. */
   function showSatellite(s) {
     if (!baseLayers) return;
+    if (glOn && !glUnsupported) { open3d({ lat: latlng(s)[0], lon: latlng(s)[1] }); return; }
     if (!map.hasLayer(baseLayers.pnoa)) { for (const k of ['osm', 'topo', 'sat']) if (map.hasLayer(baseLayers[k])) map.removeLayer(baseLayers[k]); baseLayers.sat.addTo(map); }
     progMove(() => map.setView(latlng(s), Math.max(16, aerialZoom(s, map.getSize().x, 14, 17)), { animate: false }));
     if (isMobile()) setSheet('peek');
     toast('Fond satellite · le contrôle des couches (en bas à droite) ramène au plan');
   }
-  /* ------------------------------------------------------------------ vue 3D du relief (MapLibre GL, chargé à la demande)
-     Terrain : tuiles d'altitude Terrarium (Mapzen / AWS Open Data) ; imagerie drapée : Esri ou PNOA selon le fond
-     courant ; étiquettes Esri. Caméra inclinée, orientée depuis la mer vers la côte (C.coastBearing). */
-  let gl = null, glReady = null, glHome = null;
+  /* ------------------------------------------------------------------ carte 3D (MapLibre GL, chargé à la demande)
+     Mode principal de la carte, activé par défaut et mémorisé (ccp:3d) : terrain Terrarium (Mapzen / AWS Open Data),
+     orthophoto drapée (PNOA © IGN, ou Esri si c'est le fond 2D choisi), ombrage, étiquettes, plages colorées par
+     score, parcours du séjour, hébergement. La carte 2D Leaflet reste montée dessous (lieux, fonds, hors ligne). */
+  const ESRI_IMG = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  const LABELS_IMG = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+  let gl = null, glReady = null, glOn = false, glUnsupported = false, glMarkers = [], glLoaded = false;
+  let glMode = 'auto';   // 'auto' : 2D sur la côte entière, 3D dès qu'on zoome (≥ 12,5) ; '1' / '0' : fixé par le bouton
+  const GL_IN = 12.5, GL_OUT = 11;   // seuils de zoom Leaflet (entrée en 3D, retour en 2D)
+  const saveGlMode = (m) => { glMode = m; try { localStorage.setItem('ccp:3d', m); } catch (e) { } };
+  const is3d = () => glOn && !!gl && glLoaded;
+  CCP.is3d = () => glOn && !!gl;
   function loadMaplibre() {
     if (window.maplibregl) return Promise.resolve();
     if (glReady) return glReady;
     glReady = new Promise((res, rej) => {
       const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'vendor/maplibre/maplibre-gl.css?v=' + assetVer; document.head.appendChild(l);
-      const s = document.createElement('script'); s.src = 'vendor/maplibre/maplibre-gl.js?v=' + assetVer; s.onload = res; s.onerror = () => rej(new Error('MapLibre introuvable')); document.head.appendChild(s);
+      const s = document.createElement('script'); s.src = 'vendor/maplibre/maplibre-gl.js?v=' + assetVer; s.onload = res; s.onerror = () => { glReady = null; rej(new Error('MapLibre introuvable')); }; document.head.appendChild(s);
     });
     return glReady;
   }
-  async function open3d({ lat, lon, zoom = 14, name = '', bearing = C.coastBearing ?? 180 } = {}) {
-    const box = $('#view3d'); box.hidden = false; $('#v3-title').textContent = name; $('#v3-hint').classList.remove('off');
-    $('#gl').innerHTML = '<div class="loading" style="color:#fff">Chargement de la vue 3D…</div>';
-    try { await loadMaplibre(); } catch (e) { $('#gl').innerHTML = '<div class="v3-err">Vue 3D indisponible hors ligne.</div>'; return; }
-    const probe = document.createElement('canvas'), ctx = probe.getContext('webgl2') || probe.getContext('webgl');   // MapLibre ≥ 3 n'expose plus supported()
-    if (!ctx) { $('#gl').innerHTML = '<div class="v3-err">La 3D (WebGL) n\'est pas disponible sur cet appareil.</div>'; return; }
-    const usePnoa = map && baseLayers && map.hasLayer(baseLayers.pnoa);
-    const imagery = usePnoa ? PNOA_URL.replace('{z}', '{z}').replace('{y}', '{y}').replace('{x}', '{x}') : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-    glHome = { center: [lon, lat], zoom, pitch: 62, bearing };
-    if (gl) { gl.getSource('sat') && gl.getSource('sat').setTiles && gl.getSource('sat').setTiles([imagery]); gl.jumpTo(glHome); place3dMarker(lat, lon, name); gl.resize(); return; }
-    $('#gl').innerHTML = '';
-    try {
-      gl = new maplibregl.Map({
-        container: 'gl', center: glHome.center, zoom, pitch: 62, bearing, maxPitch: 80, attributionControl: false, antialias: false,
-        style: { version: 8,
-          sources: {
-            sat: { type: 'raster', tiles: [imagery], tileSize: 256, maxzoom: 18, attribution: usePnoa ? 'PNOA © IGN' : '© Esri' },
-            labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 17 },
-            dem: { type: 'raster-dem', tiles: [TERRAIN_URL], tileSize: 256, maxzoom: 15, encoding: 'terrarium', attribution: 'Terrain Tiles, Mapzen / AWS Open Data' },
-          },
-          layers: [{ id: 'sat', type: 'raster', source: 'sat' }, { id: 'labels', type: 'raster', source: 'labels', paint: { 'raster-opacity': .9 } }],
-          terrain: { source: 'dem', exaggeration: 1.35 },
-          sky: { 'sky-color': '#9fc8e6', 'horizon-color': '#dbe9f3', 'fog-color': '#c7d8e4', 'fog-ground-blend': .55, 'horizon-fog-blend': .7, 'sky-horizon-blend': .6, 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 10, 1, 12, 0] },
-        },
-      });
-      gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true }), 'top-right');
+  const glImagery = () => (map && baseLayers && map.hasLayer(baseLayers.sat) ? ESRI_IMG : (C.orthoUrl || PNOA_URL));
+  const glOffset = () => (isMobile() && !sheet.classList.contains('full') ? [0, -sheetVisible() / 2] : [0, 0]);
+  const glPadding = () => ({ top: 70, left: 16, right: 16, bottom: (isMobile() ? Math.round(window.innerHeight * 0.58) : 0) + 24 });
+  function glStyle() {
+    return { version: 8,
+      sources: {
+        sat: { type: 'raster', tiles: [glImagery()], tileSize: 256, maxzoom: 18, attribution: map && baseLayers && map.hasLayer(baseLayers.sat) ? 'Imagerie © Esri' : 'PNOA © IGN' },
+        labels: { type: 'raster', tiles: [LABELS_IMG], tileSize: 256, maxzoom: 17 },
+        dem: { type: 'raster-dem', tiles: [TERRAIN_URL], tileSize: 256, maxzoom: 15, encoding: 'terrarium', attribution: 'Terrain Tiles · Mapzen, AWS Open Data' },
+        dem2: { type: 'raster-dem', tiles: [TERRAIN_URL], tileSize: 256, maxzoom: 15, encoding: 'terrarium' },   // source distincte pour l'ombrage (qualité de rendu)
+        routes: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+        spots: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+        pois: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      },
+      layers: [
+        { id: 'sat', type: 'raster', source: 'sat' },
+        { id: 'hill', type: 'hillshade', source: 'dem2', paint: { 'hillshade-exaggeration': .3, 'hillshade-shadow-color': '#1b2a3a', 'hillshade-highlight-color': '#ffffff', 'hillshade-illumination-direction': 315 } },
+        { id: 'labels', type: 'raster', source: 'labels', paint: { 'raster-opacity': .9 } },
+        { id: 'routes', type: 'line', source: 'routes', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['get', 'w'], 'line-opacity': ['get', 'op'], 'line-dasharray': [2, 1.5] } },
+        { id: 'pois', type: 'circle', source: 'pois', paint: { 'circle-color': ['get', 'color'], 'circle-radius': ['get', 'r'], 'circle-opacity': .95, 'circle-stroke-color': ['get', 'stroke'], 'circle-stroke-width': ['get', 'sw'], 'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport' } },
+        { id: 'spots', type: 'circle', source: 'spots', paint: { 'circle-color': ['get', 'color'], 'circle-radius': ['get', 'r'], 'circle-opacity': ['get', 'op'], 'circle-stroke-color': ['get', 'stroke'], 'circle-stroke-width': ['get', 'sw'], 'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport' } },
+      ],
+      terrain: { source: 'dem', exaggeration: 1.3 },
+      sky: { 'sky-color': '#8fc1e3', 'horizon-color': '#dbe9f3', 'fog-color': '#c7d8e4', 'fog-ground-blend': .6, 'horizon-fog-blend': .7, 'sky-horizon-blend': .6, 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 10, 1, 12, 0] },
+    };
+  }
+  /* Bascule 2D/3D du mode principal ; la vue (centre, zoom) passe d'une carte à l'autre. */
+  async function set3d(on, { silent = false } = {}) {
+    if (on && glUnsupported) { if (!silent) toast('La 3D n\'est pas disponible sur cet appareil'); return false; }
+    if (!on) {
+      if (gl && glOn) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.min(19, Math.round(gl.getZoom() * 2) / 2), { animate: false })); }
+      glOn = false; $('#view3d').hidden = true; renderBtn3d();
+      return true;
+    }
+    $('#view3d').hidden = false; glOn = true; renderBtn3d();
+    if (!gl) $('#gl').innerHTML = '<div class="loading" style="color:#fff">Chargement de la vue 3D…</div>';
+    try { await loadMaplibre(); } catch (e) { glOn = false; $('#view3d').hidden = true; renderBtn3d(); if (!silent) toast('Vue 3D indisponible hors ligne'); return false; }
+    if (!gl) {
+      const probe = document.createElement('canvas'), ctx = probe.getContext('webgl2') || probe.getContext('webgl');   // MapLibre ≥ 3 n'expose plus supported()
+      if (!ctx) { glUnsupported = true; glOn = false; $('#view3d').hidden = true; renderBtn3d(); if (!silent) toast('La 3D (WebGL) n\'est pas disponible sur cet appareil'); return false; }
+      $('#gl').innerHTML = '';
+      const c = map.getCenter();
+      try {
+        gl = new maplibregl.Map({ container: 'gl', center: [c.lng, c.lat], zoom: Math.max(6, map.getZoom() - 1), pitch: 50, bearing: 0, maxPitch: 80, attributionControl: false, style: glStyle() });
+      } catch (e) { glUnsupported = true; glOn = false; gl = null; $('#view3d').hidden = true; renderBtn3d(); if (!silent) toast('La 3D n\'est pas disponible sur cet appareil'); return false; }
+      gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: !isMobile() }), 'bottom-right');
+      gl.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
       gl.touchZoomRotate.enableRotation(); gl.dragRotate.enable();
-      gl.on('error', (e) => { if (e && e.error && /WebGL|context/i.test(String(e.error.message || ''))) $('#gl').innerHTML = '<div class="v3-err">La 3D (WebGL) n\'est pas disponible sur cet appareil.</div>'; });
-      gl.once('pointerdown', () => $('#v3-hint').classList.add('off')); setTimeout(() => $('#v3-hint').classList.add('off'), 6000);
-      place3dMarker(lat, lon, name);
-    } catch (e) { $('#gl').innerHTML = '<div class="v3-err">La 3D n\'est pas disponible sur cet appareil.</div>'; gl = null; }
+      gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); });
+      gl.on('moveend', () => paint3dPois());
+      gl.on('click', 'pois', (e) => { const f = e.features && e.features[0]; const x = f && poiById(f.properties.id); if (x) showPoi(x, { pan: false }); });
+      gl.on('mouseenter', 'pois', (e) => { gl.getCanvas().style.cursor = 'pointer'; const f = e.features && e.features[0]; if (f && !isMobile()) { glPopup.setLngLat(f.geometry.coordinates).setText(f.properties.name).addTo(gl); } });
+      gl.on('mouseleave', 'pois', () => { gl.getCanvas().style.cursor = ''; glPopup.remove(); });
+      gl.on('mouseenter', 'spots', (e) => { const f = e.features && e.features[0], s = f && spotById(f.properties.id); if (s && !isMobile()) glPopup.setLngLat(f.geometry.coordinates).setText(s.properties.name).addTo(gl); });
+      gl.on('mouseleave', 'spots', () => glPopup.remove());
+      gl.on('error', (e) => { const m = String((e && e.error && e.error.message) || ''); if (/WebGL|context lost/i.test(m)) { glUnsupported = true; set3d(false); toast('La 3D s\'est arrêtée : carte 2D'); } });
+      gl.on('click', 'spots', (e) => { const f = e.features && e.features[0]; if (f) select(f.properties.id, { pan: false }); });
+      gl.on('mouseenter', 'spots', () => { gl.getCanvas().style.cursor = 'pointer'; }); gl.on('mouseleave', 'spots', () => { gl.getCanvas().style.cursor = ''; });
+      gl.on('dragstart', (e) => { if (e.originalEvent && isMobile() && !sheet.classList.contains('peek')) setSheet('peek'); });
+      gl.on('zoomend', (e) => { if (e.originalEvent && glMode === 'auto' && gl.getZoom() + 1 < GL_OUT) set3d(false, { silent: true }); });   // dézoom manuel : retour à la vue d'ensemble 2D
+      gl.on('moveend', (e) => { if (!e.originalEvent && performance.now() - progAt < 700) return; if (!e.originalEvent) return; clearTimeout(mvT3); mvT3 = setTimeout(() => { viewBounds = liveBounds(); if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList({ keep: true }); } }, 150); });
+      gl.once('pointerdown', () => $('#v3-hint').classList.add('off')); setTimeout(() => $('#v3-hint').classList.add('off'), 7000);
+    } else {
+      const c = map.getCenter(); gl.resize(); gl.jumpTo({ center: [c.lng, c.lat], zoom: Math.max(6, map.getZoom() - 1) }); paint3d();
+    }
+    return true;
   }
-  let glMarker = null;
-  function place3dMarker(lat, lon, name) {
-    if (!gl) return;
-    if (glMarker) glMarker.remove();
-    if (!name) { glMarker = null; return; }
-    const el = document.createElement('div'); el.className = 'num-pin both'; el.style.background = 'var(--accent)'; el.style.width = el.style.height = '22px'; el.textContent = '';
-    glMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lon, lat]).addTo(gl);
+  let mvT3 = null;
+  const glPopup = { _p: null, get p() { if (!this._p) this._p = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10, className: 'gl-tip' }); return this._p; }, setLngLat(c) { this.p.setLngLat(c); return this; }, setText(t) { this.p.setText(t); return this; }, addTo(m) { this.p.addTo(m); return this; }, remove() { if (this._p) this._p.remove(); } };
+  /* Lieux (restos, bars, visites) dans la scène 3D : mêmes règles que la couche 2D (zoom, puces, 900 au plus). */
+  function paint3dPois() {
+    if (!gl || !glLoaded || !gl.getSource('pois')) return;
+    const on = state.poiOn, z = gl.getZoom() + 1;
+    if (z < C.poiMinZoom || !(on.food || on.visit)) { gl.getSource('pois').setData({ type: 'FeatureCollection', features: [] }); return; }
+    if (!state.pois.length) { ensurePois().then(() => paint3dPois()); return; }
+    const b = gl.getBounds(), colBoth = cssVar('--both'), inPlan = new Set();
+    for (const pn of Object.values(state.plans)) for (const it of pn.items) if (it.poi) inPlan.add(it.poi);
+    const feats = []; let n = 0;
+    for (const x of state.pois) {
+      if (!on[poiGroupOf(x.p.kind)] || !b.contains([x.lon, x.lat])) continue;
+      if (++n > 900) break;
+      const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism, kept = inPlan.has(x.id);
+      feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [x.lon, x.lat] }, properties: { id: x.id, name: x.p.name, color: k.color, r: kept ? 7 : (z < C.poiMinZoom + 1 ? 3.5 : 5), stroke: kept ? colBoth : '#fff', sw: kept ? 2.5 : 1.2 } });
+    }
+    gl.getSource('pois').setData({ type: 'FeatureCollection', features: feats });
   }
-  function close3d() { $('#view3d').hidden = true; }
+  function renderBtn3d() { const b = $('#btn-3d'); if (!b) return; b.textContent = glOn ? '2D' : '3D'; b.classList.toggle('on', glOn); b.title = (glOn ? 'Revenir à la carte 2D' : 'Relief 3D') + (glMode === 'auto' ? ' (bascule automatique selon le zoom)' : ''); }
+  /* Fiche : caméra au-dessus de la mer, tournée vers la plage et ses falaises. */
+  async function open3d({ lat, lon, zoom = 14.5, bearing = C.coastBearing ?? 180 } = {}) {
+    if (!(await set3d(true))) return;
+    if (isMobile()) setSheet('peek');
+    const go = () => gl.flyTo({ center: [lon, lat], zoom, pitch: 65, bearing, offset: glOffset(), duration: 1200, essential: true });
+    if (glLoaded) go(); else gl.once('load', go);
+  }
+  /* Plages, parcours et hébergement : reflet des couches Leaflet dans la scène 3D. */
+  function paint3d() {
+    if (!gl || !glLoaded) return;
+    const vis = new Set(filtered().map((s) => s.properties.id));
+    const colA = cssVar('--a'), colB = cssVar('--b'), colBoth = cssVar('--both');
+    const cols = { none: cssVar('--none') }; for (const c of C.scoreClasses) cols[c.key] = cssVar('--' + c.key);
+    const feats = [];
+    for (const s of state.spots) {
+      const id = s.properties.id; if (!vis.has(id)) continue;
+      const r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(id), sel = state.selected === id;
+      let f;
+      if ((state.view === 'wishes' && (w.a || w.b || suggestedTo(state.me, id))) || (state.view === 'trip' && tripHasSpot(id))) continue;   // épingles HTML numérotées
+      if (state.view === 'wishes' || state.view === 'trip') f = { color: cols[r.cls], r: 4, op: .5, stroke: '#fff', sw: 1 };
+      else f = { color: cols[r.cls], r: sel ? 10 : (w.a || w.b ? 8 : 6), op: .95, stroke: sel ? '#111' : w.a && w.b ? colBoth : w.a ? colA : w.b ? colB : '#fff', sw: sel ? 3 : (w.a || w.b ? 3 : 1.5) };
+      feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [latlng(s)[1], latlng(s)[0]] }, properties: { id, ...f } });
+    }
+    gl.getSource('spots').setData({ type: 'FeatureCollection', features: feats });
+    const lines = [];
+    const toLine = (seq) => seq.map(([la, lo]) => [lo, la]);
+    if (state.view === 'wishes') { const list = wishList(); if (list.length > 1) lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: toLine(list.map(latlng)) }, properties: { color: colBoth, w: 2.5, op: .8 } }); }
+    state.trip.days.forEach((d, i) => { const route = dayRoute(d); if (route.seq.length > 1) lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: toLine(route.seq) }, properties: { color: dayColor(i), w: state.view === 'trip' ? 3.5 : 2, op: state.view === 'trip' ? .9 : .4 } }); });
+    for (const [sid, pn] of Object.entries(state.plans)) { const s = spotById(sid); if (!s) continue; for (const it of pn.items) { const x = it.poi && poiById(it.poi); if (!x) continue; const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism; lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[latlng(s)[1], latlng(s)[0]], [x.lon, x.lat]] }, properties: { color: k.color, w: 1.5, op: .8 } }); } }
+    paint3dPois();
+    gl.getSource('routes').setData({ type: 'FeatureCollection', features: lines });
+    for (const m of glMarkers) m.remove(); glMarkers = [];
+    const pin = (html, lat, lon, onClick) => { const el = document.createElement('div'); el.innerHTML = html; const node = el.firstElementChild; if (onClick) node.addEventListener('click', (e) => { e.stopPropagation(); onClick(); }); const mk = new maplibregl.Marker({ element: node, anchor: 'center' }).setLngLat([lon, lat]).addTo(gl); glMarkers.push(mk); };
+    if (state.trip.base) pin(`<div class="home-pin" style="${state.view === 'trip' ? '' : 'opacity:.75'}">${I('home', { size: 15 })}</div>`, state.trip.base.lat, state.trip.base.lon);
+    if (state.view === 'wishes') wishList().forEach((s, i) => { const p = s.properties, r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : w.b ? 'b' : (state.me === 'a' ? 'b' : 'a'); pin(`<div class="num-pin ${who}" style="background:var(--${r.cls})">${i + 1}</div>`, latlng(s)[0], latlng(s)[1], () => select(p.id, { pan: false })); });
+    if (state.view === 'trip') state.trip.days.forEach((d, i) => { let n = 0; d.stops.forEach((st) => { const x = stopInfo(st); if (!x || x.lat == null) return; const isSpot = x.kind === 'spot'; if (isSpot) n++; pin(`<div class="day-pin ${isSpot ? '' : 'poi'}" style="background:${isSpot ? dayColor(i) : x.color}">${isSpot ? n : I(x.icon, { size: 10 })}</div>`, x.lat, x.lon, () => { if (isSpot) select(st.id, { pan: false }); else showPoi(x.poi); }); }); });
+    if (state.selected && state.view !== 'wishes' && state.view !== 'trip') { const s = spotById(state.selected); if (s) pin(`<div class="poi-pin sel" style="background:var(--accent);width:16px;height:16px;border-color:#111"></div>`, latlng(s)[0], latlng(s)[1]); }
+  }
   function init3d() {
-    $('#btn-3d').textContent = '3D'; $('#v3-close').innerHTML = I('x', { size: 20 }); $('#v3-reset').innerHTML = I('locate', { size: 20 });
-    $('#btn-3d').onclick = () => { const c = map.getCenter(); const s = state.selected && spotById(state.selected); const [lat, lon] = s ? latlng(s) : [c.lat, c.lng]; open3d({ lat, lon, zoom: Math.max(13, Math.min(16, map.getZoom())), name: s ? s.properties.name : '' }); };
-    $('#v3-close').onclick = close3d;
-    $('#v3-reset').onclick = () => { if (gl && glHome) gl.flyTo({ ...glHome, duration: 900 }); };
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#view3d').hidden) { close3d(); e.stopImmediatePropagation(); } }, true);
+    try { const m = localStorage.getItem('ccp:3d'); if (m === '1' || m === '0') glMode = m; } catch (e) { }
+    renderBtn3d();
+    $('#btn-3d').onclick = () => { saveGlMode(glOn ? '0' : '1'); set3d(!glOn); };
+    if (glMode === '1') set3d(true, { silent: true });
+    // bascule automatique : zoomer sur l'orthophoto (geste) fait passer en 3D
+    map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported || performance.now() - progAt < 700) return; if (map.getZoom() >= GL_IN) set3d(true, { silent: true }); });
   }
   function fitAll() {
     if (!state.spots.length) return;
@@ -810,6 +911,7 @@
     const b = L.latLngBounds(state.spots.map(latlng)), mobile = isMobile();
     const bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
     progMove(() => map.fitBounds(b, { paddingTopLeft: [16, 16], paddingBottomRight: [16, bottom + 16], animate: false }));
+    if (is3d()) progMove(() => gl.fitBounds([[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], { padding: glPadding(), pitch: 45, bearing: 0, duration: 0 }));
   }
   function paintMarkers() {
     const vis = new Set(filtered().map((s) => s.properties.id));
@@ -830,7 +932,7 @@
         color: sel ? '#111' : w.a && w.b ? colBoth : w.a ? colA : w.b ? colB : '#fff', weight: sel ? 3 : (w.a || w.b ? 3 : 2) });
       if (sel) m.bringToFront();
     }
-    paintWishLayer(); paintTripLayer(); paintPlanLayer();
+    paintWishLayer(); paintTripLayer(); paintPlanLayer(); paint3d();
   }
   /* Lieux secondaires retenus (programmes) et parcours du séjour : visibles dans toutes les vues. */
   function paintPlanLayer() {
@@ -859,6 +961,7 @@
     const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = isMobile(), p = map.project(latlng(s), z);
     if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
     progMove(() => map.setView(map.unproject(p, z), z, { animate: true }));
+    if (is3d()) progMove(() => gl.flyTo({ center: [latlng(s)[1], latlng(s)[0]], zoom: Math.max(gl.getZoom(), 13.5), offset: glOffset(), duration: 900 }));
   }
 
   /* ------------------------------------------------------------------ en-tête, jours, profil */
@@ -1009,6 +1112,7 @@
     viewBounds = null;
     const b = L.latLngBounds(list.map(latlng)), mobile = isMobile(), bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
     progMove(() => map.fitBounds(b.pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 }));
+    if (is3d()) { const p = b.pad(0.15); progMove(() => gl.fitBounds([[p.getWest(), p.getSouth()], [p.getEast(), p.getNorth()]], { padding: glPadding(), maxZoom: 12, pitch: 50, duration: 700 })); }
   }
   function paintWishLayer() {
     if (!wishLayer) wishLayer = L.layerGroup().addTo(map);
@@ -1352,6 +1456,7 @@
     if (!pts.length) return;
     const mobile = isMobile(), bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
     progMove(() => map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 }));
+    if (is3d()) { const p = L.latLngBounds(pts).pad(0.15); progMove(() => gl.fitBounds([[p.getWest(), p.getSouth()], [p.getEast(), p.getNorth()]], { padding: glPadding(), maxZoom: 12, pitch: 50, duration: 700 })); }
   }
   function paintTripLayer() {
     if (!tripLayer) tripLayer = L.layerGroup().addTo(map);
@@ -1388,7 +1493,7 @@
           <span>${I('calendar', { size: 14 })} Séjour <b>${esc((sync.ws || auth.ws).name || '')}</b> · ${((sync.ws || auth.ws).members || []).map((m) => `<i class="dot ${m.slot}" style="display:inline-block;width:10px;height:10px;vertical-align:-1px"></i> ${esc(m.name)}`).join(' · ') || 'vous seul pour l\'instant'}</span>
           <span>${I('copy', { size: 14 })} Code d'invitation <b id="c-invite">${esc((sync.ws || auth.ws).invite || '…')}</b> <button type="button" class="linkbtn" id="c-invite-copy">Copier</button></span>
           <span class="hint">L'autre voyageur crée un compte sur la page de connexion et saisit ce code : il rejoint ce séjour avec sa couleur.</span></div>
-          <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('calendar', { size: 14 })} Changer de séjour</a><button type="button" class="btn ghost" id="c-logout">${I('x', { size: 14 })} Se déconnecter</button></div>`
+          <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('calendar', { size: 14 })} Changer de séjour</a><button type="button" class="btn ghost" id="c-newcode">${I('refresh', { size: 14 })} Nouveau code</button><button type="button" class="btn ghost" id="c-leave" style="color:var(--bad)">${I('trash', { size: 14 })} Quitter ce séjour</button><button type="button" class="btn ghost" id="c-logout">${I('x', { size: 14 })} Se déconnecter</button></div>`
         : state.serverUser && sync.ws && sync.ws.invite ? `<div class="acct"><span>${I('copy', { size: 14 })} Code d'invitation de ce séjour <b id="c-invite">${esc(sync.ws.invite)}</b> <button type="button" class="linkbtn" id="c-invite-copy">Copier</button></span><span class="hint">Avec un compte (page de connexion), ce code ouvre le même séjour depuis n'importe quel appareil, y compris la version publique.</span></div>
           <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('users', { size: 14 })} Créer un compte / changer de séjour</a></div>`
         : `<div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('users', { size: 14 })} Se connecter / changer de voyageur</a></div>`}</div>
@@ -1409,7 +1514,8 @@
         <label class="f">Rayon depuis la résidence<select id="c-radius">${[20, 40, 60, 100, 200].map((n) => `<option value="${n}" ${pr.radiusKm === n ? 'selected' : ''}>${n} km</option>`).join('')}</select></label></div></div>
       <div class="card"><div class="h"><h3>${I('sliders', { size: 13 })} Affichage</h3></div>
         <label class="f">Profil d'activité par défaut<div class="seg" id="c-profile"></div></label>
-        ${sw('c-food', state.poiOn.food, 'Restos & bars sur la carte')}${sw('c-visit', state.poiOn.visit, 'Sites et visites sur la carte')}</div>
+        ${sw('c-food', state.poiOn.food, 'Restos & bars sur la carte')}${sw('c-visit', state.poiOn.visit, 'Sites et visites sur la carte')}
+        ${sw('c-3d', glMode === 'auto', 'Carte 3D automatique', 'Vue d\'ensemble en 2D, relief 3D dès qu\'on zoome ; le bouton 3D/2D fixe un mode')}</div>
       <div class="card"><div class="h"><h3>${I('download', { size: 13 })} Données</h3></div>
         ${sync.on ? `<span class="hint">Connecté au serveur : envies, programmes et séjour se synchronisent entre vos appareils (${esc(syncStatusText().toLowerCase())}).</span>` : '<span class="hint">Sans serveur, le lien de partage est un instantané fusionné sur l\'autre téléphone (ajouts seulement). « Copier le code » donne le même contenu à coller dans « Code séjour » à la connexion.</span>'}
         <div class="btns"><button type="button" class="btn ghost" id="c-share">${I('share', { size: 14 })} Partager le lien</button>${sync.on ? '' : `<button type="button" class="btn ghost" id="c-code">${I('copy', { size: 14 })} Copier le code</button>`}<button type="button" class="btn ghost" id="c-export">${I('download', { size: 14 })} Exporter (GeoJSON)</button><button type="button" class="btn ghost" id="c-refresh">${I('refresh', { size: 14 })} Rafraîchir les prévisions</button><button type="button" class="btn ghost" id="c-intro">${I('info', { size: 14 })} Revoir le guide</button><button type="button" class="btn ghost" id="c-reset" style="color:var(--bad)">${I('trash', { size: 14 })} Tout effacer</button></div></div>
@@ -1419,10 +1525,12 @@
     if (state.serverUser) { const hint = document.createElement('span'); hint.className = 'hint'; hint.textContent = `Connecté en tant que « ${state.serverUser} » : votre place (${state.me === 'a' ? 'voyageur 1' : 'voyageur 2'}) est fixée par le séjour.`; $('#c-me').closest('.card').appendChild(hint); }
     $('#c-invite-copy') && ($('#c-invite-copy').onclick = async () => { const code = $('#c-invite').textContent; try { await navigator.clipboard.writeText(code); toast('Code d\'invitation copié'); } catch (e) { prompt('Code d\'invitation :', code); } });
     $('#c-logout') && ($('#c-logout').onclick = logout);
+    $('#c-newcode') && ($('#c-newcode').onclick = async () => { try { const r = await fetch(api('api/w/' + auth.ws.id), { method: 'PUT', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ newInvite: true }) }); if (!r.ok) throw new Error(); const j = await r.json(); auth.ws = { ...auth.ws, ...j.workspace }; sync.ws = j.workspace; saveAuth(); renderConfig(); toast('Nouveau code d\'invitation : l\'ancien ne fonctionne plus'); } catch (e) { toast('Impossible de changer le code pour le moment'); } });
+    $('#c-leave') && ($('#c-leave').onclick = async () => { if (!await confirmDlg('Quitter ce séjour ?', { ok: 'Quitter', danger: true, hint: 'Vos envies et notes y restent pour l\'autre voyageur ; le code d\'invitation est renouvelé.' })) return; try { const r = await fetch(api('api/w/' + auth.ws.id + '/leave'), { method: 'POST', headers: authHeaders() }); if (!r.ok) throw new Error(); try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); } catch (e) { } auth.ws = null; saveAuth(); location.href = 'login.html'; } catch (e) { toast('Impossible de quitter le séjour pour le moment'); } });
     const commit = () => { save(); renderTabs(); renderWho(); };
     $('#c-a').onchange = (e) => { state.users.a.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[0]; commit(); renderConfig(); };
     $('#c-b').onchange = (e) => { state.users.b.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[1]; commit(); renderConfig(); };
-    seg($('#c-me'), [['a', esc(state.users.a.name)], ['b', esc(state.users.b.name)]], state.me, (v) => { if (sync.on) { toast('Identité fixée par la connexion au serveur'); renderConfig(); return; } state.me = v; commit(); }, { a: 'a', b: 'b' });
+    seg($('#c-me'), [['a', esc(state.users.a.name)], ['b', esc(state.users.b.name)]], state.me, (v) => { if (state.serverUser) { toast('Votre place est fixée par le séjour'); renderConfig(); return; } state.me = v; commit(); }, { a: 'a', b: 'b' });
     seg($('#c-profile'), Object.entries(C.profiles).map(([k, p]) => [k, esc(p.short)]), state.profile, (v) => { state.profile = v; save(); renderProfiles(); renderDays(); });
     const setBase = (b) => { t.base = b; state.pickBase = false; save(); renderConfig(); paintMarkers(); };
     const q = $('#c-base-q');
@@ -1452,6 +1560,7 @@
     $('#c-radius').onchange = (e) => { pr.radiusKm = +e.target.value; save(); autoReplan(); };
     $('#c-food').onclick = () => { state.poiOn.food = !state.poiOn.food; save(); renderLayerChips(); renderPois(); renderConfig(); };
     $('#c-visit').onclick = () => { state.poiOn.visit = !state.poiOn.visit; save(); renderLayerChips(); renderPois(); renderConfig(); };
+    $('#c-3d').onclick = () => { if (glMode === 'auto') saveGlMode(glOn ? '1' : '0'); else { saveGlMode('auto'); if (!glOn && map.getZoom() >= GL_IN) set3d(true, { silent: true }); else if (glOn && gl && gl.getZoom() + 1 < GL_OUT) set3d(false, { silent: true }); } renderBtn3d(); renderConfig(); };
     $('#c-share').onclick = share; $('#c-code') && ($('#c-code').onclick = copyCode); $('#c-export').onclick = exportSelection; $('#c-refresh').onclick = () => loadForecast(true);
     $('#c-intro').onclick = () => { try { localStorage.removeItem('ccp:intro'); } catch (e) { } showIntro(); };
     $('#c-reset').onclick = async () => { if (await confirmDlg('Effacer envies, programmes, séjour et préférences sur cet appareil ?', { ok: 'Tout effacer', danger: true })) { try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); } catch (e) { } location.hash = ''; location.reload(); } };
@@ -1597,7 +1706,7 @@
       </div>`;
     $('#btn-close').onclick = () => closeDetail();
     $('#btn-sat').onclick = () => showSatellite(s);
-    $('#btn-3d-spot').onclick = () => open3d({ lat, lon, zoom: 14.5, name: p.name });
+    $('#btn-3d-spot').onclick = () => open3d({ lat, lon, zoom: 14.5 });
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
     $('#btn-suggest') && ($('#btn-suggest').onclick = () => toggleSuggest(p.id));
@@ -1914,8 +2023,8 @@
     autoReplan();
   }
   async function init() {
-    if (/[#&]reset\b/.test(location.hash)) {          // app.html#reset : repartir de zéro (version de test publique)
-      try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); localStorage.removeItem('ccp:intro'); } catch (e) { }
+    if (/[#&]reset\b/.test(location.hash)) {          // app.html#reset : repartir de zéro (version de test publique), compte compris
+      try { for (const k of Object.keys(localStorage)) if (/^ccp:/.test(k)) localStorage.removeItem(k); } catch (e) { }
       history.replaceState(null, '', location.pathname + location.search + location.hash.replace(/[#&]reset\b/, '').replace(/^&/, '#'));
     }
     restoreAuth();

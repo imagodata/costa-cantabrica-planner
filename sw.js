@@ -1,6 +1,6 @@
 /* Service worker : coquille hors-ligne, données en cache (stale-while-revalidate, clés versionnées),
    tuiles OSM en cache avec expiration ; API météo et imagerie Esri toujours en réseau. */
-const VERSION = 'v202609141900';
+const VERSION = 'v202609141917';
 const SHELL = ['./', './index.html', './app.html', './login.html', './css/style.css', './css/site.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js',
   './js/swipe.js', './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
   './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './img/cover.jpg'];

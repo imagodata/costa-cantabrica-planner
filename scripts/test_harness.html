@@ -2,6 +2,7 @@
 <!-- Banc de test navigateur : pilote l'application dans un cadre (390 px, mobile) contre scripts/dev_server.py + server/costa_sync.py.
      Voir `make test`. Résultats dans <pre id="out"> ; le titre passe à DONE à la fin. -->
 <style>body{margin:0;display:flex;gap:8px}iframe{width:390px;height:844px;border:1px solid #999}pre{font:12px monospace;white-space:pre-wrap}</style>
+<script>try { localStorage.setItem('ccp:3d', '0'); } catch (e) { }</script><!-- le banc pilote la carte 2D ; la 3D est testée par bascule explicite -->
 <iframe id="f" src="../app.html"></iframe><pre id="out"></pre>
 <script>
 const f = document.getElementById('f'), out = document.getElementById('out');
@@ -82,9 +83,10 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     $('#btn-sat').click(); await wait(() => D().querySelector('.leaflet-tile-pane img[src*="arcgisonline"]'), 8000, 'fond satellite');
     check(!!D().querySelector('.leaflet-tile-pane img[src*="arcgisonline"]') && $('#sheet').classList.contains('peek'), 'aérien · « Satellite » bascule le fond de carte et replie le panneau');
     check(!!D().querySelector('.leaflet-overlay-pane img[src*="World_Boundaries_and_Places"]') || !!D().querySelector('.leaflet-tile-pane img[src*="World_Boundaries_and_Places"]'), 'carte · étiquettes des lieux superposées par défaut');
-    $('#btn-3d-spot').click(); await wait(() => !$('#view3d').hidden && (D().querySelector('#gl canvas') || $('#gl .v3-err')), 20000, 'vue 3D');
-    check(!$('#view3d').hidden && $('#v3-title').textContent.length > 0 && !!W().maplibregl, `3D · vue ouverte (${D().querySelector('#gl canvas') ? 'WebGL actif' : 'WebGL indisponible ici, message affiché'})`);
-    $('#v3-close').click(); check($('#view3d').hidden, '3D · fermeture');
+    check($('#view3d').hidden && $('#btn-3d').textContent === '3D', '3D · carte 2D au départ du banc, bouton « 3D » proposé');
+    $('#btn-3d').click(); await wait(() => W().CCP.is3d() ? D().querySelector('#gl canvas') : ($('#view3d').hidden && $('#toast').classList.contains('show')), 20000, 'bascule 3D');
+    check(W().CCP.is3d() ? (!$('#view3d').hidden && !!D().querySelector('#gl canvas') && $('#btn-3d').textContent === '2D') : $('#view3d').hidden, `3D · bascule (${W().CCP.is3d() ? 'WebGL actif, carte 3D affichée' : 'WebGL indisponible ici, repli 2D signalé'})`);
+    if (W().CCP.is3d()) { $('#btn-3d').click(); await sleep(300); check($('#view3d').hidden && $('#btn-3d').textContent === '3D', '3D · retour à la 2D'); }
     $('#sheet').classList.remove('peek'); $('#sheet').classList.add('full');
     $('.nearby li').click(); await wait(() => vis('#panel-poi'), 5000, 'fiche de lieu à nouveau');
     W().history.back(); await wait(() => !vis('#panel-poi') && vis('#panel-detail'), 5000, 'retour au lieu');

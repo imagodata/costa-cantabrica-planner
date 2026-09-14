@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0b6e99">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/site.css?v=202609141900">
+  <link rel="stylesheet" href="css/site.css?v=202609141917">
 </head>
 <body>
 <div class="wrap" style="max-width:520px">
@@ -75,10 +75,10 @@
   </section>
   <footer><a href="./">Retour à l'accueil</a></footer>
 </div>
-<script src="js/config.js?v=202609141900"></script>
+<script src="js/config.js?v=202609141917"></script>
 <script>
 (function () {
-  const $ = (s) => document.querySelector(s), C = window.CCP.CONFIG, LS_AUTH = 'ccp:auth:v1', KEY = 'ccp:state:v1';
+  const $ = (s) => document.querySelector(s), C = window.CCP.CONFIG, LS_AUTH = 'ccp:auth:v1', KEY = 'ccp:state:v' + C.version;
   const api = (p) => (C.apiBase ? C.apiBase.replace(/\/$/, '') + '/' + p : p);
   let auth = null;
   try { auth = JSON.parse(localStorage.getItem(LS_AUTH) || 'null'); } catch (e) { }
@@ -111,7 +111,7 @@
     auth.user = me.user; localStorage.setItem(LS_AUTH, JSON.stringify(auth));
     $('#ws-hello').textContent = `${me.user.name}, choisissez le séjour à ouvrir, ou créez-en un et partagez son code.`;
     const list = me.workspaces || [];
-    $('#ws-list').innerHTML = list.length ? list.map((w) => `<button type="button" class="wsitem" data-id="${w.id}"><span class="wsname">${esc(w.name)}</span><span class="small">${w.members.map((m) => `<i class="dot ${m.slot}"></i>${esc(m.name)}`).join(' · ')}${w.members.length < 2 ? ' · place libre' : ''}</span><span class="wscode">code ${esc(w.invite)}</span></button>`).join('')
+    $('#ws-list').innerHTML = list.length ? list.map((w) => `<button type="button" class="wsitem" data-id="${esc(w.id)}"><span class="wsname">${esc(w.name)}</span><span class="small">${w.members.map((m) => `<i class="dot ${m.slot === 'b' ? 'b' : 'a'}"></i>${esc(m.name)}`).join(' · ')}${w.members.length < 2 ? ' · place libre' : ''}</span><span class="wscode">code ${esc(w.invite)}</span></button>`).join('')
       : '<p class="small">Aucun séjour pour l\'instant : créez-en un ou rejoignez celui de l\'autre voyageur avec son code.</p>';
     $('#ws-list').querySelectorAll('.wsitem').forEach((b) => b.onclick = () => open(list.find((w) => w.id === b.dataset.id)));
     show('s-ws');
@@ -160,7 +160,7 @@
     $('#err').hidden = false; $('#err').style.color = 'var(--accent)'; $('#err').textContent = 'Appareil remis à zéro. Choisissez votre prénom puis « Entrer ».';
   };
   // ---- état initial : session mémorisée → séjours ; sinon connexion
-  if (auth && auth.token) listWs().catch(() => { auth = null; localStorage.removeItem(LS_AUTH); show('s-auth'); });
+  if (auth && auth.token) listWs().catch((e) => { if (/session expirée|connexion requise|HTTP 401/.test(e.message)) { auth = null; localStorage.removeItem(LS_AUTH); show('s-auth'); } else { show('s-ws'); err($('#ws-err'), 'Service injoignable : vérifiez la connexion puis rechargez la page.'); } });
   else show('s-auth');
 })();
 </script>

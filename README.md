@@ -91,10 +91,15 @@ deux listes sur l'autre téléphone.
 - Fonds de carte : **satellite Esri par défaut**, **orthophoto PNOA © IGN** (25 cm, CC BY 4.0), plan
   OSM, relief OpenTopoMap ; superpositions **Noms de lieux** et **Relief (ombrage)** ; choix mémorisés
   sur l'appareil (les fonds satellite ne sont pas mis en cache hors ligne).
-- **Vue 3D du relief** (bouton « 3D » sur la carte, « Relief 3D » dans une fiche) : MapLibre GL hébergé
-  localement (`vendor/maplibre/`, chargé à la demande), terrain issu des Terrain Tiles Mapzen (AWS Open
-  Data), orthophoto drapée (Esri, ou PNOA si c'est le fond courant), étiquettes ; caméra inclinée
-  depuis la mer vers la côte (`coastBearing` dans `js/config.js`), inclinaison et rotation au doigt.
+- **Carte 3D par défaut** : MapLibre GL hébergé localement (`vendor/maplibre/`, chargé à la demande)
+  remplace la carte 2D dans la même zone : terrain issu des Terrain Tiles Mapzen (AWS Open Data),
+  orthophoto PNOA drapée (Esri si c'est le fond 2D choisi), ombrage, étiquettes, plages colorées par
+  score, lieux (restos, bars, visites) à partir du zoom 13 avec leurs liens vers la plage du programme,
+  parcours du séjour, hébergement, épingles numérotées des envies et des jours. Par défaut la carte
+  s'ouvre en 2D sur toute la côte et passe en 3D dès qu'on zoome (retour en 2D en dézoomant) ; le bouton
+  « 3D / 2D » fixe un mode (mémorisé) et le réglage « Carte 3D automatique » rétablit la bascule ; « Relief 3D » dans une fiche place la caméra au-dessus de la
+  mer, tournée vers la plage (`coastBearing` dans `js/config.js`). Les fonds de carte alternatifs
+  (plan, relief) restent propres à la 2D ; sans WebGL, la 2D reste seule.
 
 ## Sources de données
 
