@@ -587,6 +587,7 @@
       m.addTo(map); markers.set(s.properties.id, m);
     }
     map.on('dragstart', () => { if (isMobile() && !sheet.classList.contains('peek')) setSheet('peek'); });
+    map.on('moveend', () => { if (gl && !glOn) { const c = map.getCenter(); gl.jumpTo({ center: [c.lng, c.lat], zoom: Math.max(0, map.getZoom() - 1) }); } });   // la 3D suit la 2D, prête à s'afficher au même endroit
     map.on('click', (e) => {
       if (!state.pickBase) return;
       state.pickBase = false; ensureTrip();
@@ -821,7 +822,7 @@
       gl.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
       gl.touchZoomRotate.enableRotation(); gl.dragRotate.enable();
       gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); });
-      gl.on('moveend', () => paint3dPois());
+      gl.on('moveend', () => { paint3dPois(); if (glOn) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.max(3, Math.min(19, gl.getZoom() + 1)), { animate: false })); } });   // la 2D suit la 3D
       gl.on('click', 'pois', (e) => { const f = e.features && e.features[0]; const x = f && poiById(f.properties.id); if (x) showPoi(x, { pan: false }); });
       gl.on('mouseenter', 'pois', (e) => { gl.getCanvas().style.cursor = 'pointer'; const f = e.features && e.features[0]; if (f && !isMobile()) { glPopup.setLngLat(f.geometry.coordinates).setText(f.properties.name).addTo(gl); } });
       gl.on('mouseleave', 'pois', () => { gl.getCanvas().style.cursor = ''; glPopup.remove(); });
