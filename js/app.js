@@ -23,7 +23,7 @@
     prefs: { perDay: 2, radiusKm: 60, lunch: true, roundTrip: true },
     filters: { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' },
     sort: 'score',
-    users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } },
+    users: { a: { name: DEFAULT_NAMES[0], wish: [], suggest: [] }, b: { name: DEFAULT_NAMES[1], wish: [], suggest: [] } },   // suggest : plages proposées à ce voyageur par l'autre
     me: 'a',
     fresh: new Set(),   // envies de l'autre reçues depuis la dernière consultation de l'onglet Envies
   };
@@ -91,7 +91,7 @@
   function restore() {
     try {
       const j = JSON.parse(localStorage.getItem(LS_STATE) || 'null'); if (!j) return;
-      if (j.users) for (const k of ['a', 'b']) if (j.users[k]) state.users[k] = { name: String(j.users[k].name || DEFAULT_NAMES[k === 'a' ? 0 : 1]).slice(0, 14) || DEFAULT_NAMES[k === 'a' ? 0 : 1], wish: Array.isArray(j.users[k].wish) ? j.users[k].wish.filter((x) => typeof x === 'string') : [] };
+      if (j.users) for (const k of ['a', 'b']) if (j.users[k]) state.users[k] = { name: String(j.users[k].name || DEFAULT_NAMES[k === 'a' ? 0 : 1]).slice(0, 14) || DEFAULT_NAMES[k === 'a' ? 0 : 1], wish: Array.isArray(j.users[k].wish) ? j.users[k].wish.filter((x) => typeof x === 'string') : [], suggest: Array.isArray(j.users[k].suggest) ? j.users[k].suggest.filter((x) => typeof x === 'string') : [] };
       if (j.me) state.me = j.me;
       if (j.profile && C.profiles[j.profile]) state.profile = j.profile;
       if (j.filters) Object.assign(state.filters, j.filters);
@@ -113,7 +113,7 @@
     for (const [id, pn] of Object.entries(state.plans)) if (pn.items.length || pn.notes.a || pn.notes.b) pl[id] = { n: pn.notes, i: pn.items.map((it) => [it.poi || ('t:' + it.text), it.by]) };
     const tr = state.trip.days.some((d) => d.stops.length) || state.trip.base
       ? { b: state.trip.base, s: state.trip.start, a: state.trip.auto ? 1 : 0, d: state.trip.days.map((d) => d.stops.map((st) => [st.t, st.id || st.text])) } : undefined;
-    const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, d: state.day, p: state.profile, s: state.selected, pl, tr };
+    const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, sa: state.users.a.suggest, sb: state.users.b.suggest, d: state.day, p: state.profile, s: state.selected, pl, tr };
     return location.origin + location.pathname + '#share=' + b64e(JSON.stringify(p));
   }
   const spotBySlug = (slug) => state.spots.find((s) => s.properties.slug === slug);
@@ -144,8 +144,8 @@
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const stable = (o) => Array.isArray(o) ? o.map(stable) : (o && typeof o === 'object') ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, stable(o[k])])) : o;
   const same = (a, b) => JSON.stringify(stable(a ?? null)) === JSON.stringify(stable(b ?? null));
-  const EMPTY_BASE = () => ({ users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } }, plans: {}, trip: { base: null, start: null, days: [], auto: false }, prefs: clone(state.prefs) });
-  const snapshot = () => clone({ users: { a: { name: state.users.a.name, wish: state.users.a.wish }, b: { name: state.users.b.name, wish: state.users.b.wish } }, plans: state.plans, trip: state.trip, prefs: state.prefs });
+  const EMPTY_BASE = () => ({ users: { a: { name: DEFAULT_NAMES[0], wish: [], suggest: [] }, b: { name: DEFAULT_NAMES[1], wish: [], suggest: [] } }, plans: {}, trip: { base: null, start: null, days: [], auto: false }, prefs: clone(state.prefs) });
+  const snapshot = () => clone({ users: { a: { name: state.users.a.name, wish: state.users.a.wish, suggest: state.users.a.suggest || [] }, b: { name: state.users.b.name, wish: state.users.b.wish, suggest: state.users.b.suggest || [] } }, plans: state.plans, trip: state.trip, prefs: state.prefs });
   const saveSyncMeta = () => { try { localStorage.setItem(LS_SYNC, JSON.stringify({ version: sync.version, base: sync.base, fresh: [...state.fresh] })); } catch (e) { } };
   const validBase = (b) => !!(b && b.users && b.users.a && b.users.b && Array.isArray(b.users.a.wish) && Array.isArray(b.users.b.wish) && b.plans && typeof b.plans === 'object' && b.trip && Array.isArray(b.trip.days));
   const restoreSyncMeta = () => {
@@ -164,17 +164,23 @@
     base = base || EMPTY_BASE();
     const cur = snapshot(), me = state.me, other = me === 'a' ? 'b' : 'a', body = {}, log = [];
     let n = 0;
-    if (!same(cur.users[me], base.users[me])) {
-      body.users = { [me]: cur.users[me] }; n++;
+    if (cur.users[me].name !== base.users[me].name || !same(cur.users[me].wish, base.users[me].wish) || !same(cur.users[me].suggest, base.users[me].suggest || [])) {
+      body.users = { [me]: { name: cur.users[me].name, wish: cur.users[me].wish, suggest: cur.users[me].suggest } }; n++;
       const was = new Set(base.users[me].wish || []), now = new Set(cur.users[me].wish);
       for (const id of cur.users[me].wish) if (!was.has(id)) log.push(`a ajouté ${nameOf(id)} à ses envies`);
       for (const id of base.users[me].wish || []) if (!now.has(id)) log.push(`a retiré ${nameOf(id)} de ses envies`);
       if (cur.users[me].name !== base.users[me].name) log.push(`s'appelle désormais ${cur.users[me].name}`);
     }
     if (cur.users[other].name !== base.users[other].name) { body.users = { ...(body.users || {}), [other]: { name: cur.users[other].name } }; n++; }
+    if (!same(cur.users[other].suggest, base.users[other].suggest || [])) {   // ce que je propose à l'autre
+      body.users = { ...(body.users || {}), [other]: { ...((body.users || {})[other] || {}), suggest: cur.users[other].suggest } }; n++;
+      const was = new Set(base.users[other].suggest || []);
+      for (const id of cur.users[other].suggest) if (!was.has(id)) log.push(`a proposé ${nameOf(id)} à ${cur.users[other].name}`);
+    }
     const plans = {};
+    const emptyP = (p) => !p || (!p.items.length && !p.notes.a && !p.notes.b);
     for (const id of new Set([...Object.keys(cur.plans), ...Object.keys(base.plans || {})])) {
-      if (same(cur.plans[id], (base.plans || {})[id])) continue;
+      if (same(cur.plans[id], (base.plans || {})[id]) || (emptyP(cur.plans[id]) && emptyP((base.plans || {})[id]))) continue;
       plans[id] = cur.plans[id] || null; n++;
       const c = cur.plans[id] || emptyPlan(), b = (base.plans || {})[id] || emptyPlan(), key = (it) => it.poi || 't:' + it.text;
       const bk = new Set(b.items.map(key)), ck = new Set(c.items.map(key));
@@ -196,7 +202,7 @@
     if ('auto' in tr) log.push(tr.auto ? 'a activé le planning dynamique' : 'a figé le planning');
     if (Object.keys(tr).length) body.trip = tr;
     if (!same(cur.prefs, base.prefs)) { body.prefs = cur.prefs; n++; }
-    return { body, log, n, cur };
+    return { body, log, n, cur, base };
   }
   /* Fusion d'un programme : ma note et mes compléments, la note et les compléments de l'autre tels que le serveur les connaît. */
   function mergePlan(local, server, me) {
@@ -206,20 +212,29 @@
     return { notes: { [me]: l.notes[me] || '', [other]: s.notes[other] || '' }, items };
   }
   /* Rejoue une différence locale sur l'état courant (après réception d'un état serveur). */
-  function applyDiff({ body, cur }) {
-    const me = state.me, other = me === 'a' ? 'b' : 'a', srv = sync.base || EMPTY_BASE();
-    if (body.users && body.users[me]) state.users[me] = clone(cur.users[me]);
+  function applyDiff({ body, cur, base }) {
+    const me = state.me, other = me === 'a' ? 'b' : 'a', srv = sync.base || EMPTY_BASE(), bs = base || EMPTY_BASE();
+    const delta = (k) => { const b = bs.users[k].suggest || [], c = cur.users[k].suggest || []; return { add: c.filter((x) => !b.includes(x)), rem: new Set(b.filter((x) => !c.includes(x))) }; };
+    if (body.users && body.users[me]) {
+      state.users[me].name = cur.users[me].name; state.users[me].wish = clone(cur.users[me].wish);
+      const d = delta(me); state.users[me].suggest = (state.users[me].suggest || []).filter((x) => !d.rem.has(x));   // mes retraits seulement : une proposition reçue entre-temps reste
+    }
     if (body.users && body.users[other] && body.users[other].name) state.users[other].name = body.users[other].name;
+    if (body.users && body.users[other] && body.users[other].suggest) {   // mes ajouts et retraits ; les retraits de l'autre (accepté, ignoré) sont respectés
+      const d = delta(other); state.users[other].suggest = [...new Set([...(state.users[other].suggest || []).filter((x) => !d.rem.has(x)), ...d.add])].filter((x) => !state.users[other].wish.includes(x)).slice(0, 100);
+    }
     for (const [id, p] of Object.entries(body.plans || {})) { if (p) state.plans[id] = mergePlan(p, srv.plans[id], me); else delete state.plans[id]; }
     if (body.trip) for (const [f, v] of Object.entries(body.trip)) state.trip[f] = clone(v);
     if (body.prefs) Object.assign(state.prefs, clone(body.prefs));
   }
   const fetchSync = (opts = {}) => fetch('api/state', { cache: 'no-store', ...opts, ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(15000) } : {}) });
-  const cleanUser = (u, fallback) => ({ name: String((u && u.name) || fallback.name).slice(0, 14), wish: ((u && u.wish) || []).filter((x) => typeof x === 'string') });
+  const cleanUser = (u, fallback) => ({ name: String((u && u.name) || fallback.name).slice(0, 14), wish: ((u && u.wish) || []).filter((x) => typeof x === 'string'), suggest: ((u && u.suggest) || []).filter((x) => typeof x === 'string') });
   const syncApply = (st) => {
     const me = state.me, other = me === 'a' ? 'b' : 'a';
     const known = new Set(sync.base ? (sync.base.users[other].wish || []) : (st.users[other].wish || []));   // sans base connue : rien n'est « nouveau »
     for (const id of st.users[other].wish || []) if (!known.has(id)) state.fresh.add(id);
+    const knownS = new Set(sync.base ? (sync.base.users[me].suggest || []) : (st.users[me].suggest || []));   // propositions reçues
+    for (const id of st.users[me].suggest || []) if (!knownS.has(id)) state.fresh.add(id);
     state.users[other] = cleanUser(st.users[other], state.users[other]);
     state.users[me] = cleanUser(st.users[me], state.users[me]);
     if (st.plans && typeof st.plans === 'object') state.plans = st.plans;
@@ -244,8 +259,9 @@
     } catch (e) { return false; }
   }
   function mergeFirst(loc) {
-    const me = state.me;
+    const me = state.me, other = me === 'a' ? 'b' : 'a';
     state.users[me].wish = [...new Set([...state.users[me].wish, ...loc.users[me].wish])].slice(0, 500);
+    state.users[other].suggest = [...new Set([...(state.users[other].suggest || []), ...(loc.users[other].suggest || [])])].filter((id) => !state.users[other].wish.includes(id)).slice(0, 100);
     for (const [id, p] of Object.entries(loc.plans)) if (p && (p.items.length || p.notes[me])) state.plans[id] = mergePlan(p, state.plans[id], me);
     if (!state.trip.days.some((d) => d.stops.length) && loc.trip.days.some((d) => d.stops.length)) state.trip = { ...state.trip, start: loc.trip.start, days: loc.trip.days };
     if (!state.trip.base && loc.trip.base) state.trip.base = loc.trip.base;
@@ -274,9 +290,9 @@
       if (r.status >= 400 && r.status < 500) { sync.base = diff.cur; toast('Modification refusée par le serveur'); return; }   // définitif : on n'insiste pas
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const st = await r.json();
-      sync.version = st.version; sync.base = diff.cur; sync.at = Date.now(); sync.err = false;
-      if (Array.isArray(st.log)) sync.log = st.log;
-      saveSyncMeta();
+      const late = syncDiff(diff.cur), before = snapshot();   // saisi pendant l'envoi
+      syncApply(st); applyDiff(late); sync.err = false;   // la base reflète les normalisations du serveur (troncatures, programmes vides retirés)
+      if (!same(before, snapshot())) { persistLocal(); rerenderAll({ soft: true }); }
     } catch (e) { sync.err = true; sync.dirty = true; }
     finally { sync.pushing = false; }
     sync.pending = sync.dirty ? syncDiff(sync.base).n : 0; renderSyncDot();
@@ -353,6 +369,7 @@
       const p = JSON.parse(b64d(m[1]));
       const merge = (k, list) => { state.users[k].wish = [...new Set([...(state.users[k].wish || []), ...(Array.isArray(list) ? list.filter((x) => typeof x === 'string') : [])])].slice(0, 500); };
       merge('a', p.a); merge('b', p.b);
+      for (const k of ['a', 'b']) state.users[k].suggest = [...new Set([...(state.users[k].suggest || []), ...(Array.isArray(p['s' + k]) ? p['s' + k].filter((x) => typeof x === 'string') : [])])].filter((id) => !state.users[k].wish.includes(id)).slice(0, 100);
       const cleanName = (v) => String(v).replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 14);
       if (p.na && DEFAULT_NAMES.includes(state.users.a.name) && cleanName(p.na)) state.users.a.name = cleanName(p.na);
       if (p.nb && DEFAULT_NAMES.includes(state.users.b.name) && cleanName(p.nb)) state.users.b.name = cleanName(p.nb);
@@ -418,9 +435,20 @@
     if (!canEdit(who)) { toast(`Seul·e ${state.users[who].name} peut modifier ses envies`); return; }
     buzz();
     const list = state.users[who].wish, i = list.indexOf(id);
-    if (i >= 0) list.splice(i, 1); else list.push(id);
+    if (i >= 0) list.splice(i, 1); else { list.push(id); const sg = state.users[who].suggest || [], k = sg.indexOf(id); if (k >= 0) { sg.splice(k, 1); state.fresh.delete(id); saveSyncMeta(); } }   // accepter une proposition = la marquer
     save(); renderTabs(); if (state.view === 'wishes') renderWishes(); else renderList({ keep: true }); paintMarkers();
     if (state.selected === id) renderDetailHead();
+  }
+  /* Proposer une plage à l'autre voyageur (écrit dans sa liste « suggest ») ; ignorer une proposition reçue. */
+  const suggestedTo = (who, id) => (state.users[who].suggest || []).includes(id);
+  function toggleSuggest(id) {
+    const other = state.me === 'a' ? 'b' : 'a', sg = state.users[other].suggest || (state.users[other].suggest = []), i = sg.indexOf(id);
+    if (i >= 0) { sg.splice(i, 1); toast(`Proposition retirée`); } else { if (state.users[other].wish.includes(id)) { toast(`${state.users[other].name} l'a déjà en envie`); return; } if (sg.length >= 100) { toast('100 propositions au plus'); return; } sg.push(id); buzz(); toast(`Proposé à ${state.users[other].name}`); }
+    save(); renderTabs(); if (state.selected === id) renderDetailHead(); if (state.view === 'wishes') renderWishes();
+  }
+  function ignoreSuggest(id) {
+    const sg = state.users[state.me].suggest || [], i = sg.indexOf(id); if (i >= 0) sg.splice(i, 1);
+    state.fresh.delete(id); saveSyncMeta(); save(); renderTabs(); renderWishes(); paintMarkers(); toast('Proposition ignorée');
   }
   function filtered({ ignoreScore = false } = {}) {
     const f = state.filters, q = f.q.trim().toLowerCase();
@@ -536,7 +564,7 @@
     const mobile = isMobile();
     if (pan) {
       const z = Math.max(map.getZoom(), C.poiMinZoom + 2), p = map.project([x.lat, x.lon], z);
-      if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
+      if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
       map.setView(map.unproject(p, z), z, { animate: false });
     }
     renderPois();
@@ -623,7 +651,7 @@
       if (!map.hasLayer(m)) m.addTo(map);
       const r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(id), sel = state.selected === id;
       if (state.view === 'wishes' || state.view === 'trip') {
-        if (state.view === 'wishes' && (w.a || w.b)) { map.removeLayer(m); continue; }
+        if (state.view === 'wishes' && (w.a || w.b || suggestedTo(state.me, id))) { map.removeLayer(m); continue; }
         if (state.view === 'trip' && tripHasSpot(id)) { map.removeLayer(m); continue; }
         m.setStyle({ fillColor: cols[r.cls], radius: 4, color: '#fff', weight: 1, fillOpacity: .45 });
         continue;
@@ -659,7 +687,7 @@
   }
   function panTo(s) {
     const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = isMobile(), p = map.project(latlng(s), z);
-    if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
+    if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
     map.setView(map.unproject(p, z), z, { animate: true });
   }
 
@@ -716,16 +744,20 @@
   /* ------------------------------------------------------------------ onglets & vue Envies */
   function renderTabs() {
     $('#btn-settings').classList.toggle('on', state.view === 'config');
-    const n = wishedIds().length, nt = state.trip.days.reduce((k, d) => k + d.stops.length, 0), nf = [...state.fresh].filter((id) => { const w = wishOf(id); return (w.a || w.b) && spotById(id); }).length;
+    const n = wishedIds().length, nt = state.trip.days.reduce((k, d) => k + d.stops.length, 0), nf = [...state.fresh].filter((id) => { const w = wishOf(id); return (w.a || w.b || suggestedTo(state.me, id)) && spotById(id); }).length;
     $('#tabs').innerHTML = `<button type="button" role="tab" aria-selected="${state.view === 'explore'}" data-v="explore" class="${state.view === 'explore' ? 'on' : ''}">${I('compass', { size: 16 })}Explorer</button>
       <button type="button" role="tab" aria-selected="${state.view === 'wishes'}" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Envies${nf ? `<b class="new" title="${nf} nouvelle${nf > 1 ? 's' : ''} envie${nf > 1 ? 's' : ''} de ${esc(state.users[state.me === 'a' ? 'b' : 'a'].name)}">+${nf}</b>` : n ? `<b>${n}</b>` : ''}</button>
       <button type="button" role="tab" aria-selected="${state.view === 'trip'}" data-v="trip" class="${state.view === 'trip' ? 'on' : ''}">${I('calendar', { size: 16 })}Séjour${nt ? `<b>${nt}</b>` : ''}</button>`;
     $('#tabs').querySelectorAll('button').forEach((b) => b.onclick = () => setView(b.dataset.v));
   }
+  let skipPop = false;   // retour d'historique provoqué par un changement d'onglet : ne rien rouvrir
   function setView(v) {
     if (state.view === 'wishes' && v !== 'wishes' && state.fresh.size) { state.fresh.clear(); saveSyncMeta(); }
     state.view = v;
-    if (state.selected && !$('#panel-detail').hidden) closeDetail();
+    if (state.selected && !$('#panel-detail').hidden) {   // fermer la fiche tout de suite ; l'historique est dépilé sans nouveau rendu
+      state.selected = null; $('#panel-detail').hidden = true; $('#panels').scrollTop = 0;
+      if (history.state && history.state.spot) { skipPop = true; history.back(); } else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    }
     $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip'; $('#panel-config').hidden = v !== 'config'; $('#panel-poi').hidden = true; currentPoi = null;
     if (/^#poi=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     renderTabs(); paintMarkers();
@@ -734,8 +766,9 @@
     if (v !== 'explore' && !state.pois.length) ensurePois().then(() => { if (state.view === v) { v === 'wishes' ? renderWishes() : renderTrip(); paintMarkers(); } });
   }
   function wishList() {
-    const who = state.wishWho;
+    const who = state.wishWho, sugg = (state.users[state.me].suggest || []).filter((id) => spotById(id) && !state.users[state.me].wish.includes(id));
     let ids = wishedIds().filter((id) => { const w = wishOf(id); return who === 'all' ? true : who === 'both' ? w.a && w.b : w[who]; });
+    if (who === 'all' || who === state.me) ids = [...new Set([...ids, ...sugg])];
     let arr = ids.map(spotById);
     if (state.wishSort === 'score' && state.bulk) arr.sort((a, b) => (scoreOf(b).score ?? -1) - (scoreOf(a).score ?? -1));
     else arr.sort((a, b) => a.geometry.coordinates[0] - b.geometry.coordinates[0]);
@@ -760,7 +793,8 @@
     if (!act.hidden) act.innerHTML = `<div class="h"><span>${I('bell', { size: 14 })} Activité</span><span style="font-weight:400;color:var(--muted)">${syncStatusText()}</span></div><ul>${entries.map((e) => `<li><span>${e.text.startsWith('a ') ? (e.by === state.me ? 'Vous avez ' : esc(e.name) + ' a ') + esc(e.text.slice(2)) : (e.by === state.me ? 'Vous ' : esc(e.name) + ' ') + esc(e.text)}</span><small>${ago(e.t * 1000)}</small></li>`).join('')}</ul>`;
     const list = wishList(), ul = $('#w-list');
     const wa = state.users.a.wish.length, wb = state.users.b.wish.length, both = state.users.a.wish.filter((id) => state.users.b.wish.includes(id)).length;
-    $('#w-summary').innerHTML = `<span>${dot('a')} ${wa} · ${dot('b')} ${wb} · ${dot('both')} ${both} commune${both > 1 ? 's' : ''}</span><span>${list.length} plage${list.length > 1 ? 's' : ''}</span>`;
+    const ns = state.wishWho === 'all' || state.wishWho === state.me ? (state.users[state.me].suggest || []).filter((id) => spotById(id) && !state.users[state.me].wish.includes(id)).length : 0;
+    $('#w-summary').innerHTML = `<span>${dot('a')} ${wa} · ${dot('b')} ${wb} · ${dot('both')} ${both} commune${both > 1 ? 's' : ''}${ns ? ` · ${ns} proposée${ns > 1 ? 's' : ''}` : ''}</span><span>${list.length} plage${list.length > 1 ? 's' : ''}</span>`;
     if (!list.length) {
       ul.innerHTML = `<li class="empty-state"><span>Aucune envie pour l'instant.</span><span>Marquez des plages avec ${I('heart', { size: 14 })} dans l'onglet Explorer, chacun avec son prénom. Les envies communes ressortent ici.</span></li>`;
       $('#w-foot').innerHTML = ''; return;
@@ -768,7 +802,7 @@
     const frag = document.createDocumentFragment();
     list.forEach((s, i) => {
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, w = wishOf(p.id), ph = photoOf(p.id), d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null;
-      const who = w.a && w.b ? 'both' : w.a ? 'a' : 'b';
+      const sug = !w.a && !w.b && suggestedTo(state.me, p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : w.b ? 'b' : (state.me === 'a' ? 'b' : 'a');
       const li = document.createElement('li'); li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
       li.style.gridTemplateColumns = '44px 56px minmax(0, 1fr) 36px';
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
@@ -778,13 +812,14 @@
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}</div>
           <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
-          ${planSummary(p.id) ? `<div class="plan">${I('note', { size: 13 })}${esc(planSummary(p.id))}</div>` : `<div class="cond">${cond}</div>`}${notesHtml(p.id)}
+          ${sug ? `<div class="sugg-row">${I('bell', { size: 13 })}Proposé par ${esc(state.users[state.me === 'a' ? 'b' : 'a'].name)}<button type="button" class="linkbtn ignore">Ignorer</button></div>` : planSummary(p.id) ? `<div class="plan">${I('note', { size: 13 })}${esc(planSummary(p.id))}</div>` : `<div class="cond">${cond}</div>`}${notesHtml(p.id)}
         </div>
         <div class="hearts">
           <button type="button" class="heart a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a" aria-label="Envie de ${esc(state.users.a.name)}" aria-pressed="${w.a}">${I('heart', { size: 15, fill: w.a })}</button>
           <button type="button" class="heart b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b" aria-label="Envie de ${esc(state.users.b.name)}" aria-pressed="${w.b}">${I('heart', { size: 15, fill: w.b })}</button>
         </div>`;
       li.querySelectorAll('.heart').forEach((h) => h.onclick = (e) => { e.stopPropagation(); toggleWish(p.id, h.dataset.who); });
+      const ig = li.querySelector('.ignore'); if (ig) ig.onclick = (e) => { e.stopPropagation(); ignoreSuggest(p.id); };
       li.onclick = () => select(p.id, { pan: true, full: true });
       frag.appendChild(li);
     });
@@ -811,7 +846,7 @@
     const list = wishList();
     if (list.length > 1) L.polyline(list.map(latlng), { color: cssVar('--both'), weight: 2, dashArray: '4 6', opacity: .7 }).addTo(wishLayer);
     list.forEach((s, i) => {
-      const p = s.properties, r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : 'b';
+      const p = s.properties, r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : w.b ? 'b' : (state.me === 'a' ? 'b' : 'a');
       const icon = L.divIcon({ className: '', html: `<div class="num-pin ${who}" style="background:var(--${r.cls})">${i + 1}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
       L.marker(latlng(s), { icon, title: p.name, zIndexOffset: 1000 }).on('click', () => select(p.id, { pan: false })).addTo(wishLayer);
     });
@@ -988,14 +1023,8 @@
   /* Réordonner les étapes au doigt : la poignée (touch-action: none) démarre le glissement sans appui long. */
   function bindStopDrag(ul, di) {
     let drag = null;
-    ul.querySelectorAll('.grip').forEach((g) => {
-      g.addEventListener('click', (e) => e.stopPropagation());
-      g.addEventListener('pointerdown', (e) => {
-        const li = g.closest('li'); if (!li) return;
-        e.preventDefault(); e.stopPropagation(); g.setPointerCapture?.(e.pointerId);
-        drag = { li, from: +li.dataset.k, id: e.pointerId }; li.classList.add('dragging'); buzz(8);
-      });
-      g.addEventListener('pointermove', (e) => {
+    const unbind = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', end); document.removeEventListener('pointercancel', end); };
+    const move = (e) => {
         if (!drag || e.pointerId !== drag.id) return;
         for (const other of [...ul.children]) {
           if (other === drag.li) continue;
@@ -1003,16 +1032,25 @@
           if (after && e.clientY < mid) { ul.insertBefore(drag.li, other); buzz(4); break; }
           if (!after && e.clientY > mid) { ul.insertBefore(drag.li, other.nextSibling); buzz(4); break; }
         }
-      });
-      const end = (e) => {
-        if (!drag || e.pointerId !== drag.id) return;
+      };
+    const end = (e) => {
+        if (!drag) { unbind(); return; }
+        if (e.pointerId !== drag.id) return;
+        unbind();
         drag.li.classList.remove('dragging');
         const order = [...ul.children].map((li) => +li.dataset.k), d = state.trip.days[di]; drag = null;
         const complete = order.length === d.stops.length && new Set(order).size === order.length && order.every((k) => k >= 0 && k < d.stops.length);
         if (!complete || order.every((k, i) => k === i)) { if (!complete) renderTrip(); return; }   // étapes non rendues (lieux pas encore chargés) : on ne réordonne pas à l'aveugle
         d.stops = order.map((k) => d.stops[k]); manualEdit(); save(); renderTabs(); renderTrip(); paintMarkers();
-      };
-      g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+    };
+    ul.querySelectorAll('.grip').forEach((g) => {
+      g.addEventListener('click', (e) => e.stopPropagation());
+      g.addEventListener('pointerdown', (e) => {
+        const li = g.closest('li'); if (!li || drag) return;
+        e.preventDefault(); e.stopPropagation(); g.setPointerCapture?.(e.pointerId);
+        drag = { li, from: +li.dataset.k, id: e.pointerId }; li.classList.add('dragging'); buzz(8);
+        document.addEventListener('pointermove', move); document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);   // suivi même sans capture de pointeur
+      });
     });
   }
   function pickStop(di) {
@@ -1309,6 +1347,7 @@
         <div class="actions">
           <button type="button" class="pill a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a">${I('heart', { size: 15, fill: w.a })}${esc(state.users.a.name)}</button>
           <button type="button" class="pill b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b">${I('heart', { size: 15, fill: w.b })}${esc(state.users.b.name)}</button>
+          ${(() => { const o = state.me === 'a' ? 'b' : 'a'; return w[o] ? '' : `<button type="button" class="pill propose ${suggestedTo(o, p.id) ? 'on' : ''}" id="btn-suggest" title="Proposer cette plage à ${esc(state.users[o].name)}">${I('bell', { size: 15 })}${suggestedTo(o, p.id) ? 'Proposé à ' : 'Proposer à '}${esc(state.users[o].name)}</button>`; })()}
           <span class="spacer"></span>
           <button type="button" class="pill ${tripHasSpot(p.id) ? 'primary' : ''}" id="btn-trip-add" title="Ajouter à un jour du séjour">${I('calendar', { size: 15 })}${tripHasSpot(p.id) ? 'Au séjour' : 'Séjour'}</button>
           <a class="pill primary" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving" target="_blank" rel="noopener">${I('navigation', { size: 16 })}Itinéraire</a>
@@ -1326,6 +1365,7 @@
     $('#btn-close').onclick = () => closeDetail();
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
+    $('#btn-suggest') && ($('#btn-suggest').onclick = () => toggleSuggest(p.id));
     if (gal.length > 1) {
       const slides = $('#slides'), dots = $('#dots').children;
       const sw = CCP.swipeable(slides);
@@ -1474,6 +1514,7 @@
   }
 
   /* ------------------------------------------------------------------ panneau glissant */
+  const sheetVisible = () => Math.max(0, window.innerHeight - sheet.getBoundingClientRect().top);   // hauteur visible (le panneau est translaté, pas redimensionné)
   function setSheet(mode) {
     sheet.classList.remove('peek', 'half', 'full'); sheet.classList.add(mode);
     document.documentElement.style.setProperty('--sheet-h', mode === 'peek' ? '30vh' : mode === 'half' ? '58vh' : '100vh');
@@ -1485,21 +1526,21 @@
     /* Glisser : le panneau suit le doigt ; au relâcher, aimantation vers la hauteur la plus proche
        en tenant compte de la vitesse (un geste vif suffit à changer d'état). */
     let drag = null;
-    const start = (y) => { if (!isMobile()) return; drag = { y0: y, h0: sheet.getBoundingClientRect().height, t0: performance.now(), y: y, t: performance.now(), moved: false }; sheet.classList.add('dragging'); };
+    const start = (y) => { if (!isMobile()) return; drag = { y0: y, h0: sheetVisible(), full: sheet.offsetHeight, t0: performance.now(), y: y, t: performance.now(), moved: false }; sheet.classList.add('dragging'); };
     const update = (y) => {
       if (!drag) return;
-      const H = window.innerHeight, hs = { peek: H * 0.30, half: H * 0.58, full: H - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar')) - 6 };
+      const H = window.innerHeight, hs = { peek: H * 0.30, half: H * 0.58, full: drag.full };
       let h = drag.h0 + (drag.y0 - y);
       if (h > hs.full) h = hs.full + (h - hs.full) * 0.2; if (h < hs.peek) h = hs.peek - (hs.peek - h) * 0.2;
       if (Math.abs(y - drag.y0) > 4) drag.moved = true;
       drag.vy = (y - drag.y) / Math.max(1, performance.now() - drag.t); drag.y = y; drag.t = performance.now();
-      sheet.style.height = h + 'px';
+      sheet.style.transform = `translateY(${Math.max(0, drag.full - h)}px)`;
     };
     const end = () => {
       if (!drag) return;
-      const H = window.innerHeight, hs = { peek: H * 0.30, half: H * 0.58, full: H - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar')) - 6 };
-      const h = sheet.getBoundingClientRect().height, vy = drag.vy || 0, moved = drag.moved;
-      sheet.classList.remove('dragging'); sheet.style.height = '';
+      const H = window.innerHeight, hs = { peek: H * 0.30, half: H * 0.58, full: drag.full };
+      const h = sheetVisible(), vy = drag.vy || 0, moved = drag.moved;
+      sheet.classList.remove('dragging'); sheet.style.transform = '';
       if (!moved) { move(cur() === 'full' ? -1 : 1); drag = null; return; }
       let target;
       if (Math.abs(vy) > 0.6) target = vy < 0 ? order[Math.min(2, order.indexOf(cur()) + 1)] : order[Math.max(0, order.indexOf(cur()) - 1)];
@@ -1512,6 +1553,7 @@
       zone.addEventListener('pointerup', (e) => { const wasDrag = drag && drag.moved; end(); if (wasDrag && e.target.closest('button')) e.preventDefault(); });
       zone.addEventListener('pointercancel', end);
     }
+    document.addEventListener('pointerup', () => { if (drag) end(); }); document.addEventListener('pointercancel', () => { if (drag) end(); });   // relâcher hors de la zone termine le geste
     $('#tabs').addEventListener('click', (e) => { if (drag) e.stopPropagation(); }, true);
     // Tirer vers le bas depuis le haut de la liste replie le panneau (tactile uniquement)
     const panel = $('#panels'); let y0 = null;
@@ -1665,6 +1707,7 @@
     if ((shared || routed) && state.selected) select(state.selected, { pan: true }); else state.selected = null;
     window.addEventListener('hashchange', () => { if (/^#share=/.test(location.hash)) return; const r = applyRoute(); if (r === true && state.selected !== (history.state && history.state.spot)) select(state.selected, { pan: true }); });
     window.addEventListener('popstate', () => {
+      if (skipPop) { skipPop = false; if (location.hash) history.replaceState(null, '', location.pathname + location.search); return; }
       const r = applyRoute();
       if (r === 'poi') return;
       if (!$('#panel-poi').hidden) { closePoi(true); return; }

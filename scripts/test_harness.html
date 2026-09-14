@@ -43,11 +43,20 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     const first = $('#list .item'), firstId = first.dataset.id; first.click();
     await wait(() => vis('#panel-detail') && $('#btn-close'), 10000, 'fiche');
     check($('#sheet').classList.contains('full'), 'M2 · la fiche s\'ouvre en plein panneau depuis la liste');
+    const tf = W().getComputedStyle($('#sheet')).transform, pf = parseFloat(W().getComputedStyle($('#panels')).paddingBottom);
+    const ty = tf === 'none' ? 0 : Math.abs(parseFloat(tf.split(',').pop()));
+    check(ty < 1 && pf === 0, `M5 · plein panneau : aucune translation (${Math.round(ty)} px), pas de marge basse`);
     check(W().history.state && W().history.state.spot === firstId, 'historique · entrée de fiche');
     // toast visible en mode déployé
     $('#sync-btn').click(); await sleep(100);
     const tr = $('#toast').getBoundingClientRect();
     check($('#toast').classList.contains('show') && tr.top >= 0 && tr.bottom <= W().innerHeight, `B5 · toast visible en mode full (top ${Math.round(tr.top)}, bottom ${Math.round(tr.bottom)} / ${W().innerHeight})`);
+    // proposition à Marie depuis la fiche
+    check(!!$('#btn-suggest') && /Proposer à Marie/.test($('#btn-suggest').textContent), 'C8 · bouton « Proposer à Marie » dans la fiche');
+    $('#btn-suggest').click();
+    let stS = await waitState((s) => (s.users.b.suggest || []).includes(firstId), 25000, 'proposition');
+    check(stS.users.b.suggest.includes(firstId) && stS.log.some((e) => /a proposé .* à Marie/.test(e.text)), 'C8 · proposition envoyée, journal « a proposé … à Marie »');
+    check(/Proposé à Marie/.test($('#btn-suggest').textContent), 'C8 · bouton en état « Proposé »');
     // lieu à proximité → historique
     await wait(() => $('.nearby li'), 15000, 'à proximité');
     $('.nearby li').click(); await wait(() => vis('#panel-poi'), 5000, 'fiche de lieu');
@@ -86,12 +95,25 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     await wait(() => $('#tabs button[data-v="wishes"] b.new'), 3000, 'pastille nouveau');
     check($('#tabs button[data-v="wishes"] b.new').textContent === '+1', 'C3 · pastille « +1 » sur l\'onglet Envies');
     check(/^Marie a ajouté/.test($('#toast').textContent), 'C2 · toast précis : « ' + $('#toast').textContent + ' »');
+    // Marie propose une plage à Simon
+    const propId = $$('#list .item')[5].dataset.id;
+    await putMarie({ users: { a: { suggest: [propId] } }, log: [{ text: 'a proposé une plage à Simon' }] });
+    for (let i = 0; i < 60 && !($('#tabs button[data-v="wishes"] b.new') && $('#tabs button[data-v="wishes"] b.new').textContent === '+2'); i++) { D().dispatchEvent(new (W().Event)('visibilitychange')); await sleep(500); }
+    check($('#tabs button[data-v="wishes"] b.new') && $('#tabs button[data-v="wishes"] b.new').textContent === '+2', 'C8 · la proposition reçue compte comme nouveauté (+2)');
     $('#tabs button[data-v="wishes"]').click(); await wait(() => vis('#panel-wishes') && $('#w-list .item'), 5000, 'envies');
+    const sugLi = $$('#w-list .item').find((li) => li.dataset.id === propId);
+    check(!!sugLi && !!sugLi.querySelector('.sugg-row') && /Proposé par Marie/.test(sugLi.textContent), 'C8 · proposition reçue affichée « Proposé par Marie » dans Envies');
+    sugLi.querySelector('.heart.a').click();
+    stS = await waitState((s) => s.users.a.wish.includes(propId) && !(s.users.a.suggest || []).includes(propId), 25000, 'acceptation');
+    check(true, 'C8 · accepter (cœur) : envie ajoutée, proposition retirée côté serveur');
     check(!$('#w-activity').hidden && $('#w-activity').textContent.includes('Marie'), 'C2 · bloc Activité affiché');
     check(!!$('#w-list .tag.new'), 'C3 · étiquette « nouveau » sur l\'envie de Marie');
     check($$('#w-list .item').some((li) => li.querySelector('.heart.b.ro')), 'sync · cœurs de Marie en lecture seule');
     // séjour : étape, poignée, cibles, ligne = voir, confirmation maison
     $('#tabs button[data-v="trip"]').click(); await wait(() => vis('#panel-trip') && $('.add-stop'), 5000, 'séjour');
+    { const sh = $('#sheet'); sh.style.transition = 'none'; sh.classList.remove('peek', 'full'); sh.classList.add('half'); await sleep(50);
+      const r = sh.getBoundingClientRect(), pad = parseFloat(W().getComputedStyle($('#panels')).paddingBottom);
+      check(Math.abs((W().innerHeight - r.top) - W().innerHeight * 0.58) < 3 && pad > 100 && Math.abs(r.height - (W().innerHeight - 56 - 6)) < 3, `M5 · mode intermédiaire : hauteur pleine, visible 58 % (${Math.round(W().innerHeight - r.top)} px), marge basse ${Math.round(pad)} px`); sh.style.transition = ''; }
     check(!$('#tabs button[data-v="wishes"] b.new'), 'C3 · marqueurs effacés en quittant l\'onglet Envies');
     $('.add-stop').click(); await wait(() => $('#dlg-pick').open && $('#pick-list button[data-t]'), 5000, 'choix d\'étape');
     $('#pick-list button[data-t]').click(); await wait(() => $('.stops li'), 5000, 'étape ajoutée');

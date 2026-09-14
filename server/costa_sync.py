@@ -4,8 +4,10 @@
 Derrière Caddy (basic_auth) qui transmet l'utilisateur authentifié dans l'en-tête X-User.
   GET  /api/state   → état partagé { version, users:{a,b}, plans, trip, prefs, log, updatedAt, by, me }
   PUT  /api/state   → écriture partielle au nom du profil connecté, fusionnée clé par clé :
-                        - users[k] (k = voyageur de l'utilisateur) remplacé s'il est présent ;
-                          users[autre].name accepté (les deux peuvent corriger un prénom) ;
+                        - users[k] (k = voyageur de l'utilisateur) : name et wish remplacés s'ils sont présents ;
+                          users[k].suggest ne peut que perdre des entrées (accepter, ignorer) ;
+                          users[autre] : name accepté (les deux peuvent corriger un prénom) et suggest
+                          (plages proposées PAR k À l'autre : c'est k qui l'écrit) ;
                         - plans : { id: programme | null } — chaque programme touché est fusionné :
                           ma note et mes compléments viennent du corps, la note et les compléments
                           de l'autre restent ceux du serveur ; null supprime ;
@@ -30,7 +32,7 @@ MAX_BODY = 512 * 1024
 LOG_MAX = 40
 LOCK = threading.Lock()
 ID_RE = re.compile(r"^[nwr]\d+$")
-EMPTY = {"version": 0, "users": {"a": {"name": "Simon", "wish": []}, "b": {"name": "Marie", "wish": []}},
+EMPTY = {"version": 0, "users": {"a": {"name": "Simon", "wish": [], "suggest": []}, "b": {"name": "Marie", "wish": [], "suggest": []}},
          "plans": {}, "trip": {"base": None, "start": None, "days": [], "auto": False, "autoBy": None},
          "prefs": None, "log": [], "updatedAt": 0, "by": None}
 
@@ -183,11 +185,20 @@ class H(BaseHTTPRequestHandler):
         users = body.get("users") if isinstance(body.get("users"), dict) else {}
         me = users.get(k)
         if isinstance(me, dict):
-            st["users"][k] = {"name": str(me.get("name") or st["users"][k]["name"]).strip()[:14] or st["users"][k]["name"],
-                              "wish": clean_list(me.get("wish")) if "wish" in me else st["users"][k].get("wish", [])}
-        oname = (users.get(other) or {}).get("name") if isinstance(users.get(other), dict) else None
+            cur = st["users"][k]
+            sugg = cur.get("suggest", [])
+            if "suggest" in me:   # le destinataire peut retirer une proposition (accepter, ignorer), jamais en ajouter
+                keep = set(clean_list(me.get("suggest"), 100))
+                sugg = [x for x in sugg if x in keep]
+            wish = clean_list(me.get("wish")) if "wish" in me else cur.get("wish", [])
+            st["users"][k] = {"name": str(me.get("name") or cur["name"]).strip()[:14] or cur["name"], "wish": wish,
+                              "suggest": [x for x in sugg if x not in wish]}
+        oth = users.get(other) if isinstance(users.get(other), dict) else {}
+        oname = oth.get("name")
         if isinstance(oname, str) and oname.strip():
             st["users"][other]["name"] = oname.strip()[:14]
+        if "suggest" in oth:   # ce que k propose à l'autre ; jamais une plage déjà en envie chez lui
+            st["users"][other]["suggest"] = [x for x in clean_list(oth.get("suggest"), 100) if ID_RE.match(x) and x not in st["users"][other].get("wish", [])]
         plans = body.get("plans")
         if isinstance(plans, dict):
             for pid, p in list(plans.items())[:400]:

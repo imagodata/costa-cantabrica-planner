@@ -105,12 +105,22 @@ svg.ic { flex: 0 0 auto; vertical-align: -3px; }
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 1050;
   background: var(--panel); border-radius: 18px 18px 0 0; box-shadow: var(--shadow);
-  height: 30vh; height: 30dvh; transition: height .25s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; padding-bottom: var(--safe-b);
-  will-change: height;
+  /* Hauteur fixe (plein écran) et déplacement par translation : aucune remise en page pendant le geste.
+     --y : partie cachée sous l'écran ; --pad : même valeur, en bas du contenu, pour atteindre la fin de la liste. */
+  height: calc(100vh - var(--topbar) - 6px); height: calc(100dvh - var(--topbar) - 6px);
+  --y: calc(100% - 58vh); --pad: calc(42vh - var(--topbar) - 6px);   /* repli vh ; dvh sous @supports (une variable est toujours « valide », pas de double déclaration possible) */
+  transform: translateY(var(--y)); transition: transform .25s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; padding-bottom: var(--safe-b);
+  will-change: transform;
 }
-.sheet.half { height: 58vh; height: 58dvh; }
-.sheet.full { height: calc(100vh - var(--topbar) - 6px); height: calc(100dvh - var(--topbar) - 6px); }
+.sheet.peek { --y: calc(100% - 30vh); --pad: calc(70vh - var(--topbar) - 6px); }
+.sheet.half { --y: calc(100% - 58vh); --pad: calc(42vh - var(--topbar) - 6px); }
+.sheet.full { --y: 0px; --pad: 0px; }
+@supports (height: 100dvh) {
+  .sheet, .sheet.half { --y: calc(100% - 58dvh); --pad: calc(42dvh - var(--topbar) - 6px); }
+  .sheet.peek { --y: calc(100% - 30dvh); --pad: calc(70dvh - var(--topbar) - 6px); }
+}
 .sheet.dragging { transition: none; }
+.panel { padding-bottom: var(--pad, 0px); }
 .handle { flex: 0 0 auto; padding: 10px 0 6px; display: grid; place-items: center; touch-action: none; cursor: grab; }
 .handle::before { content: ""; width: 42px; height: 5px; border-radius: 3px; background: var(--line); }
 .tabs { touch-action: none; }
@@ -146,6 +156,9 @@ button:focus:not(:focus-visible) { outline: none; }
 .tabs button b { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--both); color: #fff; font-size: 11px; display: grid; place-items: center; }
 .tabs button b.new { background: var(--bad); }
 .tag.new { color: #fff; background: var(--bad); border-color: var(--bad); }
+.item .sugg-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--both); }
+.item .sugg-row .linkbtn { min-height: 40px; font-size: 12.5px; padding: 0 8px; }
+.pill.propose.on { background: var(--both); color: #fff; border-color: var(--both); }
 .wtools { display: flex; flex-direction: column; gap: 6px; margin: 0 12px 8px; }
 .wfoot { display: flex; flex-direction: column; gap: 8px; padding: 4px 12px 16px; }
 .wfoot a, .wfoot button { text-decoration: none; }
@@ -432,7 +445,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 @media (min-width: 900px), (orientation: landscape) and (max-height: 500px) and (min-width: 640px) {
   :root { --sidebar: 440px; }
   #map { inset: var(--topbar) 0 0 var(--sidebar); }
-  .sheet, .sheet.half, .sheet.full { top: var(--topbar); bottom: 0; left: 0; right: auto; width: var(--sidebar); height: auto; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); }
+  .sheet, .sheet.peek, .sheet.half, .sheet.full { top: var(--topbar); bottom: 0; left: 0; right: auto; width: var(--sidebar); height: auto; transform: none; --pad: 0px; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); }
   .layer-chips { left: calc(var(--sidebar) + 58px); }
   .tabs { position: sticky; top: 0; z-index: 2; background: var(--panel); margin: 0; padding: 8px 12px; border-radius: 0; border: 0; border-bottom: 1px solid var(--line); }
   .tabs button { border: 1px solid transparent; } .tabs button.on { border-color: var(--line); }

@@ -26,13 +26,15 @@ deux listes sur l'autre téléphone.
   « envies communes », **partage par lien** (Web Share sur mobile, sinon presse-papiers) ou
   « Copier le code » à coller à la connexion (utile sur iPhone quand le lien s'ouvre hors de
   l'application installée), export GeoJSON des envies. Le lien est un instantané : il ajoute
-  envies, programmes et séjour sur l'autre téléphone, sans jamais en retirer.
+  envies, programmes et séjour sur l'autre téléphone, sans jamais en retirer. Dans une fiche,
+  « Proposer à Marie » glisse la plage dans la liste de l'autre avec la mention « Proposé par » ;
+  un cœur l'accepte, « Ignorer » l'écarte.
 - **Lieux sur mobile** : toucher un lieu ouvre sa fiche dans le panneau (horaires, adresse,
   itinéraire, appel, site, OSM) avec « Ajouter au programme de la plage la plus proche » et
   « Ajouter à un jour du séjour » ; lien direct `app.html#poi=<id OSM>`. Chaque étape du
   séjour a un menu d'actions (voir, monter, descendre, déplacer vers un autre jour, retirer).
 - **Mobile et tactile** : panneau glissant qui suit le doigt (trois hauteurs, aimantation selon
-  la vitesse du geste), glisser la carte replie le panneau, toucher un repère le rouvre, tout
+  la vitesse du geste, déplacé par translation sans remise en page), glisser la carte replie le panneau, toucher un repère le rouvre, tout
   champ de saisie déploie le panneau au-dessus du clavier, la fiche s'ouvre en plein panneau
   depuis une liste, les étapes du séjour se réordonnent à la poignée, le bouton retour ferme
   aussi la fiche de lieu, liste rendue par lots au défilement, cibles tactiles de 44 px, zones
