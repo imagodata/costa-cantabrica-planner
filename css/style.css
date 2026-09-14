@@ -79,6 +79,25 @@ svg.ic { flex: 0 0 auto; vertical-align: -3px; }
 .view3d .maplibregl-marker { cursor: pointer; }
 .gl-tip .maplibregl-popup-content { font: 600 12px/1.2 system-ui, sans-serif; background: var(--text); color: var(--panel); padding: 5px 9px; border-radius: 8px; box-shadow: none; }
 .gl-tip .maplibregl-popup-tip { display: none; }
+/* ---------- itinéraire 3D jour par jour ---------- */
+.itin { position: fixed; left: 10px; right: 10px; bottom: calc(var(--sheet-h, 58vh) + 10px); z-index: 1000; background: color-mix(in srgb, var(--panel) 94%, transparent); border-radius: 14px; box-shadow: var(--shadow); padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; transition: bottom .25s; }
+.it-days { display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+.it-days::-webkit-scrollbar { display: none; }
+.it-days .chip { flex: 0 0 auto; height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+.it-days .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--dc); }
+.it-days .chip small { font-weight: 500; }
+.it-days .chip.on { background: var(--dc); color: #fff; border-color: var(--dc); } .it-days .chip.on i { background: #fff; }
+.it-days .it-close { margin-left: auto; width: 36px; height: 36px; }
+.it-card { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.it-card .it-n { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 13px; display: grid; place-items: center; }
+.it-card .it-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.it-card .it-t b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.it-card .it-t b.link { color: var(--accent); cursor: pointer; }
+.it-card .it-t span { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.it-card .it-k { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.it-nav { display: flex; gap: 8px; align-items: center; }
+.it-nav .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; }
+.it-nav .iconbtn:disabled, .it-nav .btn:disabled { opacity: .35; }
 @media (hover: hover) { .v3-hint { display: none; } }
 .legend {
   position: fixed; left: 10px; bottom: calc(var(--sheet-h, 58vh) - 8px); z-index: 1000; display: flex; gap: 8px; align-items: center;
@@ -480,6 +499,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   .sheet, .sheet.peek, .sheet.half, .sheet.full { top: var(--topbar); bottom: 0; left: 0; right: auto; width: var(--sidebar); height: auto; transform: none; --pad: 0px; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); }
   .layer-chips { left: calc(var(--sidebar) + 58px); }
   .view3d { inset: var(--topbar) 0 0 var(--sidebar); }
+  .itin { left: calc(var(--sidebar) + 10px); right: auto; width: min(480px, calc(100vw - var(--sidebar) - 20px)); bottom: 24px; }
   .view3d .maplibregl-ctrl-bottom-right { bottom: 0; }
   .tabs { position: sticky; top: 0; z-index: 2; background: var(--panel); margin: 0; padding: 8px 12px; border-radius: 0; border: 0; border-bottom: 1px solid var(--line); }
   .tabs button { border: 1px solid transparent; } .tabs button.on { border-color: var(--line); }

@@ -78,6 +78,10 @@ deux listes sur l'autre téléphone.
 - **Séjour dynamique** : en mode dynamique, le planning est recalculé à chaque mise à jour des
   prévisions à partir des envies et des préférences ; toute modification manuelle d'une étape
   fige le planning (mode manuel), réactivable d'un geste.
+- **Itinéraire 3D jour par jour** (bouton « Suivre l'itinéraire en 3D » du séjour, « 3D » sur chaque
+  jour) : choix du jour, survol des étapes dans l'ordre (départ de l'hébergement, plages, lieux,
+  retour) avec caméra orientée dans le sens du trajet, carte d'étape (horaire estimé, tronçon, nom
+  touchable), précédent / suivant, lecture automatique, flèches du clavier.
 - **Zoom sur une entité** : bouton cible dans la fiche d'une plage (cadrage sur sa taille) et d'un lieu,
   « Carte » sur chaque jour du séjour (parcours) et sur l'hébergement, bouton cible sur la carte qui zoome
   sur la sélection ou recadre l'onglet courant (envies, séjour, toute la côte), en 2D comme en 3D.

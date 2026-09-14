@@ -7,7 +7,7 @@
 <script>
 const f = document.getElementById('f'), out = document.getElementById('out');
 const W = () => f.contentWindow, D = () => f.contentWindow.document, $ = (s) => D().querySelector(s), $$ = (s) => [...D().querySelectorAll(s)];
-let fails = 0;
+let fails = 0, itinTest = null;
 const log = (m) => { out.textContent += m + '\n'; };
 const check = (c, m) => { log((c ? 'OK   ' : 'FAIL ') + m); if (!c) fails++; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -89,6 +89,7 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     $('#btn-3d').click(); await wait(() => W().CCP.is3d() ? D().querySelector('#gl canvas') : ($('#view3d').hidden && $('#toast').classList.contains('show')), 20000, 'bascule 3D');
     check(W().CCP.is3d() ? (!$('#view3d').hidden && !!D().querySelector('#gl canvas') && $('#btn-3d').textContent === '2D') : $('#view3d').hidden, `3D · bascule (${W().CCP.is3d() ? 'WebGL actif, carte 3D affichée' : 'WebGL indisponible ici, repli 2D signalé'})`);
     if (W().CCP.is3d()) { $('#btn-3d').click(); await sleep(300); check($('#view3d').hidden && $('#btn-3d').textContent === '3D', '3D · retour à la 2D'); }
+    itinTest = W().CCP.is3d;
     $('#sheet').classList.remove('peek'); $('#sheet').classList.add('full');
     $('.nearby li').click(); await wait(() => vis('#panel-poi'), 5000, 'fiche de lieu à nouveau');
     W().history.back(); await wait(() => !vis('#panel-poi') && vis('#panel-detail'), 5000, 'retour au lieu');
@@ -160,6 +161,11 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     $('#dlg-pick').close();
     st = await waitState((s) => s.trip.days[0] && s.trip.days[0].stops.length >= 1, 25000, 'étape');
     check(st.trip.days[0] && st.trip.days[0].stops.length >= 1 && st.log.some((e) => /jour 1 du séjour/.test(e.text)), 'sync · étape envoyée, journal « jour 1 »');
+    if ($('.itin-day')) { $('.itin-day').click(); await wait(() => !$('#itin').hidden && $('#it-play'), 15000, 'itinéraire 3D');
+      check(!$('#itin').hidden && $('.it-days .chip.on') && /Suivre la journée/.test($('#it-play').textContent), 'itinéraire 3D · panneau ouvert sur le jour, vue d\'ensemble');
+      $('#it-next').click(); await sleep(400); check(/1\//.test($('#itin').textContent) && $('#it-name'), `itinéraire 3D · étape 1 « ${$('#it-name') && $('#it-name').textContent} »`);
+      $('#it-play').click(); await sleep(200); check(/Pause/.test($('#it-play').textContent), 'itinéraire 3D · lecture automatique');
+      $('#it-close').click(); check($('#itin').hidden, 'itinéraire 3D · fermeture'); $('#btn-3d').click(); await sleep(300); }
     $('.stops li').click(); await wait(() => vis('#panel-detail'), 5000, 'fiche depuis l\'étape');
     check(vis('#panel-detail'), 'M8 · toucher une étape ouvre la fiche');
     $('#btn-close').click(); await wait(() => vis('#panel-trip'), 5000, 'retour séjour');

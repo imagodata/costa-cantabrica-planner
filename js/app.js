@@ -833,7 +833,7 @@
       gl.on('error', (e) => { const m = String((e && e.error && e.error.message) || ''); if (/WebGL|context lost/i.test(m)) { glUnsupported = true; set3d(false); toast('La 3D s\'est arrêtée : carte 2D'); } });
       gl.on('click', 'spots', (e) => { const f = e.features && e.features[0]; if (f) select(f.properties.id, { pan: false }); });
       gl.on('mouseenter', 'spots', () => { gl.getCanvas().style.cursor = 'pointer'; }); gl.on('mouseleave', 'spots', () => { gl.getCanvas().style.cursor = ''; });
-      gl.on('dragstart', (e) => { if (e.originalEvent && isMobile() && !sheet.classList.contains('peek')) setSheet('peek'); });
+      gl.on('dragstart', (e) => { if (e.originalEvent && isMobile() && !sheet.classList.contains('peek')) setSheet('peek'); if (e.originalEvent && itin.playing) itinPlay(false); });
       gl.on('zoomend', (e) => { if (e.originalEvent && glMode === 'auto' && gl.getZoom() + 1 < GL_OUT) set3d(false, { silent: true }); });   // dézoom manuel : retour à la vue d'ensemble 2D
       gl.on('moveend', (e) => { if (!e.originalEvent && performance.now() - progAt < 700) return; if (!e.originalEvent) return; clearTimeout(mvT3); mvT3 = setTimeout(() => { viewBounds = liveBounds(); if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList({ keep: true }); } }, 150); });
       gl.once('pointerdown', () => $('#v3-hint').classList.add('off')); setTimeout(() => $('#v3-hint').classList.add('off'), 7000);
@@ -880,7 +880,7 @@
       const id = s.properties.id; if (!vis.has(id)) continue;
       const r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(id), sel = state.selected === id;
       let f;
-      if ((state.view === 'wishes' && (w.a || w.b || suggestedTo(state.me, id))) || (state.view === 'trip' && tripHasSpot(id))) continue;   // épingles HTML numérotées
+      if ((state.view === 'wishes' && (w.a || w.b || suggestedTo(state.me, id))) || ((state.view === 'trip' || itin.on) && tripHasSpot(id))) continue;   // épingles HTML numérotées
       if (state.view === 'wishes' || state.view === 'trip') f = { color: cols[r.cls], r: 4, op: .5, stroke: '#fff', sw: 1 };
       else f = { color: cols[r.cls], r: sel ? 10 : (w.a || w.b ? 8 : 6), op: .95, stroke: sel ? '#111' : w.a && w.b ? colBoth : w.a ? colA : w.b ? colB : '#fff', sw: sel ? 3 : (w.a || w.b ? 3 : 1.5) };
       feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [latlng(s)[1], latlng(s)[0]] }, properties: { id, ...f } });
@@ -889,7 +889,7 @@
     const lines = [];
     const toLine = (seq) => seq.map(([la, lo]) => [lo, la]);
     if (state.view === 'wishes') { const list = wishList(); if (list.length > 1) lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: toLine(list.map(latlng)) }, properties: { color: colBoth, w: 2.5, op: .8 } }); }
-    state.trip.days.forEach((d, i) => { const route = dayRoute(d); if (route.seq.length > 1) lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: toLine(route.seq) }, properties: { color: dayColor(i), w: state.view === 'trip' ? 3.5 : 2, op: state.view === 'trip' ? .9 : .4 } }); });
+    state.trip.days.forEach((d, i) => { const route = dayRoute(d); if (route.seq.length > 1) { const focus = itin.on ? (i === itin.day ? 1 : 0) : (state.view === 'trip' ? 1 : .5); if (itin.on && i !== itin.day) return; lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: toLine(route.seq) }, properties: { color: dayColor(i), w: focus === 1 ? (itin.on ? 5 : 3.5) : 2, op: focus === 1 ? .95 : .4 } }); } });
     for (const [sid, pn] of Object.entries(state.plans)) { const s = spotById(sid); if (!s) continue; for (const it of pn.items) { const x = it.poi && poiById(it.poi); if (!x) continue; const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism; lines.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[latlng(s)[1], latlng(s)[0]], [x.lon, x.lat]] }, properties: { color: k.color, w: 1.5, op: .8 } }); } }
     paint3dPois();
     gl.getSource('routes').setData({ type: 'FeatureCollection', features: lines });
@@ -897,13 +897,71 @@
     const pin = (html, lat, lon, onClick) => { const el = document.createElement('div'); el.innerHTML = html; const node = el.firstElementChild; if (onClick) node.addEventListener('click', (e) => { e.stopPropagation(); onClick(); }); const mk = new maplibregl.Marker({ element: node, anchor: 'center' }).setLngLat([lon, lat]).addTo(gl); glMarkers.push(mk); };
     if (state.trip.base) pin(`<div class="home-pin" style="${state.view === 'trip' ? '' : 'opacity:.75'}">${I('home', { size: 15 })}</div>`, state.trip.base.lat, state.trip.base.lon);
     if (state.view === 'wishes') wishList().forEach((s, i) => { const p = s.properties, r = state.bulk ? scoreOf(s) : { cls: 'none' }, w = wishOf(p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : w.b ? 'b' : (state.me === 'a' ? 'b' : 'a'); pin(`<div class="num-pin ${who}" style="background:var(--${r.cls})">${i + 1}</div>`, latlng(s)[0], latlng(s)[1], () => select(p.id, { pan: false })); });
-    if (state.view === 'trip') state.trip.days.forEach((d, i) => { let n = 0; d.stops.forEach((st) => { const x = stopInfo(st); if (!x || x.lat == null) return; const isSpot = x.kind === 'spot'; if (isSpot) n++; pin(`<div class="day-pin ${isSpot ? '' : 'poi'}" style="background:${isSpot ? dayColor(i) : x.color}">${isSpot ? n : I(x.icon, { size: 10 })}</div>`, x.lat, x.lon, () => { if (isSpot) select(st.id, { pan: false }); else showPoi(x.poi); }); }); });
-    if (state.selected && state.view !== 'wishes' && state.view !== 'trip') { const s = spotById(state.selected); if (s) pin(`<div class="poi-pin sel" style="background:var(--accent);width:16px;height:16px;border-color:#111"></div>`, latlng(s)[0], latlng(s)[1]); }
+    if (state.view === 'trip' || itin.on) state.trip.days.filter((d, i) => !itin.on || i === itin.day).forEach((d) => { const i = state.trip.days.indexOf(d); let n = 0; d.stops.forEach((st) => { const x = stopInfo(st); if (!x || x.lat == null) return; const isSpot = x.kind === 'spot'; if (isSpot) n++; pin(`<div class="day-pin ${isSpot ? '' : 'poi'}" style="background:${isSpot ? dayColor(i) : x.color}">${isSpot ? n : I(x.icon, { size: 10 })}</div>`, x.lat, x.lon, () => { if (isSpot) select(st.id, { pan: false }); else showPoi(x.poi); }); }); });
+    if (state.selected && state.view !== 'wishes' && state.view !== 'trip' && !itin.on) { const s = spotById(state.selected); if (s) pin(`<div class="poi-pin sel" style="background:var(--accent);width:16px;height:16px;border-color:#111"></div>`, latlng(s)[0], latlng(s)[1]); }
+  }
+  /* ------------------------------------------------------------------ itinéraire jour par jour en 3D
+     La caméra survole les étapes du jour dans l'ordre (départ de l'hébergement, plages, lieux, retour),
+     orientée dans le sens du trajet ; carte d'étape avec horaire estimé et tronçon ; lecture automatique. */
+  const itin = { on: false, day: 0, step: 0, playing: false, timer: null, steps: [] };
+  const bearingTo = (a, b) => { const p = Math.PI / 180, la1 = a[0] * p, la2 = b[0] * p, dl = (b[1] - a[1]) * p; const y = Math.sin(dl) * Math.cos(la2), x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; };
+  function itinSteps(di) {
+    const d = state.trip.days[di]; if (!d) return [];
+    const tl = dayTimeline(d), base = state.trip.base, steps = [];
+    if (base) steps.push({ kind: 'base', name: base.name, sub: 'départ', lat: base.lat, lon: base.lon, time: tl.start, km: 0 });
+    d.stops.forEach((st, k) => { const info = stopInfo(st), slot = tl.slots[k]; if (!info || info.lat == null) return; steps.push({ kind: info.kind, name: info.name, sub: info.sub, lat: info.lat, lon: info.lon, time: slot ? slot.start : null, end: slot ? slot.end : null, km: slot ? slot.km : 0, st, info }); });
+    if (base && state.prefs.roundTrip && steps.length > 1) steps.push({ kind: 'base', name: base.name, sub: 'retour', lat: base.lat, lon: base.lon, time: tl.end, km: 0 });
+    return steps;
+  }
+  async function itinStart(di) {
+    if (!(await set3d(true))) return;
+    itin.on = true; itin.day = di; itin.step = 0; itin.playing = false; clearTimeout(itin.timer);
+    itin.steps = itinSteps(di);
+    $('#itin').hidden = false; if (isMobile()) setSheet('peek');
+    paint3d();
+    if (!itin.steps.length) { renderItin(); toast('Aucune étape localisée ce jour-là'); return; }
+    const b = L.latLngBounds(itin.steps.map((s) => [s.lat, s.lon])).pad(0.25), bottom = isMobile() ? Math.round(window.innerHeight * 0.30) : 0;
+    const fly = () => progMove(() => gl.fitBounds([[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], { padding: { top: 70, left: 16, right: 16, bottom: bottom + 120 }, maxZoom: 13.5, pitch: 55, bearing: 0, duration: 1000 }));
+    if (glLoaded) fly(); else gl.once('load', fly);
+    itin.step = -1; renderItin();   // vue d'ensemble d'abord ; ▶ ou « suivant » démarre
+  }
+  function itinGo(k) {
+    if (!itin.on || !itin.steps.length) return;
+    k = Math.max(-1, Math.min(itin.steps.length - 1, k)); itin.step = k; renderItin();
+    if (k < 0) return;
+    const s = itin.steps[k], prev = itin.steps[k - 1];
+    const bearing = prev ? bearingTo([prev.lat, prev.lon], [s.lat, s.lon]) : (C.coastBearing ?? 180);
+    const zoom = s.kind === 'base' ? 14 : s.kind === 'spot' ? 14.3 : 15.3;
+    progMove(() => gl.flyTo({ center: [s.lon, s.lat], zoom, pitch: 62, bearing, offset: glOffset(), duration: 1800, essential: true }));
+    if (itin.playing) { clearTimeout(itin.timer); itin.timer = setTimeout(() => { if (itin.playing && itin.step < itin.steps.length - 1) itinGo(itin.step + 1); else { itin.playing = false; renderItin(); } }, 5200); }
+  }
+  function itinPlay(on) { itin.playing = on; clearTimeout(itin.timer); if (on) itinGo(itin.step < 0 ? 0 : (itin.step >= itin.steps.length - 1 ? 0 : itin.step + 1)); else renderItin(); }
+  function itinStop() { itin.on = false; itin.playing = false; clearTimeout(itin.timer); $('#itin').hidden = true; paint3d(); }
+  function renderItin() {
+    const el = $('#itin'); if (!el || el.hidden) return;
+    const t = state.trip, days = t.days.map((d, i) => `<button type="button" class="chip ${i === itin.day ? 'on' : ''}" data-i="${i}" style="--dc:${dayColor(i)}"><i></i>J${i + 1}<small>${esc(dayLabel(i).split(' ')[1] || '')}</small></button>`).join('');
+    const s = itin.step >= 0 ? itin.steps[itin.step] : null, n = itin.steps.length;
+    const body = !n ? `<div class="it-card"><b>Aucune étape localisée</b><span class="hint">Ajoutez une plage ou un lieu à ce jour.</span></div>`
+      : !s ? `<div class="it-card"><b>Jour ${itin.day + 1} · ${esc(dayLabel(itin.day))}</b><span>${n} étape${n > 1 ? 's' : ''} · ${I('clock', { size: 12 })} ${hm(itin.steps[0].time ?? 0)} → ${hm(itin.steps[n - 1].end ?? itin.steps[n - 1].time ?? 0)} · ${I('car', { size: 12 })} ~${Math.round(dayRoute(t.days[itin.day]).km)} km</span></div>`
+      : `<div class="it-card"><span class="it-n" style="background:${s.kind === 'base' ? 'var(--text)' : s.kind === 'spot' ? dayColor(itin.day) : (s.info && s.info.color) || 'var(--muted)'}">${s.kind === 'base' ? I('home', { size: 13 }) : s.kind === 'spot' ? itin.steps.slice(0, itin.step + 1).filter((x) => x.kind === 'spot').length : I(s.info && s.info.icon || 'compass', { size: 12 })}</span>
+          <div class="it-t"><b class="${s.kind !== 'base' ? 'link' : ''}" id="it-name">${esc(s.name)}</b><span>${esc(s.sub)}${s.time != null ? ` · ${hm(s.time)}${s.end != null ? '–' + hm(s.end) : ''}` : ''}${s.km ? ` · ${s.km.toFixed(0)} km` : ''}</span></div>
+          <span class="it-k">${itin.step + 1}/${n}</span></div>`;
+    el.innerHTML = `<div class="it-days">${days}<button type="button" class="iconbtn it-close" id="it-close" aria-label="Quitter l'itinéraire">${I('x', { size: 18 })}</button></div>${body}
+      <div class="it-nav"><button type="button" class="iconbtn" id="it-prev" ${itin.step <= -1 || !n ? 'disabled' : ''} aria-label="Étape précédente">${I('chevronL', { size: 20 })}</button>
+        <button type="button" class="btn ${itin.playing ? 'ghost' : 'primary'}" id="it-play" ${!n ? 'disabled' : ''}>${itin.playing ? I('minus', { size: 16 }) + ' Pause' : I('route', { size: 16 }) + (itin.step < 0 ? ' Suivre la journée' : ' Lecture')}</button>
+        <button type="button" class="iconbtn" id="it-next" ${itin.step >= n - 1 || !n ? 'disabled' : ''} aria-label="Étape suivante">${I('chevronR', { size: 20 })}</button></div>`;
+    el.querySelectorAll('.it-days .chip').forEach((b) => b.onclick = () => itinStart(+b.dataset.i));
+    $('#it-close').onclick = itinStop;
+    $('#it-prev').onclick = () => { itin.playing = false; itinGo(itin.step - 1); };
+    $('#it-next').onclick = () => { itin.playing = false; itinGo(itin.step + 1); };
+    $('#it-play').onclick = () => itinPlay(!itin.playing);
+    const nm = $('#it-name'); if (nm && s && s.st) nm.onclick = () => { if (s.st.t === 's') select(s.st.id, { pan: false, full: true }); else if (s.st.t === 'p' && s.info.poi) showPoi(s.info.poi, { pan: false }); };
   }
   function init3d() {
     try { const m = localStorage.getItem('ccp:3d'); if (m === '1' || m === '0') glMode = m; } catch (e) { }
     renderBtn3d();
-    $('#btn-3d').onclick = () => { saveGlMode(glOn ? '0' : '1'); set3d(!glOn); };
+    $('#btn-3d').onclick = () => { if (itin.on) itinStop(); saveGlMode(glOn ? '0' : '1'); set3d(!glOn); };
+    document.addEventListener('keydown', (e) => { if (!itin.on || document.querySelector('dialog[open]') || isTyping()) return; if (e.key === 'ArrowRight') { itin.playing = false; itinGo(itin.step + 1); } else if (e.key === 'ArrowLeft') { itin.playing = false; itinGo(itin.step - 1); } else if (e.key === 'Escape') itinStop(); });
     if (glMode === '1') set3d(true, { silent: true });
     // bascule automatique : zoomer sur l'orthophoto (geste) fait passer en 3D
     map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported || performance.now() - progAt < 700) return; if (map.getZoom() >= GL_IN) set3d(true, { silent: true }); });
@@ -1308,7 +1366,7 @@
         ${tl.warns.map((w) => `<div class="day-warn">${I('info', { size: 14 })}<span>${esc(w)}</span></div>`).join('')}
         <div class="day-foot">
           <button type="button" class="linkbtn add-stop" data-i="${i}">${I('plus', { size: 14 })} Ajouter une étape</button>
-          ${d.stops.length ? `<button type="button" class="linkbtn zoom-day" data-i="${i}" title="Voir la journée sur la carte">${I('frame', { size: 14 })} Carte</button>` : ''}
+          ${d.stops.length ? `<button type="button" class="linkbtn zoom-day" data-i="${i}" title="Voir la journée sur la carte">${I('frame', { size: 14 })} Carte</button><button type="button" class="linkbtn itin-day" data-i="${i}" title="Suivre cette journée en 3D">${I('route', { size: 14 })} 3D</button>` : ''}
           ${route.url ? `${tl.slots.some(Boolean) ? `<span class="tl">${I('clock', { size: 14 })} ${hm(tl.start)} → ${hm(tl.end)}</span>` : ''}<span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base && state.prefs.roundTrip ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
         </div></div>`;
     }).join('');
@@ -1321,7 +1379,8 @@
           <button type="button" class="auto-chip" id="trip-config">${I('sliders', { size: 13 })}Réglages</button>
           <span class="hint" style="flex-basis:100%">${t.auto ? 'Le planning suit les prévisions : il est recalculé à chaque rafraîchissement, sauf si vous modifiez une étape. Les étapes verrouillées (menu d\'une étape) sont toujours conservées.' : 'Vos étapes sont conservées telles quelles. Horaires estimés : départ ' + (state.prefs.startHour || 10) + ' h, trajets à 45 km/h, environ 2 h 30 par plage, 1 h 15 au resto.'}</span>
         </div>
-        <button type="button" class="btn ghost" id="trip-propose" style="display:flex;align-items:center;justify-content:center;gap:8px">${I('wand', { size: 16 })}Proposer un planning selon la météo</button></div>
+        <button type="button" class="btn ghost" id="trip-propose" style="display:flex;align-items:center;justify-content:center;gap:8px">${I('wand', { size: 16 })}Proposer un planning selon la météo</button>
+        ${t.days.some((d) => d.stops.length) ? `<button type="button" class="btn ghost" id="trip-itin" style="display:flex;align-items:center;justify-content:center;gap:8px">${I('route', { size: 16 })}Suivre l'itinéraire en 3D, jour par jour</button>` : ''}</div>
       ${daysHtml}
       <div class="row"><button type="button" class="btn ghost" id="trip-share" style="flex:1">Partager le séjour</button><button type="button" class="btn ghost" id="trip-clear" style="flex:1">Tout effacer</button></div>`;
     // hébergement
@@ -1351,6 +1410,8 @@
     $('#trip-clear').onclick = async () => { if (await confirmDlg('Effacer hébergement et étapes ?', { ok: 'Tout effacer', danger: true })) { state.trip = { base: null, start: null, days: [], auto: false }; save(); renderTabs(); renderTrip(); paintMarkers(); } };
     el.querySelectorAll('.add-stop').forEach((b) => b.onclick = () => pickStop(+b.dataset.i));
     el.querySelectorAll('.zoom-day').forEach((b) => b.onclick = () => zoomTo({ day: t.days[+b.dataset.i] }));
+    el.querySelectorAll('.itin-day').forEach((b) => b.onclick = () => itinStart(+b.dataset.i));
+    $('#trip-itin') && ($('#trip-itin').onclick = () => itinStart(t.days.findIndex((d) => d.stops.length)));
     el.querySelectorAll('.day-card').forEach((card) => {
       const i = +card.dataset.i, d = t.days[i];
       card.querySelectorAll('.menu-btn').forEach((b) => b.onclick = (e) => { e.stopPropagation(); stepMenu(i, +b.dataset.k); });
