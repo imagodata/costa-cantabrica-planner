@@ -2,15 +2,18 @@
 import json, os, subprocess, sys, time, urllib.request, tempfile
 port = 8097
 data = os.path.join(tempfile.mkdtemp(), 'state.json')
-env = dict(os.environ, COSTA_DATA=data, COSTA_PORT=str(port), COSTA_USERS='simon:a,marie:b')
+env = dict(os.environ, COSTA_DB=os.path.join(os.path.dirname(data), 'costa.db'), COSTA_DATA=data, COSTA_PORT=str(port), COSTA_USERS='simon:a,marie:b')
 srv = subprocess.Popen([sys.executable, 'server/costa_sync.py'], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(0.6)
-def call(method, user, body=None, version=None):
-    req = urllib.request.Request(f'http://127.0.0.1:{port}/api/state', method=method, data=json.dumps(body).encode() if body is not None else None)
-    req.add_header('X-User', user); req.add_header('Content-Type', 'application/json')
+def call(method, user, body=None, version=None, path='/api/state', token=None, headers=None):
+    req = urllib.request.Request(f'http://127.0.0.1:{port}{path}', method=method, data=json.dumps(body).encode() if body is not None else None)
+    if user: req.add_header('X-User', user)
+    req.add_header('Content-Type', 'application/json')
+    if token: req.add_header('Authorization', 'Bearer ' + token)
     if version is not None: req.add_header('If-Match', str(version))
+    for k, v in (headers or {}).items(): req.add_header(k, v)
     try:
-        with urllib.request.urlopen(req) as r: return r.status, json.loads(r.read())
+        with urllib.request.urlopen(req) as r: return r.status, (json.loads(r.read()) if r.status != 204 else {'_headers': dict(r.headers)})
     except urllib.error.HTTPError as e: return e.code, json.loads(e.read())
 fails = 0
 def check(cond, msg):
@@ -70,6 +73,48 @@ try:
     # persistance : relecture
     st = call('GET', 'marie')[1]
     check(st['version'] == 11 and st['me'] == 'b' and len(st['log']) == 1, 'état relu, journal persistant')
+    check(isinstance(st.get('workspace'), dict) and len(st['workspace'].get('invite', '')) == 8, 'séjour hérité : code d\'invitation exposé')
+    # comptes et séjours partagés
+    c, r = call('POST', None, {'email': 'ana@example.org', 'name': 'Ana', 'password': 'court'}, path='/api/auth/register')
+    check(c == 400, 'inscription : mot de passe trop court refusé')
+    c, r = call('POST', None, {'email': 'ana@example.org', 'name': 'Ana', 'password': 'motdepasse1'}, path='/api/auth/register')
+    check(c == 201 and r['user']['name'] == 'Ana' and len(r['token']) > 20, 'inscription : jeton délivré'); ta = r['token']
+    c, r = call('POST', None, {'email': 'ana@example.org', 'name': 'Ana', 'password': 'motdepasse1'}, path='/api/auth/register')
+    check(c == 409, 'inscription : adresse déjà utilisée')
+    c, r = call('POST', None, {'email': 'ana@example.org', 'password': 'faux'}, path='/api/auth/login')
+    check(c == 401, 'connexion : mot de passe faux refusé')
+    c, r = call('POST', None, {'email': 'ANA@example.org', 'password': 'motdepasse1'}, path='/api/auth/login')
+    check(c == 200 and r['user']['id'], 'connexion : adresse insensible à la casse')
+    c, r = call('POST', None, {'email': 'bo@example.org', 'name': 'Bo', 'password': 'motdepasse2'}, path='/api/auth/register'); tb = r['token']
+    c, r = call('GET', None, path='/api/w/nope/state', token=ta)
+    check(c == 403, 'séjour : accès refusé aux non-membres')
+    c, r = call('POST', None, {'name': 'Asturies 2026'}, path='/api/workspaces', token=ta)
+    check(c == 201 and r['workspace']['slot'] == 'a' and len(r['workspace']['invite']) == 8, 'séjour créé, créateur voyageur 1'); ws = r['workspace']
+    c, r = call('POST', None, {'code': 'ZZZZZZZZ'}, path='/api/workspaces/join', token=tb)
+    check(c == 404, 'rejoindre : code inconnu')
+    c, r = call('POST', None, {'code': ws['invite'].lower()}, path='/api/workspaces/join', token=tb)
+    check(c == 200 and r['workspace']['slot'] == 'b' and [m['name'] for m in r['workspace']['members']] == ['Ana', 'Bo'], 'rejoindre : voyageur 2, membres listés')
+    c, r = call('POST', None, {'email': 'cy@example.org', 'name': 'Cy', 'password': 'motdepasse3'}, path='/api/auth/register'); tc = r['token']
+    c, r = call('POST', None, {'code': ws['invite']}, path='/api/workspaces/join', token=tc)
+    check(c == 409, 'rejoindre : séjour complet refusé')
+    c, r = call('GET', None, path=f"/api/w/{ws['id']}/state", token=tb)
+    check(c == 200 and r['me'] == 'b' and r['users']['a']['name'] == 'Ana' and r['users']['b']['name'] == 'Bo', 'état du séjour : prénoms des comptes, ma place')
+    v = r['version']
+    c, r = call('PUT', None, {'users': {'b': {'name': 'Bo', 'wish': ['n5']}}, 'log': [{'text': 'a ajouté X à ses envies'}]}, version=v, path=f"/api/w/{ws['id']}/state", token=tb)
+    check(c == 200 and r['users']['b']['wish'] == ['n5'] and r['log'][-1]['name'] == 'Bo', 'écriture par jeton fusionnée et journalisée')
+    c, r = call('PUT', None, {'users': {'a': {'wish': ['n9']}}}, version=r['version'], path=f"/api/w/{ws['id']}/state", token=tb)
+    check(c == 200 and r['users']['a']['wish'] == [], 'un membre n\'écrit pas la liste de l\'autre')
+    c, r = call('GET', None, path='/api/me', token=ta)
+    check(c == 200 and [w['name'] for w in r['workspaces']] == ['Asturies 2026'] and r['workspaces'][0]['slot'] == 'a', '/api/me : séjours du compte')
+    c, r = call('OPTIONS', None, path='/api/me', headers={'Origin': 'https://imagodata.github.io'})
+    check(c == 204 and r['_headers'].get('Access-Control-Allow-Origin') == 'https://imagodata.github.io', 'CORS : origine GitHub Pages admise')
+    c, r = call('GET', None, path='/api/me', token=ta, headers={'Origin': 'https://evil.example'})
+    check(c == 200 and 'Access-Control-Allow-Origin' not in json.dumps(r), 'CORS : origine inconnue sans en-tête')
+    c, r = call('POST', None, {}, path='/api/auth/logout', token=tb)
+    c, r = call('GET', None, path='/api/me', token=tb)
+    check(c == 401, 'déconnexion : jeton invalidé')
+    c, r = call('GET', None, path=f"/api/w/{ws['id']}", token=ta)
+    check(c == 200 and r['workspace']['members'][1]['name'] == 'Bo', 'fiche du séjour')
 finally:
     srv.terminate()
 print('ÉCHECS :', fails); sys.exit(1 if fails else 0)

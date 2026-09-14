@@ -27,7 +27,8 @@ if [ "${1:-}" = "--init" ]; then
 # --- Costa Cantábrica (version protégée) : $HOST ---
 $HOST {
 	encode zstd gzip
-	basic_auth {
+	@site not path /api/auth/* /api/w/* /api/me /api/workspaces /api/workspaces/*
+	basic_auth @site {
 $USERS	}
 	respond /whoami \"{http.auth.user.id}\" 200
 	handle /api/* {
@@ -48,6 +49,20 @@ $USERS	}
 CADDY
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy && echo 'Caddy rechargé'"
 fi
+
+# Caddy déjà en place : les routes à jeton (comptes, séjours) sortent de basic_auth pour être joignables
+# depuis GitHub Pages ou une application mobile ; le reste du site garde le mot de passe.
+ssh "$VPS" 'python3 - <<"PY"
+import re, subprocess, sys
+p = "/etc/caddy/Caddyfile"; s = open(p, encoding="utf-8").read()
+if "basic_auth @site" not in s and re.search(r"^# --- Costa Cant", s, re.M):
+    s2 = s.replace("\tbasic_auth {", "\t@site not path /api/auth/* /api/w/* /api/me /api/workspaces /api/workspaces/*\n\tbasic_auth @site {", 1)
+    open(p + ".new", "w", encoding="utf-8").write(s2)
+    if subprocess.call(["caddy", "validate", "--config", p + ".new", "--adapter", "caddyfile"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+        subprocess.call(["cp", p, p + ".bak-costa-auth"]); subprocess.call(["mv", p + ".new", p]); subprocess.call(["systemctl", "reload", "caddy"]); print("Caddy : routes à jeton hors basic_auth")
+    else:
+        print("Caddy : configuration modifiée invalide, inchangée", file=sys.stderr)
+PY'
 
 # Service de synchronisation (identité transmise par Caddy) : installation / mise à jour
 rsync -az server/costa_sync.py server/costa-sync.service "$VPS:/tmp/costa-sync/"

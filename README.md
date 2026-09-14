@@ -108,13 +108,18 @@ Hébergée sur GitHub Pages :
 
 - `index.html` : page d'accueil publique (présentation, « Entrer avec mon prénom », « Tester
   sans compte (à zéro) »).
-- `login.html` : connexion par voyageur (prénom et couleur mémorisés sur l'appareil, code ou lien
-  de séjour à coller pour retrouver envies, programmes et séjour, « Repartir de zéro »).
+- `login.html` : **compte** (e-mail, prénom, mot de passe) puis choix du **séjour partagé** : en
+  créer un (le créateur est le voyageur 1) ou en rejoindre un avec son **code d'invitation** (le
+  second arrivé est le voyageur 2). Le service est celui du VPS (`apiBase` dans `js/config.js`,
+  CORS) : la version publique GitHub Pages et une future application mobile s'y connectent avec
+  le même jeton. En bas de page, le mode **sans compte** subsiste : prénom et couleur mémorisés sur
+  l'appareil, code ou lien de séjour à coller, « Repartir de zéro ».
 - `app.html` : l'application. Vues directes : `app.html#view=trip`, `#view=config`,
   `#view=wishes` ; fiche : `#<slug>` ; `#reset` repart d'un état vierge.
 
-Il n'y a pas de serveur : l'identité et les données restent sur l'appareil, la synchronisation
-entre deux voyageurs passe par le lien de partage.
+Sans compte, il n'y a pas de serveur : l'identité et les données restent sur l'appareil, la
+synchronisation entre deux voyageurs passe par le lien de partage. Avec un compte, le séjour est
+partagé par le service décrit plus bas.
 
 En local :
 
@@ -144,9 +149,21 @@ avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
   données brutes, et pages de partage régénérées avec l'URL du serveur).
 - Changer un mot de passe : relancer `--init` avec tous les comptes ; l'ancien bloc est
   remplacé automatiquement.
-- **Écriture en tant que profil connecté** : `server/costa_sync.py` (service systemd
-  `costa-sync`, bibliothèque standard, port local 8095, données dans `/opt/costa-data/state.json`)
-  reçoit l'utilisateur authentifié de Caddy (`X-User`) sur `/api/state`. L'application n'envoie
+- **Comptes et séjours partagés** : `server/costa_sync.py` (service systemd `costa-sync`,
+  bibliothèque standard, SQLite dans `/opt/costa-data/costa.db`, port local 8095) gère des
+  comptes (`POST /api/auth/register`, `/api/auth/login`, `/api/auth/logout`, mot de passe haché
+  scrypt, jeton de session 180 jours), des séjours (`POST /api/workspaces`, `POST
+  /api/workspaces/join {code}`, `GET /api/me`, `GET|PUT /api/w/<id>`, `POST /api/w/<id>/leave`)
+  et l'état de chaque séjour (`GET|PUT /api/w/<id>/state`). Chaque séjour a deux places (a, b)
+  et un code d'invitation à 8 caractères ; CORS pour les origines de `COSTA_ORIGINS` (GitHub
+  Pages par défaut) ; limitation des tentatives de connexion par adresse. Dans Caddy, ces routes
+  sont hors `basic_auth` (matcher `@site`) pour être joignables de partout ; le reste du site
+  garde le mot de passe. Au premier démarrage, `state.json` est migré dans le séjour hérité
+  `legacy`, dont le code d'invitation est imprimé dans le journal et affiché dans Réglages : avec
+  un compte, ce code ouvre le même séjour depuis n'importe quel appareil.
+- **Écriture en tant que profil connecté** (mode hérité, toujours actif) : Caddy transmet
+  l'utilisateur authentifié (`X-User`) sur `/api/state`, qui pointe sur le séjour `legacy`.
+  Dans les deux modes, l'application n'envoie
   que ce qu'elle a changé depuis le dernier état serveur connu (sa liste d'envies, les programmes
   touchés, les champs du séjour modifiés, les préférences) et le serveur **fusionne clé par clé** :
   chaque voyageur n'écrit que sa liste d'envies, sa note et ses compléments ; les étapes du séjour

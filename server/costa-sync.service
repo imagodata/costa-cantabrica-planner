@@ -4,7 +4,9 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/python3 /opt/costa-sync/costa_sync.py
+Environment=COSTA_DB=/opt/costa-data/costa.db
 Environment=COSTA_DATA=/opt/costa-data/state.json
+Environment=COSTA_ORIGINS=https://imagodata.github.io
 Environment=COSTA_USERS=simon:a,marie:b
 Environment=COSTA_PORT=8095
 User=costa

@@ -8,43 +8,131 @@
   <meta name="theme-color" content="#0b6e99">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/site.css?v=202609141826">
+  <link rel="stylesheet" href="css/site.css?v=202609141851">
 </head>
 <body>
 <div class="wrap" style="max-width:520px">
   <a class="brand" href="./"><span class="mark"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;stroke-width:2"><path d="M2 12c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 17c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg></span><span><b>Costa Cantábrica</b><small>plages &amp; criques</small></span></a>
 
-  <section class="hero" style="margin-bottom:8px">
-    <h1 style="font-size:28px">Qui êtes-vous ?</h1>
-    <p>Choisissez votre prénom : vos envies, notes et compléments porteront votre couleur sur cet appareil.</p>
+  <!-- compte : connexion ou création -->
+  <section id="s-auth">
+    <section class="hero" style="margin-bottom:8px">
+      <h1 style="font-size:28px">Votre compte</h1>
+      <p>Un compte, un séjour partagé à deux : envies, programmes et planning se retrouvent sur tous vos appareils.</p>
+    </section>
+    <div class="tabs2"><button type="button" class="on" id="t-login">Se connecter</button><button type="button" id="t-register">Créer un compte</button></div>
+    <form id="f-auth" onsubmit="return false">
+      <label class="f" id="l-name" hidden>Prénom (affiché à l'autre voyageur)<input type="text" id="a-name" maxlength="14" autocomplete="given-name"></label>
+      <label class="f">Adresse e-mail<input type="email" id="a-email" autocomplete="email" inputmode="email"></label>
+      <label class="f">Mot de passe<input type="password" id="a-pw" autocomplete="current-password" minlength="8"></label>
+      <p class="err" id="a-err" hidden></p>
+      <div class="cta"><button type="submit" class="btn" id="a-go" style="flex:1">Se connecter</button></div>
+    </form>
+    <p class="small">Sans compte ? <a href="#" id="to-local">Continuer sur cet appareil seulement</a> (partage par lien).</p>
   </section>
 
-  <form id="f" onsubmit="return false">
-    <div class="travelers">
-      <button type="button" class="traveler a" id="t-a"><span class="av" id="av-a">S</span><input type="text" id="n-a" maxlength="14" value="Simon" aria-label="Prénom du voyageur 1"></button>
-      <button type="button" class="traveler b" id="t-b"><span class="av" id="av-b">M</span><input type="text" id="n-b" maxlength="14" value="Marie" aria-label="Prénom du voyageur 2"></button>
+  <!-- séjours du compte -->
+  <section id="s-ws" hidden>
+    <section class="hero" style="margin-bottom:8px">
+      <h1 style="font-size:28px">Vos séjours</h1>
+      <p id="ws-hello"></p>
+    </section>
+    <div id="ws-list" class="wslist"></div>
+    <div class="card" style="margin:12px 0">
+      <h3>Créer un séjour</h3>
+      <div class="row2"><input type="text" id="ws-name" maxlength="40" placeholder="Ex. : Asturies 2026" style="flex:1"><button type="button" class="btn" id="ws-create">Créer</button></div>
     </div>
-    <label class="f">Code séjour ou lien partagé (facultatif)
-      <textarea id="code" placeholder="Collez ici le lien reçu de l'autre voyageur (…app.html#share=…) pour retrouver envies, programmes et séjour."></textarea>
-    </label>
-    <p class="err" id="err" hidden></p>
-    <div class="cta">
-      <button type="button" class="btn" id="go" style="flex:1">Entrer</button>
-      <button type="button" class="btn ghost" id="reset" title="Efface envies, programmes et séjour enregistrés sur cet appareil">Repartir de zéro</button>
+    <div class="card" style="margin:12px 0">
+      <h3>Rejoindre un séjour</h3>
+      <div class="row2"><input type="text" id="ws-code" maxlength="12" placeholder="Code d'invitation" autocapitalize="characters" style="flex:1;font-family:ui-monospace,monospace;letter-spacing:.1em"><button type="button" class="btn" id="ws-join">Rejoindre</button></div>
+      <p class="small">Le code se trouve dans Réglages de l'autre voyageur. Le premier arrivé prend la place du voyageur 1, le second celle du voyageur 2.</p>
     </div>
-    <p class="small">Sans serveur ni mot de passe : l'identité est mémorisée sur cet appareil. Pour se synchroniser, on s'envoie le lien de partage depuis l'application.</p>
-  </form>
+    <p class="err" id="ws-err" hidden></p>
+    <p class="small"><a href="#" id="logout">Se déconnecter</a></p>
+  </section>
+
+  <!-- sans compte : identité locale et code de partage -->
+  <section id="s-local" hidden>
+    <section class="hero" style="margin-bottom:8px">
+      <h1 style="font-size:28px">Qui êtes-vous ?</h1>
+      <p>Choisissez votre prénom : vos envies, notes et compléments porteront votre couleur sur cet appareil.</p>
+    </section>
+    <form id="f" onsubmit="return false">
+      <div class="travelers">
+        <button type="button" class="traveler a" id="t-a"><span class="av" id="av-a">S</span><input type="text" id="n-a" maxlength="14" value="Simon" aria-label="Prénom du voyageur 1"></button>
+        <button type="button" class="traveler b" id="t-b"><span class="av" id="av-b">M</span><input type="text" id="n-b" maxlength="14" value="Marie" aria-label="Prénom du voyageur 2"></button>
+      </div>
+      <label class="f">Code séjour ou lien partagé (facultatif)
+        <textarea id="code" placeholder="Collez ici le lien reçu de l'autre voyageur (…app.html#share=…) pour retrouver envies, programmes et séjour."></textarea>
+      </label>
+      <p class="err" id="err" hidden></p>
+      <div class="cta">
+        <button type="button" class="btn" id="go" style="flex:1">Entrer</button>
+        <button type="button" class="btn ghost" id="reset" title="Efface envies, programmes et séjour enregistrés sur cet appareil">Repartir de zéro</button>
+      </div>
+      <p class="small">Sans serveur ni mot de passe : l'identité est mémorisée sur cet appareil. Pour se synchroniser, on s'envoie le lien de partage depuis l'application. <a href="#" id="to-auth">Créer un compte</a> pour un séjour partagé sur tous les appareils.</p>
+    </form>
+  </section>
   <footer><a href="./">Retour à l'accueil</a></footer>
 </div>
+<script src="js/config.js?v=202609141851"></script>
 <script>
 (function () {
-  const KEY = 'ccp:state:v1', $ = (s) => document.querySelector(s);
+  const $ = (s) => document.querySelector(s), C = window.CCP.CONFIG, LS_AUTH = 'ccp:auth:v1', KEY = 'ccp:state:v1';
+  const api = (p) => (C.apiBase ? C.apiBase.replace(/\/$/, '') + '/' + p : p);
+  let auth = null;
+  try { auth = JSON.parse(localStorage.getItem(LS_AUTH) || 'null'); } catch (e) { }
+  const show = (id) => { for (const s of ['s-auth', 's-ws', 's-local']) $('#' + s).hidden = s !== id; };
+  const err = (el, msg) => { el.hidden = !msg; el.textContent = msg || ''; };
+  const call = async (path, body, method = 'POST') => {
+    const r = await fetch(api(path), { method, headers: { 'Content-Type': 'application/json', ...(auth && auth.token ? { Authorization: 'Bearer ' + auth.token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    let j = null; try { j = await r.json(); } catch (e) { }
+    if (!r.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+    return j;
+  };
+  // ---- compte
+  let mode = 'login';
+  const setMode = (m) => { mode = m; $('#t-login').classList.toggle('on', m === 'login'); $('#t-register').classList.toggle('on', m === 'register'); $('#l-name').hidden = m !== 'register'; $('#a-go').textContent = m === 'login' ? 'Se connecter' : 'Créer mon compte'; $('#a-pw').autocomplete = m === 'login' ? 'current-password' : 'new-password'; err($('#a-err')); };
+  $('#t-login').onclick = () => setMode('login'); $('#t-register').onclick = () => setMode('register');
+  $('#f-auth').onsubmit = async () => {
+    err($('#a-err')); $('#a-go').disabled = true;
+    try {
+      const body = { email: $('#a-email').value.trim(), password: $('#a-pw').value };
+      if (mode === 'register') body.name = $('#a-name').value.trim();
+      const j = await call(mode === 'login' ? 'api/auth/login' : 'api/auth/register', body);
+      auth = { token: j.token, user: j.user, ws: null }; localStorage.setItem(LS_AUTH, JSON.stringify(auth));
+      await listWs();
+    } catch (e) { err($('#a-err'), e.message === 'Failed to fetch' ? 'Service injoignable : vérifiez la connexion.' : e.message); }
+    $('#a-go').disabled = false; return false;
+  };
+  // ---- séjours
+  async function listWs() {
+    const me = await call('api/me', null, 'GET');
+    auth.user = me.user; localStorage.setItem(LS_AUTH, JSON.stringify(auth));
+    $('#ws-hello').textContent = `${me.user.name}, choisissez le séjour à ouvrir, ou créez-en un et partagez son code.`;
+    const list = me.workspaces || [];
+    $('#ws-list').innerHTML = list.length ? list.map((w) => `<button type="button" class="wsitem" data-id="${w.id}"><span class="wsname">${esc(w.name)}</span><span class="small">${w.members.map((m) => `<i class="dot ${m.slot}"></i>${esc(m.name)}`).join(' · ')}${w.members.length < 2 ? ' · place libre' : ''}</span><span class="wscode">code ${esc(w.invite)}</span></button>`).join('')
+      : '<p class="small">Aucun séjour pour l\'instant : créez-en un ou rejoignez celui de l\'autre voyageur avec son code.</p>';
+    $('#ws-list').querySelectorAll('.wsitem').forEach((b) => b.onclick = () => open(list.find((w) => w.id === b.dataset.id)));
+    show('s-ws');
+  }
+  function open(w) {
+    if (!w) return;
+    auth.ws = { id: w.id, name: w.name, slot: w.slot, invite: w.invite, members: w.members }; localStorage.setItem(LS_AUTH, JSON.stringify(auth));
+    location.href = 'app.html';
+  }
+  $('#ws-create').onclick = async () => { err($('#ws-err')); try { const j = await call('api/workspaces', { name: $('#ws-name').value.trim() || 'Notre séjour' }); open(j.workspace); } catch (e) { err($('#ws-err'), e.message); } };
+  $('#ws-join').onclick = async () => { err($('#ws-err')); try { const j = await call('api/workspaces/join', { code: $('#ws-code').value.trim() }); open(j.workspace); } catch (e) { err($('#ws-err'), e.message); } };
+  $('#logout').onclick = async (e) => { e.preventDefault(); try { await call('api/auth/logout', {}); } catch (x) { } auth = null; localStorage.removeItem(LS_AUTH); show('s-auth'); };
+  $('#to-local').onclick = (e) => { e.preventDefault(); show('s-local'); };
+  $('#to-auth').onclick = (e) => { e.preventDefault(); show('s-auth'); };
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // ---- sans compte (identité locale, code de partage)
   let me = 'a', st = null;
   try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { }
   if (st && st.users) { $('#n-a').value = (st.users.a && st.users.a.name) || 'Simon'; $('#n-b').value = (st.users.b && st.users.b.name) || 'Marie'; me = st.me === 'b' ? 'b' : 'a'; }
   const initial = (v, d) => (v.trim() || d)[0].toUpperCase();
-  const paint = () => { $('#t-a').classList.toggle('on', me === 'a'); $('#t-b').classList.toggle('on', me === 'b');
-    $('#av-a').textContent = initial($('#n-a').value, 'S'); $('#av-b').textContent = initial($('#n-b').value, 'M'); };
+  const paint = () => { $('#t-a').classList.toggle('on', me === 'a'); $('#t-b').classList.toggle('on', me === 'b'); $('#av-a').textContent = initial($('#n-a').value, 'S'); $('#av-b').textContent = initial($('#n-b').value, 'M'); };
   $('#t-a').onclick = () => { me = 'a'; paint(); }; $('#t-b').onclick = () => { me = 'b'; paint(); };
   $('#n-a').oninput = paint; $('#n-b').oninput = paint;
   $('#n-a').onclick = (e) => { e.stopPropagation(); me = 'a'; paint(); }; $('#n-b').onclick = (e) => { e.stopPropagation(); me = 'b'; paint(); };
@@ -55,7 +143,7 @@
     base.users.a = Object.assign({ wish: [] }, base.users.a || {}, { name: clean($('#n-a').value, 'Simon') });
     base.users.b = Object.assign({ wish: [] }, base.users.b || {}, { name: clean($('#n-b').value, 'Marie') });
     base.me = me;
-    try { localStorage.setItem(KEY, JSON.stringify(base)); } catch (e) { }
+    try { localStorage.setItem(KEY, JSON.stringify(base)); localStorage.removeItem(LS_AUTH); } catch (e) { }
     const code = $('#code').value.trim();
     let hash = '';
     if (code) {
@@ -68,9 +156,12 @@
   $('#reset').onclick = () => {
     if (!confirm('Effacer envies, programmes, séjour et préférences enregistrés sur cet appareil ?')) return;
     try { for (const k of Object.keys(localStorage)) if (/^ccp:/.test(k)) localStorage.removeItem(k); } catch (e) { }
-    st = null; $('#n-a').value = 'Simon'; $('#n-b').value = 'Marie'; me = 'a'; paint(); $('#code').value = '';
+    st = null; auth = null; $('#n-a').value = 'Simon'; $('#n-b').value = 'Marie'; me = 'a'; paint(); $('#code').value = '';
     $('#err').hidden = false; $('#err').style.color = 'var(--accent)'; $('#err').textContent = 'Appareil remis à zéro. Choisissez votre prénom puis « Entrer ».';
   };
+  // ---- état initial : session mémorisée → séjours ; sinon connexion
+  if (auth && auth.token) listWs().catch(() => { auth = null; localStorage.removeItem(LS_AUTH); show('s-auth'); });
+  else show('s-auth');
 })();
 </script>
 </body>

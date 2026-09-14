@@ -168,6 +168,23 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     check($('#sheet').classList.contains('full'), 'config · panneau déployé');
     $('#c-start').focus(); await sleep(400);
     check($('#sheet').classList.contains('full'), 'M1 · le focus d\'un champ garde le panneau déployé');
+    // ---- mode compte : inscription, séjour, ouverture de l'application avec jeton, synchro par jeton
+    const callT = async (path, method, body, token) => { const r = await fetch(path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, j: await r.json() }; };
+    const reg = await callT('/api/auth/register', 'POST', { email: 'ana@example.org', name: 'Ana', password: 'motdepasse1' });
+    check(reg.status === 201 && reg.j.token, 'compte · inscription par l\'API');
+    const cw = await callT('/api/workspaces', 'POST', { name: 'Test séjour' }, reg.j.token);
+    check(cw.status === 201 && cw.j.workspace.slot === 'a', 'compte · séjour créé');
+    W().localStorage.setItem('ccp:auth:v1', JSON.stringify({ token: reg.j.token, user: reg.j.user, ws: { id: cw.j.workspace.id, name: cw.j.workspace.name, slot: 'a', invite: cw.j.workspace.invite, members: cw.j.workspace.members } }));
+    f.src = '../app.html'; await sleep(300);
+    await wait(() => D().querySelector('#list .item') && D().querySelector('#who .me .n'), 30000, 'rechargement avec compte');
+    if ($('#intro-skip') && $('#dlg-intro').open) $('#intro-skip').click();
+    check($('#who .me .n').textContent === 'Ana' && !!$('#sync-dot'), 'compte · l\'application s\'ouvre au nom du compte avec la synchro');
+    check($$('#list .heart.a.on').length === 0, 'compte · état propre au séjour (aucune envie héritée du mode précédent)');
+    const it0 = $('#list .item'), id0 = it0.dataset.id; it0.querySelector('.heart.a').click();
+    let stw = null; for (let i = 0; i < 100; i++) { stw = (await callT(`/api/w/${cw.j.workspace.id}/state`, 'GET', null, reg.j.token)).j; if (stw.users && stw.users.a.wish.includes(id0)) break; await sleep(200); }
+    check(stw && stw.users.a.wish.includes(id0), 'compte · envie synchronisée dans le séjour par jeton');
+    $('#btn-settings').click(); await wait(() => vis('#panel-config') && $('#c-invite'), 5000, 'config compte');
+    check($('#c-invite').textContent.length === 8 && !!$('#c-logout') && $('#panel-config').textContent.includes('Test séjour'), 'compte · réglages : code d\'invitation, séjour, déconnexion');
   } catch (e) { check(false, 'exception : ' + (e && e.message)); }
   log('ÉCHECS : ' + fails); document.title = 'DONE';
 })();

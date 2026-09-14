@@ -1,7 +1,7 @@
 /* Application : carte, liste classée, fiche détail, filtres, deux voyageurs, partage. */
 (function () {
   const C = CCP.CONFIG, F = CCP.forecast, I = CCP.icon;
-  const LS_STATE = 'ccp:state:v' + C.version;
+  let LS_STATE = 'ccp:state:v' + C.version;   // suffixé par le séjour quand un compte est connecté
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const DEFAULT_NAMES = ['Simon', 'Marie'];
@@ -74,9 +74,9 @@
   /* Mètres par pixel CSS au zoom z (Web Mercator). */
   const mpp = (lat, z) => 156543.03 * Math.cos(lat * Math.PI / 180) / 2 ** z;
   /* Zoom qui fait tenir la plage (diagonale size_m) dans environ 60 % de la largeur affichée, borné. */
-  function aerialZoom(s, w, zmin, zmax) {
+  function aerialZoom(s, w, zmin, zmax, fill = 0.6) {
     const size = Math.max(60, s.properties.size_m || 200), lat = latlng(s)[0];
-    const z = Math.log2(156543.03 * Math.cos(lat * Math.PI / 180) * 0.6 * w / size);
+    const z = Math.log2(156543.03 * Math.cos(lat * Math.PI / 180) * fill * w / size);
     return Math.max(zmin, Math.min(zmax, Math.round(z)));
   }
   /* Sur écran haute densité, les tuiles sont demandées un niveau plus loin et affichées à moitié : image nette.
@@ -155,7 +155,24 @@
      clé par clé (voir server/costa_sync.py). En cas de conflit de version (409), la différence locale
      est rejouée sur l'état reçu puis renvoyée : rien n'est perdu. Hors ligne, la différence attend
      (persistée) et repart au retour du réseau ou au lancement suivant. */
-  const LS_SYNC = 'ccp:sync:v' + C.version;
+  let LS_SYNC = 'ccp:sync:v' + C.version;
+  /* ------------------------------------------------------------------ compte et séjour partagé (jeton porteur)
+     auth = { token, user:{id,name,email}, ws:{id,name,slot,invite,members} } dans localStorage ; la page de
+     connexion l'écrit. Sans compte, le mode hérité (Caddy, /whoami) ou le mode local s'appliquent. */
+  const LS_AUTH = 'ccp:auth:v1';
+  let auth = null;
+  const api = (p) => (C.apiBase ? C.apiBase.replace(/\/$/, '') + '/' + p : p);
+  const authHeaders = () => (auth && auth.token ? { Authorization: 'Bearer ' + auth.token } : {});
+  function restoreAuth() {
+    try { const j = JSON.parse(localStorage.getItem(LS_AUTH) || 'null'); if (j && typeof j.token === 'string' && j.user && j.ws && j.ws.id) auth = j; } catch (e) { }
+    const suffix = auth ? ':' + auth.ws.id : '';
+    LS_STATE = 'ccp:state:v' + C.version + suffix; LS_SYNC = 'ccp:sync:v' + C.version + suffix;
+  }
+  const saveAuth = () => { try { if (auth) localStorage.setItem(LS_AUTH, JSON.stringify(auth)); else localStorage.removeItem(LS_AUTH); } catch (e) { } };
+  async function logout() {
+    try { if (auth) await fetch(api('api/auth/logout'), { method: 'POST', headers: authHeaders() }); } catch (e) { }
+    auth = null; saveAuth(); location.href = 'login.html';
+  }
   const sync = { on: false, version: null, timer: null, pushing: false, dirty: false, poll: null, base: null, err: false, at: 0, log: [], pending: 0 };
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const stable = (o) => Array.isArray(o) ? o.map(stable) : (o && typeof o === 'object') ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, stable(o[k])])) : o;
@@ -243,7 +260,8 @@
     if (body.trip) for (const [f, v] of Object.entries(body.trip)) state.trip[f] = clone(v);
     if (body.prefs) Object.assign(state.prefs, clone(body.prefs));
   }
-  const fetchSync = (opts = {}) => fetch('api/state', { cache: 'no-store', ...opts, ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(15000) } : {}) });
+  const syncUrl = () => (auth ? api('api/w/' + auth.ws.id + '/state') : api('api/state'));
+  const fetchSync = (opts = {}) => fetch(syncUrl(), { cache: 'no-store', ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) }, ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(15000) } : {}) });
   const cleanUser = (u, fallback) => ({ name: String((u && u.name) || fallback.name).slice(0, 14), wish: ((u && u.wish) || []).filter((x) => typeof x === 'string'), suggest: ((u && u.suggest) || []).filter((x) => typeof x === 'string') });
   const syncApply = (st) => {
     const me = state.me, other = me === 'a' ? 'b' : 'a';
@@ -257,6 +275,7 @@
     if (st.trip && Array.isArray(st.trip.days)) state.trip = { auto: false, ...st.trip };
     if (st.prefs && typeof st.prefs === 'object') Object.assign(state.prefs, st.prefs);
     if (Array.isArray(st.log)) sync.log = st.log;
+    if (st.workspace) { sync.ws = st.workspace; if (auth) { auth.ws = { ...auth.ws, ...st.workspace, slot: st.me || auth.ws.slot }; saveAuth(); } }
     sync.version = st.version; sync.at = Date.now();
     sync.base = clone({ users: { a: state.users.a, b: state.users.b }, plans: state.plans, trip: state.trip, prefs: state.prefs });
     saveSyncMeta();
@@ -360,7 +379,25 @@
      renvoie le voyageur correspondant (me) dans l'état. Le sondage reprend aussi la synchro si le serveur
      était injoignable au lancement. */
   async function applyServerIdentity() {
-    try {
+    if (auth) {   // compte : la session est vérifiée, puis l'état du séjour chargé
+      try {
+        const r = await fetch(api('api/me'), { cache: 'no-store', headers: authHeaders() });
+        if (r.status === 401) { auth = null; saveAuth(); toast('Session expirée : reconnectez-vous'); setTimeout(() => { location.href = 'login.html'; }, 1200); return; }
+        if (r.ok) {
+          const me = await r.json(); auth.user = me.user;
+          const w = (me.workspaces || []).find((x) => x.id === auth.ws.id);
+          if (!w) { auth = null; saveAuth(); toast('Ce séjour n\'est plus accessible : choisissez-en un autre'); setTimeout(() => { location.href = 'login.html'; }, 1500); return; }
+          auth.ws = { ...auth.ws, ...w }; saveAuth();
+        }
+      } catch (e) { /* hors ligne : on continue avec la session mémorisée */ }
+      state.serverUser = auth.user.name; state.me = auth.ws.slot === 'b' ? 'b' : 'a';
+      restoreSyncMeta();
+      await syncLoad();
+      sync.poll = setInterval(syncPoll, 20000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPoll(); });
+      return;
+    }
+    try {   // mode hérité : Caddy transmet l'utilisateur authentifié
       const r = await fetch('whoami', { cache: 'no-store' });
       if (!r.ok) return;
       const id = (await r.text()).trim().toLowerCase();
@@ -863,11 +900,11 @@
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, w = wishOf(p.id), ph = photoOf(p.id), d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null;
       const sug = !w.a && !w.b && suggestedTo(state.me, p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : w.b ? 'b' : (state.me === 'a' ? 'b' : 'a');
       const li = document.createElement('li'); li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
-      li.style.gridTemplateColumns = '44px 56px minmax(0, 1fr) 36px';
+      li.style.gridTemplateColumns = '44px 64px minmax(0, 1fr) 36px';
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="num c-${r ? r.cls : 'none'}">${i + 1}<small style="background:var(--${who})">${who === 'both' ? '2' : esc(state.users[who].name[0].toUpperCase())}</small></div>
-        ${aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
+        ${aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 64, 13, 17, 0.85), 64, 64, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}</div>
           <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
@@ -1273,7 +1310,14 @@
         <div class="two"><label class="f"><span style="color:var(--a)">Voyageur 1</span><input type="text" id="c-a" maxlength="14" value="${esc(state.users.a.name)}"></label>
         <label class="f"><span style="color:var(--b)">Voyageur 2</span><input type="text" id="c-b" maxlength="14" value="${esc(state.users.b.name)}"></label></div>
         <label class="f">Sur cet appareil, je suis<div class="seg" id="c-me"></div></label>
-        <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('users', { size: 14 })} Changer de voyageur / code séjour</a></div></div>
+        ${auth ? `<div class="acct"><span>${I('users', { size: 14 })} Compte <b>${esc(auth.user.name)}</b> <small>${esc(auth.user.email || '')}</small></span>
+          <span>${I('calendar', { size: 14 })} Séjour <b>${esc((sync.ws || auth.ws).name || '')}</b> · ${((sync.ws || auth.ws).members || []).map((m) => `<i class="dot ${m.slot}" style="display:inline-block;width:10px;height:10px;vertical-align:-1px"></i> ${esc(m.name)}`).join(' · ') || 'vous seul pour l\'instant'}</span>
+          <span>${I('copy', { size: 14 })} Code d'invitation <b id="c-invite">${esc((sync.ws || auth.ws).invite || '…')}</b> <button type="button" class="linkbtn" id="c-invite-copy">Copier</button></span>
+          <span class="hint">L'autre voyageur crée un compte sur la page de connexion et saisit ce code : il rejoint ce séjour avec sa couleur.</span></div>
+          <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('calendar', { size: 14 })} Changer de séjour</a><button type="button" class="btn ghost" id="c-logout">${I('x', { size: 14 })} Se déconnecter</button></div>`
+        : state.serverUser && sync.ws && sync.ws.invite ? `<div class="acct"><span>${I('copy', { size: 14 })} Code d'invitation de ce séjour <b id="c-invite">${esc(sync.ws.invite)}</b> <button type="button" class="linkbtn" id="c-invite-copy">Copier</button></span><span class="hint">Avec un compte (page de connexion), ce code ouvre le même séjour depuis n'importe quel appareil, y compris la version publique.</span></div>
+          <div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('users', { size: 14 })} Créer un compte / changer de séjour</a></div>`
+        : `<div class="btns"><a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">${I('users', { size: 14 })} Se connecter / changer de voyageur</a></div>`}</div>
       <div class="card"><div class="h"><h3>${I('home', { size: 13 })} Résidence / hébergement</h3></div>
         ${t.base ? `<div class="base-name"><span class="home">${I('home', { size: 16 })}</span><span>${esc(t.base.name)}</span></div><span class="coords">${t.base.lat.toFixed(5)}, ${t.base.lon.toFixed(5)} · <a href="https://www.google.com/maps/search/?api=1&query=${t.base.lat},${t.base.lon}" target="_blank" rel="noopener">voir</a></span>` : '<span class="hint">Aucune résidence définie. Les journées partent et reviennent de ce point.</span>'}
         <div class="base-search"><input type="search" id="c-base-q" placeholder="Rechercher un village, un lieu, une plage…" autocomplete="off"></div>
@@ -1298,7 +1342,9 @@
       <div class="card"><div class="h"><h3>${I('info', { size: 13 })} À propos</h3></div>
         <span class="hint">${esc(state.region.name)} · ${state.spots.length} plages et criques · ${state.pois.length ? state.pois.length + ' lieux' : 'lieux chargés à la demande'} · version ${esc(assetVer || '—')}</span>
         <span class="hint">Données © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · prévisions <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) · photos Wikimedia Commons, Flickr, Openverse (licences indiquées) · imagerie Esri · <a href="https://github.com/imagodata/costa-cantabrica-planner" target="_blank" rel="noopener">code source</a>.</span></div>`;
-    if (state.serverUser) { const hint = document.createElement('span'); hint.className = 'hint'; hint.textContent = `Connecté sur le serveur en tant que « ${state.serverUser} » : le voyageur est choisi automatiquement.`; $('#c-me').closest('.card').appendChild(hint); }
+    if (state.serverUser) { const hint = document.createElement('span'); hint.className = 'hint'; hint.textContent = `Connecté en tant que « ${state.serverUser} » : votre place (${state.me === 'a' ? 'voyageur 1' : 'voyageur 2'}) est fixée par le séjour.`; $('#c-me').closest('.card').appendChild(hint); }
+    $('#c-invite-copy') && ($('#c-invite-copy').onclick = async () => { const code = $('#c-invite').textContent; try { await navigator.clipboard.writeText(code); toast('Code d\'invitation copié'); } catch (e) { prompt('Code d\'invitation :', code); } });
+    $('#c-logout') && ($('#c-logout').onclick = logout);
     const commit = () => { save(); renderTabs(); renderWho(); };
     $('#c-a').onchange = (e) => { state.users.a.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[0]; commit(); renderConfig(); };
     $('#c-b').onchange = (e) => { state.users.b.name = e.target.value.trim().slice(0, 14) || DEFAULT_NAMES[1]; commit(); renderConfig(); };
@@ -1361,7 +1407,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="mu">${I('wind', { size: 14 })}${n0(d.wind)} ${compass(d.wdir)}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="score c-${r ? r.cls : 'none'}"><b>${r && r.score != null ? r.score : '—'}</b><small>${r ? esc(r.label) : ''}</small></div>
-        ${aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
+        ${aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 64, 13, 17, 0.85), 64, 64, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}</div>
           <div class="meta">${esc(meta)}</div>
@@ -1796,6 +1842,7 @@
       try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); localStorage.removeItem('ccp:intro'); } catch (e) { }
       history.replaceState(null, '', location.pathname + location.search + location.hash.replace(/[#&]reset\b/, '').replace(/^&/, '#'));
     }
+    restoreAuth();
     restore();
     const ver = (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
     assetVer = ver;

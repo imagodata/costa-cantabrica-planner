@@ -7,6 +7,8 @@ CCP.CONFIG = {
   forecastDays: 7,
   cacheTtlMin: 180,
   timezone: 'Europe/Madrid',
+  // Service (comptes, séjours partagés) : même origine par défaut ; depuis GitHub Pages, le VPS.
+  apiBase: /github\.io$/.test(location.hostname) ? 'https://costa.188-245-235-42.sslip.io' : '',
   weatherApi: 'https://api.open-meteo.com/v1/forecast',
   marineApi: 'https://marine-api.open-meteo.com/v1/marine',
   // Regroupement des points pour limiter les appels API (degrés)

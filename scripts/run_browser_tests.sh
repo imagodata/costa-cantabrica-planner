@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 H=$(ls -d ~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell 2>/dev/null | tail -1)
 [ -x "$H" ] || { echo "Chromium sans tête introuvable (~/.cache/ms-playwright) : banc navigateur ignoré"; exit 0; }
 D=$(mktemp -d)
-COSTA_DATA=$D/state.json COSTA_PORT=8097 COSTA_USERS=simon:a,marie:b python3 server/costa_sync.py >$D/sync.log 2>&1 & P1=$!
+COSTA_DB=$D/costa.db COSTA_DATA=$D/state.json COSTA_PORT=8097 COSTA_USERS=simon:a,marie:b python3 server/costa_sync.py >$D/sync.log 2>&1 & P1=$!
 python3 scripts/dev_server.py 8020 simon >/dev/null 2>&1 & P2=$!
 trap 'kill $P1 $P2 2>/dev/null' EXIT
 sleep 0.8

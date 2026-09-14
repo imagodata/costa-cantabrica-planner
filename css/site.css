@@ -6,6 +6,7 @@
 }
 @media (prefers-color-scheme: dark) { :root { --bg: #0f1419; --panel: #171d25; --text: #e6e9ef; --muted: #98a2b3; --line: #2a323d; --accent: #4cc9f0; --a: #8fb0c9; --b: #f07ab6; --both: #b48ef0; } }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); }
 .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
@@ -57,3 +58,15 @@ label.f input, label.f textarea { height: 44px; border: 1px solid var(--line); b
 label.f textarea { height: auto; min-height: 64px; padding: 10px 12px; resize: vertical; }
 .small { font-size: 12.5px; color: var(--muted); }
 .err { color: #c73a3a; font-size: 13px; }
+.tabs2 { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); margin: 12px 0 4px; }
+.tabs2 button { flex: 1; height: 40px; border-radius: 9px; border: 0; background: none; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.tabs2 button.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.wslist { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.wsitem { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; font: inherit; color: inherit; }
+.wsitem:hover, .wsitem:focus-visible { border-color: var(--accent); }
+.wsname { font-weight: 700; font-size: 16px; }
+.wscode { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--muted); letter-spacing: .1em; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 3px; } .dot.a { background: var(--a); } .dot.b { background: var(--b); }
+.row2 { display: flex; gap: 8px; }
+.row2 input { height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--bg); color: var(--text); font: inherit; min-width: 0; }
+.row2 .btn { min-height: 44px; }
