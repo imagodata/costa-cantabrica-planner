@@ -9,6 +9,8 @@ jobs:
         with: { python-version: '3.12' }
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
+      - name: Fichier client assemblé à jour
+        run: python3 scripts/build_app.py --check
       - name: Syntaxe
         run: for f in js/*.js sw.js scripts/*.js; do node --check "$f"; done && python3 -m py_compile server/costa_sync.py scripts/*.py
       - name: Lint

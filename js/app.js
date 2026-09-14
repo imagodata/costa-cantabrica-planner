@@ -1,5 +1,7 @@
-/* Application : carte, liste classée, fiche détail, filtres, deux voyageurs, partage. */
+/* Application : carte, liste classée, fiche détail, filtres, deux voyageurs, partage.
+   FICHIER GÉNÉRÉ par scripts/build_app.py à partir de js/src/*.js : modifier les sources, puis `make build`. */
 (function () {
+  /* ==================== 00-state.js ==================== */
   const C = CCP.CONFIG, F = CCP.forecast, I = CCP.icon;
   let LS_STATE = 'ccp:state:v' + C.version;   // suffixé par le séjour quand un compte est connecté
   const $ = (s, el = document) => el.querySelector(s);
@@ -38,7 +40,7 @@
   /* Disposition : panneau latéral sur grand écran, en paysage bas et sur tablette (même requête que le CSS). */
   const SIDE_MQ = matchMedia('(min-width: 900px), (orientation: landscape) and (max-height: 500px) and (min-width: 640px)');
   const isMobile = () => !SIDE_MQ.matches;
-
+  /* ==================== 10-utils.js ==================== */
   /* ------------------------------------------------------------------ utilitaires */
   const dayNames = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
   function fmtDay(iso, i) {
@@ -120,7 +122,7 @@
       if (typeof j.mapFilter === 'boolean') state.mapFilter = j.mapFilter;
     } catch (e) { }
   }
-
+  /* ==================== 15-share.js ==================== */
   /* ------------------------------------------------------------------ partage (lien) */
   const b64e = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const b64d = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
@@ -149,6 +151,7 @@
     const s = spotBySlug(m[1]); if (!s) return false;
     state.selected = s.properties.id; return true;
   }
+  /* ==================== 20-sync.js ==================== */
   /* ------------------------------------------------------------------ synchronisation serveur (version connectée)
      Le client garde le dernier état serveur connu (base) et n'envoie que la différence : sa liste
      d'envies, les programmes touchés, les champs du séjour modifiés, les préférences. Le serveur fusionne
@@ -471,7 +474,7 @@
     try { if (navigator.share) { await navigator.share({ title, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
     try { await navigator.clipboard.writeText(url); toast('Lien copié dans le presse-papiers'); } catch (e) { prompt('Copiez ce lien :', url); }
   }
-
+  /* ==================== 30-data.js ==================== */
   /* ------------------------------------------------------------------ données */
   function scoreOf(s, day = state.day) {
     const k = s.properties.id + ':' + day + ':' + state.profile;
@@ -563,7 +566,7 @@
   const filtersCount = () => { const f = state.filters; return [f.province !== 'all', f.type !== 'all', f.surface !== 'all', f.lifeguard, f.dog, f.wish !== 'all', f.minScore > 0].filter(Boolean).length; };
   const filtersActive = () => filtersCount() > 0;
   function renderFiltersBtn() { const n = filtersCount(); $('#btn-filters').classList.toggle('on', n > 0); $('#btn-filters').innerHTML = I('sliders', { size: 20 }) + (n ? `<b class="cnt">${n}</b>` : ''); }
-
+  /* ==================== 40-map2d.js ==================== */
   /* ------------------------------------------------------------------ carte */
   function initMap() {
     map = L.map('map', { zoomControl: true, attributionControl: true, tapTolerance: 20, zoomSnap: 0.5, wheelPxPerZoomLevel: 90, preferCanvas: true }).setView(C.center, C.zoom);
@@ -749,6 +752,7 @@
     if (isMobile()) setSheet('peek');
     toast('Fond satellite · le contrôle des couches (en bas à droite) ramène au plan');
   }
+  /* ==================== 45-map3d.js ==================== */
   /* ------------------------------------------------------------------ carte 3D (MapLibre GL, chargé à la demande)
      Mode principal de la carte, activé par défaut et mémorisé (ccp:3d) : terrain Terrarium (Mapzen / AWS Open Data),
      orthophoto drapée (PNOA © IGN, ou Esri si c'est le fond 2D choisi), ombrage, étiquettes, plages colorées par
@@ -1058,7 +1062,7 @@
     progMove(() => map.setView(map.unproject(p, z), z, { animate: true }));
     if (is3d()) progMove(() => gl.flyTo({ center: [latlng(s)[1], latlng(s)[0]], zoom: Math.max(gl.getZoom(), 13.5), offset: glOffset(), duration: 900 }));
   }
-
+  /* ==================== 50-chrome.js ==================== */
   /* ------------------------------------------------------------------ en-tête, jours, profil */
   function renderChrome() {
     $('#btn-settings').classList.toggle('on', state.view === 'config');
@@ -1109,7 +1113,7 @@
     $('#profile-seg').innerHTML = Object.entries(C.profiles).map(([k, p]) => `<button type="button" role="tab" data-k="${k}" class="${k === state.profile ? 'on' : ''}" title="${esc(p.label)}">${k === state.profile ? I(p.icon, { size: 15 }) : ''}${esc(p.short)}</button>`).join('');
     $('#profile-seg').querySelectorAll('button').forEach((b) => b.onclick = () => { state.profile = b.dataset.k; save(); renderProfiles(); renderDays(); renderList(); paintMarkers(); if (state.selected) renderDetailDay(detailDay); });
   }
-
+  /* ==================== 55-wishes.js ==================== */
   /* ------------------------------------------------------------------ onglets & vue Envies */
   function renderTabs() {
     $('#btn-settings').classList.toggle('on', state.view === 'config');
@@ -1222,7 +1226,7 @@
       L.marker(latlng(s), { icon, title: p.name, zIndexOffset: 1000 }).on('click', () => select(p.id, { pan: false })).addTo(wishLayer);
     });
   }
-
+  /* ==================== 60-trip.js ==================== */
   /* ------------------------------------------------------------------ séjour (jours, étapes, hébergement) */
   const todayIso = () => (state.bulk ? state.bulk.dates[0] : F.todayLocal());
   const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
@@ -1579,7 +1583,7 @@
       });
     });
   }
-
+  /* ==================== 65-config.js ==================== */
   /* ------------------------------------------------------------------ page de configuration */
   function renderConfig() {
     ensureTrip();
@@ -1678,7 +1682,7 @@
     $('#c-intro').onclick = () => { try { localStorage.removeItem('ccp:intro'); } catch (e) { } showIntro(); };
     $('#c-reset').onclick = async () => { if (await confirmDlg('Effacer envies, programmes, séjour et préférences sur cet appareil ?', { ok: 'Tout effacer', danger: true })) { try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); } catch (e) { } location.hash = ''; location.reload(); } };
   }
-
+  /* ==================== 70-list.js ==================== */
   /* ------------------------------------------------------------------ liste */
   const LIST_CHUNK = 60;
   let listShown = LIST_CHUNK, listObserver = null, listKey = '';
@@ -1734,7 +1738,7 @@
       listObserver.disconnect(); listObserver.observe(li);
     } else if (listObserver) listObserver.disconnect();
   }
-
+  /* ==================== 75-detail.js ==================== */
   /* ------------------------------------------------------------------ détail */
   const spotById = (id) => state.spots.find((s) => s.properties.id === id);
   async function select(id, { pan = true, full = false } = {}) {
@@ -1977,7 +1981,7 @@
     return `<svg class="spark" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>
       ${isToday ? `<line x1="${x(hNow)}" x2="${x(hNow)}" y1="${top}" y2="${Hh - 14}" stroke="currentColor" opacity=".3" stroke-dasharray="3 3"/>` : ''}${labels}</svg>`;
   }
-
+  /* ==================== 80-sheet.js ==================== */
   /* ------------------------------------------------------------------ panneau glissant */
   const sheetVisible = () => Math.max(0, window.innerHeight - sheet.getBoundingClientRect().top);   // hauteur visible (le panneau est translaté, pas redimensionné)
   let sheetT = null;
@@ -2036,7 +2040,7 @@
       setTimeout(() => { try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) { } }, 320);
     });
   }
-
+  /* ==================== 85-dialogs.js ==================== */
   /* ------------------------------------------------------------------ filtres & réglages */
   function seg(el, options, value, onPick, tone) {
     el.innerHTML = options.map(([v, lbl]) => `<button type="button" data-v="${v}" aria-pressed="${v === value}" class="${v === value ? 'on' : ''} ${tone && tone[v] ? 'tone-' + tone[v] : ''}">${lbl}</button>`).join('');
@@ -2105,7 +2109,7 @@
       state.sort = 'dist'; save(); renderDays(); renderList(); toast('Liste triée par distance');
     }, () => toast('Position introuvable'), { enableHighAccuracy: true, timeout: 10000 });
   }
-
+  /* ==================== 90-intro.js ==================== */
   /* ------------------------------------------------------------------ premier lancement */
   function showIntro() {
     let seen = false; try { seen = localStorage.getItem('ccp:intro') === '1'; } catch (e) { }
@@ -2129,7 +2133,7 @@
     dlg.addEventListener('close', () => { try { localStorage.setItem('ccp:intro', '1'); } catch (e) { } }, { once: true });
     render(); dlg.showModal();
   }
-
+  /* ==================== 95-init.js ==================== */
   /* ------------------------------------------------------------------ chargement */
   function showBanner(text, retry) {
     const b = $('#banner'); $('#banner-text').textContent = text; b.hidden = false;

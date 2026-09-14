@@ -150,7 +150,7 @@ python3 -m http.server 8000
 
 (Un simple `file://` ne suffit pas : le GeoJSON est chargé par `fetch`.)
 
-Après toute modification de `css/`, `js/` ou `data/`, lancer `make bump` avant de pousser :
+Après toute modification de `js/src/`, lancer `make build` (fait aussi par `make bump`, `make test` et `make deploy`) ; après toute modification de `css/`, `js/` ou `data/`, lancer `make bump` avant de pousser :
 les ressources sont versionnées (`?v=…`) dans `index.html` pour invalider le cache du navigateur.
 
 ## Version protégée sur le VPS
@@ -307,7 +307,8 @@ data/slugs.json               slugs attribués (stables entre exécutions)
 css/style.css                 mobile-first, panneau glissant, mode sombre
 js/config.js                  sources, profils, codes météo
 js/forecast.js                appels Open-Meteo, cache, score, marées
-js/app.js                     carte Leaflet, liste, fiche, filtres, voyageurs, partage
+js/src/*.js                   sources du client, un fichier par domaine (état, synchro, cartes 2D et 3D, envies, séjour, réglages, liste, fiche, panneau, dialogues, démarrage)
+js/app.js                     assemblage GÉNÉRÉ des sources (`make build`, vérifié par la CI) : ne pas éditer
 data/spots.geojson            spots (généré)
 data/raw/                     caches OSM + GeoJSON bruts (entrées du pipeline)
 gispulse/spots_pipeline.json  pipeline gispulse v2 (nearest_neighbor → calculate → filter)
