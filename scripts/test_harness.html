@@ -2,7 +2,7 @@
 <!-- Banc de test navigateur : pilote l'application dans un cadre (390 px, mobile) contre scripts/dev_server.py + server/costa_sync.py.
      Voir `make test`. Résultats dans <pre id="out"> ; le titre passe à DONE à la fin. -->
 <style>body{margin:0;display:flex;gap:8px}iframe{width:390px;height:844px;border:1px solid #999}pre{font:12px monospace;white-space:pre-wrap}</style>
-<script>try { localStorage.setItem('ccp:3d', '0'); } catch (e) { }</script><!-- le banc pilote la carte 2D ; la 3D est testée par bascule explicite -->
+<script>try { localStorage.setItem('ccp:3d', '0'); localStorage.setItem('ccp:3dv', '2'); } catch (e) { }</script><!-- le banc pilote la carte 2D ; la 3D est testée par bascule explicite -->
 <iframe id="f" src="../app.html"></iframe><pre id="out"></pre>
 <script>
 const f = document.getElementById('f'), out = document.getElementById('out');

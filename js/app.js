@@ -762,8 +762,8 @@
   const LABELS_IMG = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
   let gl = null, glReady = null, glOn = false, glUnsupported = false, glMarkers = [], glLoaded = false;
   let glMode = 'auto';   // 'auto' : 2D sur la côte entière, 3D dès qu'on zoome (≥ 12,5) ; '1' / '0' : fixé par le bouton
-  const GL_IN = 12.5, GL_OUT = 11;   // seuils de zoom Leaflet (entrée en 3D, retour en 2D)
-  const saveGlMode = (m) => { glMode = m; try { localStorage.setItem('ccp:3d', m); } catch (e) { } };
+  const GL_IN = 12, GL_OUT = 11;   // seuils de zoom Leaflet (entrée en 3D, retour en 2D)
+  const saveGlMode = (m) => { glMode = m; try { localStorage.setItem('ccp:3d', m); localStorage.setItem('ccp:3dv', '2'); } catch (e) { } };
   const is3d = () => glOn && !!gl && glLoaded;
   CCP.is3d = () => glOn && !!gl;
   function loadMaplibre() {
@@ -958,13 +958,14 @@
     const nm = $('#it-name'); if (nm && s && s.st) nm.onclick = () => { if (s.st.t === 's') select(s.st.id, { pan: false, full: true }); else if (s.st.t === 'p' && s.info.poi) showPoi(s.info.poi, { pan: false }); };
   }
   function init3d() {
-    try { const m = localStorage.getItem('ccp:3d'); if (m === '1' || m === '0') glMode = m; } catch (e) { }
+    try { const m = localStorage.getItem('ccp:3d'); if (localStorage.getItem('ccp:3dv') === '2' && (m === '1' || m === '0')) glMode = m; else glMode = 'auto'; } catch (e) { }   // un mode mémorisé avant la bascule automatique repasse en auto
     renderBtn3d();
     $('#btn-3d').onclick = () => { if (itin.on) itinStop(); saveGlMode(glOn ? '0' : '1'); set3d(!glOn); };
     document.addEventListener('keydown', (e) => { if (!itin.on || document.querySelector('dialog[open]') || isTyping()) return; if (e.key === 'ArrowRight') { itin.playing = false; itinGo(itin.step + 1); } else if (e.key === 'ArrowLeft') { itin.playing = false; itinGo(itin.step - 1); } else if (e.key === 'Escape') itinStop(); });
     if (glMode === '1') set3d(true, { silent: true });
     // bascule automatique : zoomer sur l'orthophoto (geste) fait passer en 3D
-    map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported || performance.now() - progAt < 700) return; if (map.getZoom() >= GL_IN) set3d(true, { silent: true }); });
+    map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported) return; if (map.getZoom() >= GL_IN) set3d(true, { silent: true }); });   // geste, fiche ouverte, zoom sur entité : au-delà du seuil, 3D
+    if (glMode === 'auto' && map.getZoom() >= GL_IN) set3d(true, { silent: true });
   }
   /* Zoom sur une entité : plage (cadrée sur sa taille), lieu, hébergement ou journée (parcours), en 2D comme en 3D.
      Sur téléphone, le panneau se replie pour laisser voir la carte. */
