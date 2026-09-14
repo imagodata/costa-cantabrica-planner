@@ -97,9 +97,9 @@ if a >= 0 and b > a and "basic_auth @site" not in s[a:b] and "\tbasic_auth {" in
 PY'
 
 # Service de synchronisation (identité transmise par Caddy) : installation / mise à jour
-rsync -az server/costa_sync.py server/costa-sync.service "$VPS:/tmp/costa-sync/"
+rsync -az server/costa_sync.py server/costa-sync.service scripts/reset_password.py "$VPS:/tmp/costa-sync/"
 ssh "$VPS" "id -u costa >/dev/null 2>&1 || useradd --system --home /opt/costa-data --shell /usr/sbin/nologin costa; \
-  mkdir -p /opt/costa-sync /opt/costa-data && install -m 644 /tmp/costa-sync/costa_sync.py /opt/costa-sync/costa_sync.py \
+  mkdir -p /opt/costa-sync /opt/costa-data && install -m 644 /tmp/costa-sync/costa_sync.py /opt/costa-sync/costa_sync.py && install -m 755 /tmp/costa-sync/reset_password.py /opt/costa-sync/reset_password.py \
   && chown -R costa:costa /opt/costa-data && install -m 644 /tmp/costa-sync/costa-sync.service /etc/systemd/system/costa-sync.service \
   && systemctl daemon-reload && systemctl enable --now costa-sync >/dev/null && systemctl restart costa-sync && sleep 1 && systemctl is-active costa-sync"
 

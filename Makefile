@@ -3,7 +3,7 @@ GISPULSE ?= gispulse
 PORT ?= 8000
 REGION ?= config/region.json
 
-.PHONY: spots pois refresh photos galleries openverse pages serve preview publish-map bump deploy
+.PHONY: spots pois refresh photos galleries openverse pages serve preview publish-map bump deploy test lint
 
 spots:            ## régénère data/spots.geojson (caches OSM, pipeline gispulse)
 	GISPULSE=$(GISPULSE) python3 scripts/build_spots.py --region $(REGION)
@@ -42,6 +42,11 @@ preview:          ## visionneuse gispulse embarquée sur les spots
 publish-map:      ## crée la carte sauvegardée sur un portail gispulse (GISPULSE_API=http://localhost:8001)
 	python3 scripts/publish_gispulse_map.py
 
-test:             ## tests : service de synchro (python) puis banc navigateur (Chromium sans tête de Playwright, si présent)
+test:             ## tests : unitaires (fusion, score), service de synchro, puis banc navigateur (Chromium sans tête de Playwright, si présent)
+	python3 scripts/test_merge.py
+	node scripts/test_score.js
 	python3 scripts/test_sync.py
 	scripts/run_browser_tests.sh
+
+lint:             ## analyse statique du JavaScript (npm install une fois)
+	npx eslint js/*.js sw.js scripts/*.js

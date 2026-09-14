@@ -30,8 +30,9 @@
   };
   const scoreCache = new Map();
   let baseLayers = null;
-  let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0, detailReq = 0, listScroll = 0;
-  let poiLayer = null, poiMarkers = new Map(), wishLayer = null, tripLayer = null, planLayer = null;
+  let map, userMarker = null, sheet, detailData = null, detailDay = 0, detailReq = 0, listScroll = 0;
+  const markers = new Map(), poiMarkers = new Map();
+  let poiLayer = null, wishLayer = null, tripLayer = null, planLayer = null;
   const DAY_COLORS = ['#0b6e99', '#b45309', '#7c3aed', '#0a9396', '#d64545', '#4361ee', '#f0a202'];
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   /* Disposition : panneau latéral sur grand écran, en paysage bas et sur tablette (même requête que le CSS). */
@@ -51,7 +52,6 @@
   const wIcon = (code, size = 16, cls = '') => I(wc(code)[0], { size, cls: cls || (code <= 2 ? 'sun' : 'mu') });
   const n1 = (v, u = '') => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('fr-FR') + u;
   const n0 = (v, u = '') => v == null ? '—' : Math.round(v) + u;
-  const dur = (min) => min == null ? '—' : `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}`;
   function distKm(a, b) {
     const R = 6371, p = Math.PI / 180, x = (b[0] - a[0]) * p, y = (b[1] - a[1]) * p;
     const h = Math.sin(x / 2) ** 2 + Math.cos(a[0] * p) * Math.cos(b[0] * p) * Math.sin(y / 2) ** 2;
@@ -60,8 +60,6 @@
   const latlng = (s) => [s.geometry.coordinates[1], s.geometry.coordinates[0]];
   const photoOf = (id) => state.photos[id] || null;
   const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : null);
-  const thumbAt = (ph, w) => ph.thumb.includes('/thumb/') ? ph.thumb.replace(/\/\d+px-/, `/${w}px-`)
-    : /staticflickr\.com/.test(ph.thumb) ? ph.thumb.replace(/_[bcz]\.jpg$/i, w <= 320 ? '_n.jpg' : '_c.jpg') : ph.thumb;
   const surfaceLbl = (p) => p.surface ? (C.surfaces[p.surface] || p.surface) : null;
   /* Vue aérienne : mosaïque de tuiles satellite centrée sur le point (aucune bibliothèque). */
   const AERIAL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
@@ -484,7 +482,6 @@
   const wishOf = (id) => ({ a: state.users.a.wish.includes(id), b: state.users.b.wish.includes(id) });
   const wishedIds = () => [...new Set([...state.users.a.wish, ...state.users.b.wish])].filter(spotById);
   function planOf(id) { return state.plans[id] || (state.plans[id] = { notes: { a: '', b: '' }, items: [] }); }
-  const hasPlan = (id) => { const pn = state.plans[id]; return !!(pn && (pn.items.length || pn.notes.a || pn.notes.b)); };
   function planAdd(spotId, item, { wish = true } = {}) {
     const pn = planOf(spotId);
     if (pn.items.some((x) => (item.poi && x.poi === item.poi) || (item.text && x.text === item.text))) return false;
@@ -579,7 +576,7 @@
     const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, pane: 'overlayPane', zIndex: 3 });
     const hill = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, opacity: .55, className: 'hill-tiles', pane: 'overlayPane', zIndex: 2 });
     baseLayers = { osm, sat, pnoa, topo, labels, hill };
-    let base = 'sat', ov = { labels: true, hill: true };
+    let base = 'sat'; const ov = { labels: true, hill: true };
     try { base = localStorage.getItem('ccp:base') || 'sat'; Object.assign(ov, JSON.parse(localStorage.getItem('ccp:overlays') || '{}')); } catch (e) { }   // vue aérienne par défaut, choix mémorisés
     (baseLayers[base] || sat).addTo(map); if (ov.hill) hill.addTo(map); if (ov.labels) labels.addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
     const NAMES = { Plan: 'osm', Satellite: 'sat', 'Ortho IGN (PNOA)': 'pnoa', Relief: 'topo' };
@@ -609,17 +606,6 @@
   /* ------------------------------------------------------------------ points d'intérêt */
   const poiGroupOf = (kind) => C.poiGroups.food.includes(kind) ? 'food' : 'visit';
   const osmUrl = (id) => `https://www.openstreetmap.org/${{ n: 'node', w: 'way', r: 'relation' }[id[0]]}/${id.slice(1)}`;
-  function poiPopup(x) {
-    const p = x.p, k = C.poiKinds[p.kind] || C.poiKinds.tourism;
-    const meta = [p.cuisine ? p.cuisine.split(';').join(', ') : null, p.sub && p.kind !== p.sub ? p.sub.replace(/_/g, ' ') : null,
-      p.beach_m && p.beach_m < 400 ? `plage à ${p.beach_m} m` : null, p.addr_city].filter(Boolean).join(' · ');
-    return `<div class="poi-pop"><b>${esc(p.name)}</b><span class="k" style="color:${k.color}">${I(k.icon, { size: 13 })}${esc(k.label)}</span>
-      ${meta ? `<div class="m">${esc(meta)}</div>` : ''}${p.opening_hours ? `<div class="m">${I('clock', { size: 12 })} ${esc(p.opening_hours)}</div>` : ''}
-      <div class="l"><a href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" rel="noopener">${I('navigation', { size: 12 })}Itinéraire</a>
-      ${safeUrl(p.website) ? `<a href="${esc(safeUrl(p.website))}" target="_blank" rel="noopener">${I('link', { size: 12 })}Site</a>` : ''}
-      ${p.phone && /^[+\d][\d\s().-]{5,20}$/.test(p.phone) ? `<a href="tel:${esc(p.phone.replace(/[^+\d]/g, ''))}">${esc(p.phone)}</a>` : ''}
-      <a href="${osmUrl(p.id)}" target="_blank" rel="noopener">${I('map', { size: 12 })}OSM</a></div></div>`;
-  }
   function poiIcon(x, small) {
     const k = C.poiKinds[x.p.kind] || C.poiKinds.tourism;
     return L.divIcon({ className: '', html: `<div class="poi-pin ${small ? 'small' : ''}" style="background:${k.color}">${I(k.icon, { size: 13 })}</div>`, iconSize: small ? [12, 12] : [24, 24], iconAnchor: small ? [6, 6] : [12, 12], popupAnchor: [0, small ? -6 : -12] });
@@ -654,7 +640,7 @@
   }
   function initPois() {
     poiLayer = L.layerGroup().addTo(map);
-    map.on('moveend zoomend', renderPois);
+    map.on('moveend zoomend', () => { if (!glOn) renderPois(); });   // inutile tant que la 3D couvre la carte
     let mvT = null;   // la liste Explorer suit l'emprise laissée par un geste
     for (const ev of ['pointerdown', 'wheel', 'touchstart']) map.getContainer().addEventListener(ev, () => { progAt = 0; }, { passive: true });
     map.on('moveend', () => { if (performance.now() - progAt < 700) return; clearTimeout(mvT); mvT = setTimeout(() => { viewBounds = liveBounds(); if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList({ keep: true }); } }, 150); });
@@ -816,7 +802,7 @@
     if (!on) {
       if (itin.on) itinStop();
       if (gl && glOn) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.min(19, Math.round((gl.getZoom() + 1) * 2) / 2), { animate: false })); }
-      glOn = false; $('#view3d').hidden = true; renderBtn3d();
+      glOn = false; $('#view3d').hidden = true; renderBtn3d(); renderPois();
       return true;
     }
     $('#view3d').hidden = false; glOn = true; renderBtn3d();
@@ -835,7 +821,7 @@
       gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: !isMobile() }), 'bottom-right');
       gl.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
       gl.touchZoomRotate.enableRotation(); gl.dragRotate.enable();
-      gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); viewBounds = viewBounds && liveBounds(); });
+      gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); viewBounds = viewBounds && liveBounds(); try { if (!localStorage.getItem('ccp:3dhint')) { localStorage.setItem('ccp:3dhint', '1'); toast('Relief 3D · deux doigts pour incliner, bouton 2D pour la carte plate'); } } catch (e) { } });
       resolveCreate(); glCreating = null;
       gl.on('moveend', (e) => { paint3dPois(); if (glOn && e.originalEvent) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.max(3, Math.min(19, gl.getZoom() + 1)), { animate: false })); } });   // la 2D suit les gestes faits en 3D (pas les recentrages dus au terrain)
       gl.on('click', 'pois', (e) => { const f = e.features && e.features[0]; const x = f && poiById(f.properties.id); if (x) showPoi(x, { pan: false }); });
@@ -1152,7 +1138,7 @@
     const who = state.wishWho, sugg = (state.users[state.me].suggest || []).filter((id) => spotById(id) && !state.users[state.me].wish.includes(id));
     let ids = wishedIds().filter((id) => { const w = wishOf(id); return who === 'all' ? true : who === 'both' ? w.a && w.b : w[who]; });
     if (who === 'all' || who === state.me) ids = [...new Set([...ids, ...sugg])];
-    let arr = ids.map(spotById);
+    const arr = ids.map(spotById);
     if (state.wishSort === 'score' && state.bulk) arr.sort((a, b) => (scoreOf(b).score ?? -1) - (scoreOf(a).score ?? -1));
     else arr.sort((a, b) => a.geometry.coordinates[0] - b.geometry.coordinates[0]);
     return arr;
@@ -1184,7 +1170,7 @@
     }
     const frag = document.createDocumentFragment();
     list.forEach((s, i) => {
-      const p = s.properties, r = state.bulk ? scoreOf(s) : null, w = wishOf(p.id), ph = photoOf(p.id), d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null;
+      const p = s.properties, r = state.bulk ? scoreOf(s) : null, w = wishOf(p.id), d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null;
       const sug = !w.a && !w.b && suggestedTo(state.me, p.id), who = w.a && w.b ? 'both' : w.a ? 'a' : w.b ? 'b' : (state.me === 'a' ? 'b' : 'a');
       const li = document.createElement('li'); li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
       li.style.gridTemplateColumns = '44px 64px minmax(0, 1fr) 36px';
@@ -1530,7 +1516,7 @@
       `<button type="button" data-i="new"><span class="n" style="width:26px;height:26px;border-radius:50%;background:var(--line);display:grid;place-items:center">${I('plus', { size: 14 })}</span><span>Nouveau jour</span></button></div>`;
     $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => {
       if (b.dataset.i === 'new' && state.trip.days.length >= 14) { toast('14 jours au plus'); return; }
-      let i = b.dataset.i === 'new' ? (state.trip.days.push({ stops: [] }), state.trip.days.length - 1) : +b.dataset.i;
+      const i = b.dataset.i === 'new' ? (state.trip.days.push({ stops: [] }), state.trip.days.length - 1) : +b.dataset.i;
       manualEdit(); const ok = addStop(i, stop); dlg.close(); renderTabs(); paintMarkers(); buzz();
       toast(ok ? `Ajouté au jour ${i + 1}` : 'Déjà dans ce jour');
       if (stop.t === 's' && state.selected === stop.id) renderDetailHead();
@@ -1695,7 +1681,7 @@
 
   /* ------------------------------------------------------------------ liste */
   const LIST_CHUNK = 60;
-  let listShown = LIST_CHUNK, listObserver = null;
+  let listShown = LIST_CHUNK, listObserver = null, listKey = '';
   function renderList({ more = false, keep = false } = {}) {
     if (!more && !keep) listShown = LIST_CHUNK;
     const ul = $('#list'), list = sorted(filtered({ inView: true })), inView = !state.filters.q.trim() && !!mapBounds();
@@ -1707,9 +1693,13 @@
       (fetched ? `<button type="button" class="linkbtn" id="sum-refresh" title="Rafraîchir les prévisions (Open-Meteo)" style="min-height:28px;color:inherit;font-weight:500">${I('refresh', { size: 12 })}${fetched}</button>` : `<span class="warn">prévisions indisponibles</span>`) + '</span>';
     $('#sum-refresh') && ($('#sum-refresh').onclick = () => loadForecast(true));
     $('#sum-view').onclick = () => { state.mapFilter = !state.mapFilter; persistLocal(); renderDays(); renderList(); toast(state.mapFilter ? 'Liste calée sur la carte' : 'Toute la côte'); };
+    // même contenu que le rendu précédent (déplacement de carte sans changement d'emprise utile, sondage sans nouveauté) : le DOM et ses vignettes restent
+    const key = [list.slice(0, listShown).map((s) => s.properties.id).join(','), state.day, state.profile, state.selected, state.me, state.users.a.wish.join(','), state.users.b.wish.join(','), [...state.fresh].join(','), state.bulk && state.bulk.fetchedAt, state.userPos && state.userPos.join(','), !!state.serverUser, list.length > listShown].join('|');
+    if (key === listKey && ul.querySelector('.item')) return;
+    listKey = key;
     const frag = document.createDocumentFragment();
     for (const s of list.slice(0, listShown)) {
-      const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id), ph = photoOf(p.id);
+      const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id);
       const li = document.createElement('li');
       li.className = 'item' + (state.selected === p.id ? ' sel' : ''); li.dataset.id = p.id;
       const meta = [p.province, surfaceLbl(p), p.size_m ? `~${p.size_m.toLocaleString('fr-FR')} m` : null,
@@ -1823,17 +1813,20 @@
         <div class="links">
           <button type="button" id="btn-sat" title="Voir la plage en satellite sur la carte">${I('layers', { size: 14 })}Satellite</button>
           <button type="button" id="btn-3d-spot" title="Voir le relief en 3D, depuis la mer">${I('boot', { size: 14 })}Relief 3D</button>
-          <a href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(p.name)})">${I('pin', { size: 14 })}GPS</a>
           ${wiki ? `<a href="${wiki}" target="_blank" rel="noopener">${I('book', { size: 14 })}Wikipédia</a>` : ''}
-          <a href="${commons}" target="_blank" rel="noopener">${I('camera', { size: 14 })}Photos</a>
-          <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + p.province)}" target="_blank" rel="noopener">${I('pin', { size: 14 })}Google Maps</a>
-          <a href="${esc(p.osm)}" target="_blank" rel="noopener">${I('map', { size: 14 })}OSM</a>
-          ${safeUrl(p.website) ? `<a href="${esc(safeUrl(p.website))}" target="_blank" rel="noopener">${I('link', { size: 14 })}Site</a>` : ''}
+          <button type="button" id="btn-more" title="Autres liens : GPS, photos, Google Maps, OSM, site">${I('sliders', { size: 14 })}Plus</button>
         </div>
       </div>`;
     $('#btn-close').onclick = () => closeDetail();
     $('#btn-sat').onclick = () => showSatellite(s);
     $('#btn-zoom-spot').onclick = () => zoomTo({ spot: s });
+    $('#btn-more').onclick = () => {   // liens externes, hors de la fiche pour la garder lisible
+      const dlg = $('#dlg-pick'); if (dlg.open) dlg.close();
+      $('#pick-title').textContent = p.name;
+      const row = (href, icon, label, sub) => `<a class="menu-link" href="${href}" target="_blank" rel="noopener">${I(icon, { size: 16 })}${label}${sub ? `<span class="sub">${sub}</span>` : ''}</a>`;
+      $('#pick-list').innerHTML = `<div class="menu">${row(`geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(p.name)})`, 'pin', 'Ouvrir dans le GPS', 'application du téléphone')}${row(commons, 'camera', 'Photos sur Wikimedia Commons')}${row(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + p.province)}`, 'pin', 'Google Maps', 'avis, horaires')}${row(esc(p.osm), 'map', 'OpenStreetMap', 'source des données')}${safeUrl(p.website) ? row(esc(safeUrl(p.website)), 'link', 'Site web') : ''}</div>`;
+      dlg.showModal();
+    };
     $('#btn-3d-spot').onclick = () => open3d({ lat, lon, zoom: 14.5 });
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
@@ -2119,8 +2112,9 @@
     if (seen || wishedIds().length) return;
     const steps = [
       { icon: 'compass', title: 'Explorer', text: `Choisissez le jour et votre profil (plage, famille, surf, balade) : chaque plage reçoit un score selon la météo, le vent et la houle. Touchez un point de la carte ou la liste pour la fiche complète : marées, heure par heure, photos, lieux à proximité.` },
-      { icon: 'heart', title: 'À deux', text: `${esc(state.users.a.name)} et ${esc(state.users.b.name)} marquent chacun leurs envies avec le cœur de leur couleur. L'onglet « Nos envies » réunit les listes, numérote les plages d'ouest en est et prépare l'itinéraire.` },
-      { icon: 'calendar', title: 'Programmer', text: `Dans une fiche, ajoutez un resto, un monument ou une activité au programme de la plage. L'onglet « Séjour » place votre hébergement, répartit les plages sur les jours selon la météo et prépare chaque trajet aller-retour dans Google Maps. Tout se partage par lien.` },
+      { icon: 'heart', title: 'À deux', text: `${esc(state.users.a.name)} et ${esc(state.users.b.name)} marquent chacun leurs envies avec le cœur de leur couleur, se proposent des plages et notent chaque programme. L'onglet « Envies » réunit les listes, numérote les plages d'ouest en est et prépare l'itinéraire.` },
+      { icon: 'calendar', title: 'Programmer', text: `Dans une fiche, ajoutez un resto, un monument ou une activité au programme de la plage. L'onglet « Séjour » place votre hébergement, répartit les plages sur les jours selon la météo, estime les horaires et prépare chaque trajet dans Google Maps.` },
+      { icon: 'boot', title: 'Relief 3D', text: `Zoomez : la carte passe en 3D sur l'orthophoto et le relief (bouton 2D pour revenir). « Suivre l'itinéraire en 3D » survole chaque journée étape par étape. Avec un compte (page de connexion), le séjour est partagé à deux sur tous vos appareils ; sans compte, tout se partage par lien.` },
     ];
     const dlg = $('#dlg-intro'); let i = 0;
     const render = () => {
@@ -2163,20 +2157,19 @@
     const dataP = Promise.all([
       fetch('data/spots.geojson?v=' + ver).then((r) => r.json()),
       fetch('data/photos.json?v=' + ver).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
-      fetch('data/pois.geojson?v=' + ver).then((r) => (r.ok ? r.json() : { features: [] })).catch(() => ({ features: [] })),
       fetch('data/region.json?v=' + ver).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
     await applyServerIdentity();   // en parallèle des données
     const shared = applyShare();
     let routed = false;
     if (!shared && applyViewParam()) history.replaceState(null, '', location.pathname + location.search);
-    const [fc, photos, pois, region] = await dataP;
+    const [fc, photos, region] = await dataP;
     state.region = region || { name: 'Plages', short: 'Plages', subtitle: '', areas: [] };
     if (state.region.center) { C.center = state.region.center; C.zoom = state.region.zoom || C.zoom; }
     if (state.region.timezone) C.timezone = state.region.timezone;
     document.title = `${state.region.name} · plages & criques`;
     state.spots = fc.features; state.photos = photos || {};
-    state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
+    setTimeout(() => { if (navigator.onLine !== false) ensurePois(); }, 8000);   // les 1,3 Mo de lieux arrivent en tâche de fond, ou dès le premier besoin (fiche, séjour, zoom)
     routed = !shared && applyRoute();
     renderChrome(); initSheet(); initMap(); initPois(); init3d(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
     if (state.view !== 'explore') setView(state.view);

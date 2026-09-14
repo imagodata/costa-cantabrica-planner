@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .DS_Store
 data/coastline_raw.json
+node_modules/
+package-lock.json

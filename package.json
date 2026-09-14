@@ -1,0 +1,13 @@
+{
+  "name": "costa-cantabrica-planner",
+  "private": true,
+  "description": "Carte-sélecteur des plages de la côte cantabrique : outillage de qualité (lint) ; l'application elle-même n'a aucune dépendance.",
+  "scripts": {
+    "lint": "eslint js/*.js sw.js scripts/*.js",
+    "test": "python3 scripts/test_sync.py && python3 scripts/test_merge.py && node scripts/test_score.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}

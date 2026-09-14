@@ -1,0 +1,22 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Syntaxe
+        run: for f in js/*.js sw.js scripts/*.js; do node --check "$f"; done && python3 -m py_compile server/costa_sync.py scripts/*.py
+      - name: Lint
+        run: npm install --no-audit --no-fund && npx eslint js/*.js sw.js scripts/*.js
+      - name: Tests unitaires et service
+        run: python3 scripts/test_merge.py && node scripts/test_score.js && python3 scripts/test_sync.py
+      - name: Banc navigateur
+        run: |
+          npm install --no-audit --no-fund playwright-core@1
+          npx playwright-core install chromium-headless-shell
+          scripts/run_browser_tests.sh

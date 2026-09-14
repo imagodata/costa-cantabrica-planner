@@ -207,12 +207,17 @@ avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
 make test
 ```
 
-`scripts/test_sync.py` exerce le service de synchronisation (fusion partielle, conflits 409,
-journal, préférences). `scripts/run_browser_tests.sh` lance ensuite le service et
+`scripts/test_merge.py` (fusion d'état, sans serveur) et `scripts/test_score.js` (score météo,
+sans navigateur) sont des tests unitaires purs ; `scripts/test_sync.py` exerce le service de
+synchronisation (comptes, séjours, fusion partielle, conflits 409, journal, limitation de débit). `scripts/run_browser_tests.sh` lance ensuite le service et
 `scripts/dev_server.py` (qui joue le rôle de Caddy en local : `/whoami`, relais `/api/state`),
 puis ouvre `scripts/test_harness.html` dans le Chromium sans tête de Playwright (s'il est présent
 dans `~/.cache/ms-playwright`) : l'application y est pilotée dans un cadre de 390 px et une
-quarantaine de comportements mobiles et collaboratifs sont vérifiés.
+quarantaine de comportements mobiles et collaboratifs sont vérifiés. `make lint` lance ESLint
+(`npm install` une fois). L'intégration continue GitHub (`.github/workflows/test.yml`) rejoue
+syntaxe, lint, tests unitaires, service et banc navigateur à chaque push.
+
+`scripts/reset_password.py adresse` (sur le serveur) réinitialise le mot de passe d'un compte.
 
 ## Adapter à une autre côte
 
