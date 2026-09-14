@@ -29,6 +29,7 @@
     fresh: new Set(),   // envies de l'autre reçues depuis la dernière consultation de l'onglet Envies
   };
   const scoreCache = new Map();
+  let baseLayers = null;
   let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0, detailReq = 0, listScroll = 0;
   let poiLayer = null, poiMarkers = new Map(), wishLayer = null, tripLayer = null, planLayer = null;
   const DAY_COLORS = ['#0b6e99', '#b45309', '#7c3aed', '#0a9396', '#d64545', '#4361ee', '#f0a202'];
@@ -70,16 +71,29 @@
     const y = (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n;
     return { tx: Math.floor(x), ty: Math.floor(y), px: (x - Math.floor(x)) * 256, py: (y - Math.floor(y)) * 256 };
   }
-  function aerialHtml(lat, lon, z, w, h, cls = '', extra = '') {
-    const t = tilePx(lat, lon, z), cx = w / 2 - t.px, cy = h / 2 - t.py;
-    const r = Math.ceil(Math.max(w, h) / 256) + 1;
+  /* Mètres par pixel CSS au zoom z (Web Mercator). */
+  const mpp = (lat, z) => 156543.03 * Math.cos(lat * Math.PI / 180) / 2 ** z;
+  /* Zoom qui fait tenir la plage (diagonale size_m) dans environ 60 % de la largeur affichée, borné. */
+  function aerialZoom(s, w, zmin, zmax) {
+    const size = Math.max(60, s.properties.size_m || 200), lat = latlng(s)[0];
+    const z = Math.log2(156543.03 * Math.cos(lat * Math.PI / 180) * 0.6 * w / size);
+    return Math.max(zmin, Math.min(zmax, Math.round(z)));
+  }
+  /* Sur écran haute densité, les tuiles sont demandées un niveau plus loin et affichées à moitié : image nette.
+     Option scale : barre d'échelle. Les tuiles apparaissent en fondu une fois chargées. */
+  function aerialHtml(lat, lon, z, w, h, cls = '', extra = '', { scale = false } = {}) {
+    const hi = (window.devicePixelRatio || 1) >= 1.5, tz = hi ? z + 1 : z, ts = hi ? 128 : 256;
+    const t = tilePx(lat, lon, tz), k = ts / 256, cx = w / 2 - t.px * k, cy = h / 2 - t.py * k;
+    const r = Math.ceil(Math.max(w, h) / ts) + 1;
     let imgs = '';
     for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      const left = cx + dx * 256, top = cy + dy * 256;
-      if (left > w || top > h || left + 256 < 0 || top + 256 < 0) continue;
-      imgs += `<img src="${AERIAL}/${z}/${t.ty + dy}/${t.tx + dx}" alt="" loading="lazy" decoding="async" style="left:${Math.round(left)}px;top:${Math.round(top)}px">`;
+      const left = cx + dx * ts, top = cy + dy * ts;
+      if (left > w || top > h || left + ts < 0 || top + ts < 0) continue;
+      imgs += `<img src="${AERIAL}/${tz}/${t.ty + dy}/${t.tx + dx}" alt="" loading="lazy" decoding="async" onload="this.classList.add('ld')" style="left:${Math.round(left)}px;top:${Math.round(top)}px;width:${ts}px;height:${ts}px">`;
     }
-    return `<div class="aerial ${cls}" style="width:${w}px;height:${h}px" ${extra}>${imgs}<i class="pinpt"></i></div>`;
+    let bar = '';
+    if (scale) { const m = mpp(lat, z), len = [50, 100, 200, 500, 1000, 2000].find((L0) => L0 / m >= 44) || 2000; bar = `<span class="scalebar" style="width:${Math.round(len / m)}px">${len >= 1000 ? len / 1000 + ' km' : len + ' m'}</span>`; }
+    return `<div class="aerial ${cls}" style="width:${w}px;height:${h}px" ${extra}>${imgs}<i class="pinpt"></i>${bar}</div>`;
   }
   let toastT;
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
@@ -506,6 +520,7 @@
     const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
     osm.addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
+    baseLayers = { osm, sat, topo };
     L.control.layers({ 'Plan': osm, 'Satellite': sat, 'Relief': topo }, null, { position: 'bottomright' }).addTo(map);
     L.control.scale({ imperial: false }).addTo(map);
     for (const s of state.spots) {
@@ -669,6 +684,15 @@
       .sort((a, b) => a.d - b.d);
   }
 
+  /* Fond satellite centré sur la plage : accès, parking, rochers se lisent mieux qu'en vue fixe. */
+  function showSatellite(s) {
+    if (!baseLayers) return;
+    for (const l of Object.values(baseLayers)) if (l !== baseLayers.sat && map.hasLayer(l)) map.removeLayer(l);
+    if (!map.hasLayer(baseLayers.sat)) baseLayers.sat.addTo(map);
+    progMove(() => map.setView(latlng(s), Math.max(16, aerialZoom(s, map.getSize().x, 14, 17)), { animate: false }));
+    if (isMobile()) setSheet('peek');
+    toast('Fond satellite · le contrôle des couches (en bas à droite) ramène au plan');
+  }
   function fitAll() {
     if (!state.spots.length) return;
     viewBounds = null;
@@ -843,7 +867,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="num c-${r ? r.cls : 'none'}">${i + 1}<small style="background:var(--${who})">${who === 'both' ? '2' : esc(state.users[who].name[0].toUpperCase())}</small></div>
-        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], 16, 56, 56, 'thumb')}
+        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}</div>
           <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
@@ -1337,7 +1361,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="mu">${I('wind', { size: 14 })}${n0(d.wind)} ${compass(d.wdir)}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="score c-${r ? r.cls : 'none'}"><b>${r && r.score != null ? r.score : '—'}</b><small>${r ? esc(r.label) : ''}</small></div>
-        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>${I('wave', { size: 20 }).replace(/"/g, '&quot;')}</div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], 16, 56, 56, 'thumb')}
+        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>${I('wave', { size: 20 }).replace(/"/g, '&quot;')}</div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}</div>
           <div class="meta">${esc(meta)}</div>
@@ -1416,7 +1440,7 @@
     $('#detail-head').innerHTML = `
       <div class="hero ${ph ? '' : 'nophoto'}">
         <div class="slides" id="slides">${gal.map((g, i) => g.aerial
-          ? aerialHtml(lat, lon, 17, heroW, 250, 'slide')
+          ? aerialHtml(lat, lon, aerialZoom(s, heroW, 14, 17), heroW, 250, 'slide', '', { scale: true })
           : `<img src="${esc(g.thumb)}" alt="${esc(p.name)} (${i + 1})" ${i ? 'loading="lazy"' : ''} decoding="async" onerror="this.style.visibility='hidden'">`).join('')}</div>
         <div class="shade"></div>
         ${gal.length > 1 ? `<div class="dots" id="dots">${gal.map((g, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div><span class="count" id="gcount">1 / ${gal.length}</span>
@@ -1441,6 +1465,7 @@
         </div>
         <div id="plan-slot"></div>
         <div class="links">
+          <button type="button" id="btn-sat" title="Voir la plage en satellite sur la carte">${I('layers', { size: 14 })}Satellite</button>
           <a href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(p.name)})">${I('pin', { size: 14 })}GPS</a>
           ${wiki ? `<a href="${wiki}" target="_blank" rel="noopener">${I('book', { size: 14 })}Wikipédia</a>` : ''}
           <a href="${commons}" target="_blank" rel="noopener">${I('camera', { size: 14 })}Photos</a>
@@ -1450,6 +1475,7 @@
         </div>
       </div>`;
     $('#btn-close').onclick = () => closeDetail();
+    $('#btn-sat').onclick = () => showSatellite(s);
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
     $('#btn-suggest') && ($('#btn-suggest').onclick = () => toggleSuggest(p.id));

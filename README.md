@@ -47,7 +47,9 @@ deux listes sur l'autre téléphone.
   Wikidata, photos géolocalisées), repli Openverse, avec crédit et licence, en carrousel en tête
   de fiche et en vignette dans la liste. Chaque galerie se termine par une **vue aérienne**
   zoomée (tuiles satellite Esri) ; c'est l'image des plages sans photo, dans la liste, la fiche
-  et l'aperçu des pages de partage.
+  et l'aperçu des pages de partage. Les vues aériennes sont nettes sur écran haute densité (tuiles
+  demandées un niveau plus loin), zoomées selon la taille de la plage, avec une barre d'échelle ;
+  le bouton « Satellite » de la fiche bascule la carte sur l'imagerie, centrée sur la plage.
 - **Restaurants, bars, bars de plage, cafés, sites culturels et à visiter** (~4 400 lieux OSM
   dans la bande côtière) : couche carte activable (visible à partir du zoom 13), fiche popup
   (cuisine, horaires, site, téléphone, itinéraire) et rubrique « À proximité » dans chaque fiche
