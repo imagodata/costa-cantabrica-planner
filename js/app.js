@@ -300,6 +300,7 @@
   function mergeFirst(loc) {
     const me = state.me, other = me === 'a' ? 'b' : 'a';
     state.users[me].wish = [...new Set([...state.users[me].wish, ...loc.users[me].wish])].slice(0, 500);
+    if (!state.users[other].wish.length && loc.users[other].wish.length) state.users[other].wish = loc.users[other].wish.slice(0, 500);   // séjour partagé encore vide côté autre : ses envies saisies en mode local
     state.users[other].suggest = [...new Set([...(state.users[other].suggest || []), ...(loc.users[other].suggest || [])])].filter((id) => !state.users[other].wish.includes(id)).slice(0, 100);
     for (const [id, p] of Object.entries(loc.plans)) if (p && (p.items.length || p.notes[me])) state.plans[id] = mergePlan(p, state.plans[id], me);
     if (!state.trip.days.some((d) => d.stops.length) && loc.trip.days.some((d) => d.stops.length)) state.trip = { ...state.trip, start: loc.trip.start, days: loc.trip.days };
@@ -328,7 +329,7 @@
       if (r.status === 401) { sync.on = false; sync.err = true; sync.dirty = true; if (auth) { auth = null; saveAuth(); toast('Session expirée : reconnectez-vous'); setTimeout(() => { location.href = 'login.html'; }, 1500); } return; }   // rien n'est perdu : la différence attend
       if (r.status === 429) { sync.err = true; sync.dirty = true; return; }   // réessai au prochain sondage
       if (r.status === 403) { sync.on = false; sync.err = true; toast(auth ? 'Vous ne faites plus partie de ce séjour' : 'Ce compte n\'est pas connu du serveur de synchronisation'); return; }
-      if (r.status === 413) { sync.err = true; sync.dirty = true; toast('Séjour trop volumineux : retirez des programmes ou des notes'); return; }
+      if (r.status === 413) { sync.err = true; sync.dirty = false; sync.pending = diff.n; toast('Séjour trop volumineux : retirez des programmes ou des notes'); return; }   // réessai à la prochaine modification seulement
       if (r.status >= 400 && r.status < 500) { sync.base = diff.cur; toast('Modification refusée par le serveur'); return; }   // définitif : on n'insiste pas
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const st = await r.json();
@@ -347,7 +348,10 @@
     if (sync.pushing) return;
     if (sync.dirty) { syncFlush(); return; }
     try {
-      const r = await fetchSync(); if (!r.ok) { sync.err = true; renderSyncDot(); return; }
+      const r = await fetchSync();
+      if (r.status === 401 && auth) { sync.on = false; auth = null; saveAuth(); toast('Session expirée : reconnectez-vous'); setTimeout(() => { location.href = 'login.html'; }, 1500); return; }
+      if (r.status === 403 && auth) { sync.on = false; sync.err = true; renderSyncDot(); toast('Vous ne faites plus partie de ce séjour'); return; }
+      if (!r.ok) { sync.err = true; renderSyncDot(); return; }
       const st = await r.json(); sync.err = false; sync.at = Date.now();
       if (st.version !== sync.version) {
         if (isTyping() || sync.dirty || sync.pushing) { renderSyncDot(); return; }   // saisie en cours ou envoi en attente : au prochain sondage
@@ -363,7 +367,7 @@
   function syncOnline() { if (!state.serverUser) return; if (sync.dirty) syncFlush(); else syncPoll(); }
   const ago = (ms) => { const s = Math.max(0, Math.round((Date.now() - ms) / 1000)); if (s < 60) return `il y a ${s} s`; if (s < 3600) return `il y a ${Math.round(s / 60)} min`; if (s < 86400) return `il y a ${Math.round(s / 3600)} h`; const d = new Date(ms); return `le ${d.getDate()}/${d.getMonth() + 1} à ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
   function syncStatusText() {
-    if (!sync.on) return state.serverUser ? 'Serveur injoignable : les modifications restent sur cet appareil' : 'Version sans serveur';
+    if (!sync.on) return state.serverUser ? (auth ? 'Séjour inaccessible ou serveur injoignable : les modifications restent sur cet appareil' : 'Serveur injoignable : les modifications restent sur cet appareil') : 'Version sans serveur';
     const pend = sync.pending ? ` · ${sync.pending} modification${sync.pending > 1 ? 's' : ''} en attente` : '';
     if (sync.err) return (navigator.onLine === false ? 'Hors ligne' : 'Serveur injoignable') + pend;
     if (sync.pending) return `${sync.pending} modification${sync.pending > 1 ? 's' : ''} à envoyer`;
@@ -516,7 +520,12 @@
   let viewBounds = null, progAt = 0;
   const progMove = (fn) => { progAt = performance.now(); fn(); };   // déplacement programmé : les moveend qui suivent de près sont ignorés
   function liveBounds() {
-    if (is3d()) { const b = gl.getBounds(); return L.latLngBounds([b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]); }
+    if (is3d()) {   // partie de l'écran au-dessus du panneau, projetée au sol
+      const w = gl.getContainer().clientWidth, hAll = gl.getContainer().clientHeight;
+      const h = isMobile() && !sheet.classList.contains('full') ? Math.max(60, sheet.getBoundingClientRect().top - gl.getContainer().getBoundingClientRect().top) : hAll;
+      const pts = [[0, h * 0.35], [w, h * 0.35], [0, h], [w, h], [w / 2, h * 0.35]].map((p) => { try { return gl.unproject(p); } catch (e) { return null; } }).filter(Boolean);
+      if (pts.length) return L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
+    }
     const size = map.getSize(); let h = size.y;
     if (isMobile() && !sheet.classList.contains('full')) h = Math.max(60, sheet.getBoundingClientRect().top - map.getContainer().getBoundingClientRect().top);
     return L.latLngBounds(map.containerPointToLatLng([0, h]), map.containerPointToLatLng([size.x, 0]));
@@ -659,7 +668,7 @@
       const z = Math.max(map.getZoom(), C.poiMinZoom + 2), p = map.project([x.lat, x.lon], z);
       if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
       progMove(() => map.setView(map.unproject(p, z), z, { animate: false }));
-      if (is3d()) progMove(() => gl.jumpTo({ center: [x.lon, x.lat], zoom: Math.max(gl.getZoom(), 14), offset: glOffset() }));
+      if (is3d()) progMove(() => gl.easeTo({ center: [x.lon, x.lat], zoom: Math.max(gl.getZoom(), 14), offset: glOffset(), duration: 0 }));
     }
     renderPois();
     map.closePopup();
@@ -760,7 +769,7 @@
      score, parcours du séjour, hébergement. La carte 2D Leaflet reste montée dessous (lieux, fonds, hors ligne). */
   const ESRI_IMG = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
   const LABELS_IMG = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
-  let gl = null, glReady = null, glOn = false, glUnsupported = false, glMarkers = [], glLoaded = false;
+  let gl = null, glReady = null, glOn = false, glUnsupported = false, glMarkers = [], glLoaded = false, glCreating = null;
   let glMode = 'auto';   // 'auto' : 2D sur la côte entière, 3D dès qu'on zoome (≥ 12,5) ; '1' / '0' : fixé par le bouton
   const GL_IN = 12, GL_OUT = 11;   // seuils de zoom Leaflet (entrée en 3D, retour en 2D)
   const saveGlMode = (m) => { glMode = m; try { localStorage.setItem('ccp:3d', m); localStorage.setItem('ccp:3dv', '2'); } catch (e) { } };
@@ -805,32 +814,36 @@
   async function set3d(on, { silent = false } = {}) {
     if (on && glUnsupported) { if (!silent) toast('La 3D n\'est pas disponible sur cet appareil'); return false; }
     if (!on) {
-      if (gl && glOn) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.min(19, Math.round(gl.getZoom() * 2) / 2), { animate: false })); }
+      if (itin.on) itinStop();
+      if (gl && glOn) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.min(19, Math.round((gl.getZoom() + 1) * 2) / 2), { animate: false })); }
       glOn = false; $('#view3d').hidden = true; renderBtn3d();
       return true;
     }
     $('#view3d').hidden = false; glOn = true; renderBtn3d();
     if (!gl) $('#gl').innerHTML = '<div class="loading" style="color:#fff">Chargement de la vue 3D…</div>';
     try { await loadMaplibre(); } catch (e) { glOn = false; $('#view3d').hidden = true; renderBtn3d(); if (!silent) toast('Vue 3D indisponible hors ligne'); return false; }
+    if (glCreating) { await glCreating; }   // un seul MapLibre, même si deux bascules se croisent
     if (!gl) {
       const probe = document.createElement('canvas'), ctx = probe.getContext('webgl2') || probe.getContext('webgl');   // MapLibre ≥ 3 n'expose plus supported()
       if (!ctx) { glUnsupported = true; glOn = false; $('#view3d').hidden = true; renderBtn3d(); if (!silent) toast('La 3D (WebGL) n\'est pas disponible sur cet appareil'); return false; }
       $('#gl').innerHTML = '';
       const c = map.getCenter();
+      let resolveCreate; glCreating = new Promise((r) => { resolveCreate = r; });
       try {
         gl = new maplibregl.Map({ container: 'gl', center: [c.lng, c.lat], zoom: Math.max(6, map.getZoom() - 1), pitch: 50, bearing: 0, maxPitch: 80, attributionControl: false, style: glStyle() });
-      } catch (e) { glUnsupported = true; glOn = false; gl = null; $('#view3d').hidden = true; renderBtn3d(); if (!silent) toast('La 3D n\'est pas disponible sur cet appareil'); return false; }
+      } catch (e) { glUnsupported = true; glOn = false; gl = null; $('#view3d').hidden = true; renderBtn3d(); resolveCreate(); glCreating = null; if (!silent) toast('La 3D n\'est pas disponible sur cet appareil'); return false; }
       gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: !isMobile() }), 'bottom-right');
       gl.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
       gl.touchZoomRotate.enableRotation(); gl.dragRotate.enable();
-      gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); });
+      gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); viewBounds = viewBounds && liveBounds(); });
+      resolveCreate(); glCreating = null;
       gl.on('moveend', (e) => { paint3dPois(); if (glOn && e.originalEvent) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.max(3, Math.min(19, gl.getZoom() + 1)), { animate: false })); } });   // la 2D suit les gestes faits en 3D (pas les recentrages dus au terrain)
       gl.on('click', 'pois', (e) => { const f = e.features && e.features[0]; const x = f && poiById(f.properties.id); if (x) showPoi(x, { pan: false }); });
       gl.on('mouseenter', 'pois', (e) => { gl.getCanvas().style.cursor = 'pointer'; const f = e.features && e.features[0]; if (f && !isMobile()) { glPopup.setLngLat(f.geometry.coordinates).setText(f.properties.name).addTo(gl); } });
       gl.on('mouseleave', 'pois', () => { gl.getCanvas().style.cursor = ''; glPopup.remove(); });
       gl.on('mouseenter', 'spots', (e) => { const f = e.features && e.features[0], s = f && spotById(f.properties.id); if (s && !isMobile()) glPopup.setLngLat(f.geometry.coordinates).setText(s.properties.name).addTo(gl); });
       gl.on('mouseleave', 'spots', () => glPopup.remove());
-      gl.on('error', (e) => { const m = String((e && e.error && e.error.message) || ''); if (/WebGL|context lost/i.test(m)) { glUnsupported = true; set3d(false); toast('La 3D s\'est arrêtée : carte 2D'); } });
+      gl.on('error', (e) => { const m = String((e && e.error && e.error.message) || ''); if (/WebGL|context lost/i.test(m)) { glUnsupported = true; set3d(false); try { gl.remove(); } catch (x) { } gl = null; glLoaded = false; glMarkers = []; toast('La 3D s\'est arrêtée : carte 2D'); } });
       gl.on('click', 'spots', (e) => { const f = e.features && e.features[0]; if (f) select(f.properties.id, { pan: false }); });
       gl.on('mouseenter', 'spots', () => { gl.getCanvas().style.cursor = 'pointer'; }); gl.on('mouseleave', 'spots', () => { gl.getCanvas().style.cursor = ''; });
       gl.on('dragstart', (e) => { if (e.originalEvent && isMobile() && !sheet.classList.contains('peek')) setSheet('peek'); if (e.originalEvent && itin.playing) itinPlay(false); });
@@ -838,7 +851,7 @@
       gl.on('moveend', (e) => { if (!e.originalEvent && performance.now() - progAt < 700) return; if (!e.originalEvent) return; clearTimeout(mvT3); mvT3 = setTimeout(() => { viewBounds = liveBounds(); if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList({ keep: true }); } }, 150); });
       gl.once('pointerdown', () => $('#v3-hint').classList.add('off')); setTimeout(() => $('#v3-hint').classList.add('off'), 7000);
     } else {
-      const c = map.getCenter(); gl.resize(); gl.jumpTo({ center: [c.lng, c.lat], zoom: Math.max(6, map.getZoom() - 1) }); paint3d();
+      const c = map.getCenter(); gl.resize(); gl.jumpTo({ center: [c.lng, c.lat], zoom: Math.max(6, map.getZoom() - 1) }); paint3d(); if (viewBounds) viewBounds = liveBounds();
     }
     return true;
   }
@@ -940,6 +953,8 @@
   function itinStop() { itin.on = false; itin.playing = false; clearTimeout(itin.timer); $('#itin').hidden = true; paint3d(); }
   function renderItin() {
     const el = $('#itin'); if (!el || el.hidden) return;
+    if (!state.trip.days[itin.day]) { itinStop(); return; }   // jour supprimé pendant le suivi
+    itin.steps = itinSteps(itin.day); if (itin.step >= itin.steps.length) itin.step = itin.steps.length - 1;
     const t = state.trip, days = t.days.map((d, i) => `<button type="button" class="chip ${i === itin.day ? 'on' : ''}" data-i="${i}" style="--dc:${dayColor(i)}"><i></i>J${i + 1}<small>${esc(dayLabel(i).split(' ')[1] || '')}</small></button>`).join('');
     const s = itin.step >= 0 ? itin.steps[itin.step] : null, n = itin.steps.length;
     const body = !n ? `<div class="it-card"><b>Aucune étape localisée</b><span class="hint">Ajoutez une plage ou un lieu à ce jour.</span></div>`
@@ -965,8 +980,8 @@
     document.addEventListener('keydown', (e) => { if (!itin.on || document.querySelector('dialog[open]') || isTyping()) return; if (e.key === 'ArrowRight') { itin.playing = false; itinGo(itin.step + 1); } else if (e.key === 'ArrowLeft') { itin.playing = false; itinGo(itin.step - 1); } else if (e.key === 'Escape') itinStop(); });
     if (glMode === '1') set3d(true, { silent: true });
     // bascule automatique : zoomer sur l'orthophoto (geste) fait passer en 3D
-    map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported) return; if (map.getZoom() >= GL_IN) set3d(true, { silent: true }); });   // geste, fiche ouverte, zoom sur entité : au-delà du seuil, 3D
-    if (glMode === 'auto' && map.getZoom() >= GL_IN) set3d(true, { silent: true });
+    map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported) return; if (map.getZoom() > GL_IN) set3d(true, { silent: true }); });   // geste, fiche ouverte, zoom sur entité : au-delà du seuil, 3D
+    if (glMode === 'auto' && map.getZoom() > GL_IN) set3d(true, { silent: true });
   }
   /* Zoom sur une entité : plage (cadrée sur sa taille), lieu, hébergement ou journée (parcours), en 2D comme en 3D.
      Sur téléphone, le panneau se replie pour laisser voir la carte. */
@@ -1131,7 +1146,7 @@
     renderTabs(); paintMarkers();
     if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else if (v === 'config') { renderConfig(); } else { renderDays(); renderList(); }
     if (v === 'config' && isMobile()) setSheet('full');
-    if (v !== 'explore' && !state.pois.length) ensurePois().then(() => { if (state.view === v) { v === 'wishes' ? renderWishes() : renderTrip(); paintMarkers(); } });
+    if (v !== 'explore' && !state.pois.length) ensurePois().then(() => { if (state.view === v) { (v === 'wishes' ? renderWishes : v === 'config' ? renderConfig : renderTrip)(); paintMarkers(); } });
   }
   function wishList() {
     const who = state.wishWho, sugg = (state.users[state.me].suggest || []).filter((id) => spotById(id) && !state.users[state.me].wish.includes(id));
@@ -1322,7 +1337,7 @@
       const beachesAll = [...locked.filter((st) => st.t === 's'), ...picked[i]].sort((x, y) => lon(x) - lon(y));   // d'ouest en est, verrous compris
       d.stops = [...beachesAll.filter((st) => st.lock), ...locked.filter((st) => st.t !== 's')];
       beachesAll.filter((st) => !st.lock).forEach((st) => addStop(i, st));
-      d.stops.sort((x, y) => (x.t === 's' && y.t === 's') ? lon(x) - lon(y) : 0);
+      { const idx = d.stops.map((st, k) => (st.t === 's' ? k : -1)).filter((k) => k >= 0), sortedSpots = idx.map((k) => d.stops[k]).sort((x, y) => lon(x) - lon(y)); idx.forEach((k, j) => { d.stops[k] = sortedSpots[j]; }); }
       const firstBeach = d.stops.findIndex((x) => x.t === 's');
       if (state.prefs.lunch && firstBeach >= 0 && !d.stops.some((x) => x.t === 'p' && ['restaurant', 'beach_bar'].includes(poiById(x.id)?.p.kind))) {
         const c = latlng(spotById(d.stops[firstBeach].id));   // resto retenu dans un programme du jour, sinon le plus proche de la première plage
@@ -1331,7 +1346,7 @@
       }
     });
     save(); renderTabs(); if (state.view === 'trip') { renderTrip(); paintMarkers(); if (!silent) fitTrip(); }
-    if (!silent) toast(!cands.length && lockedIds.size ? 'Toutes vos envies sont déjà verrouillées : rien à ajouter' : wished ? 'Planning proposé à partir de vos envies' : 'Planning proposé avec les meilleures plages');
+    if (!silent) toast(!scored.length ? 'Aucune prévision pour ces dates : rapprochez le séjour des 7 prochains jours' : !cands.length && lockedIds.size ? 'Toutes vos envies sont déjà verrouillées : rien à ajouter' : wished ? 'Planning proposé à partir de vos envies' : 'Planning proposé avec les meilleures plages');
   }
   /* Séjour dynamique : à chaque mise à jour des prévisions, le planning est recalculé (mode auto). */
   function autoReplan() {
@@ -1405,7 +1420,7 @@
     // jours
     $('#days-minus').onclick = () => { if (t.days.length > 1) { t.days.pop(); save(); renderTabs(); renderTrip(); paintMarkers(); } };
     $('#days-plus').onclick = () => { if (t.days.length < 14) { t.days.push({ stops: [] }); save(); renderTrip(); } };
-    $('#trip-propose').onclick = async () => { if (!t.days.some((d) => d.stops.length) || await confirmDlg('Remplacer les étapes actuelles par une proposition ?', { ok: 'Remplacer', hint: 'Une proposition unique : le planning reste manuel ensuite, sauf si vous activez « Dynamique ».' })) ensurePois().then(() => proposeTrip()); };
+    $('#trip-propose').onclick = async () => { if (!t.days.some((d) => d.stops.length) || await confirmDlg('Remplacer les étapes actuelles par une proposition ?', { ok: 'Remplacer', hint: 'Les étapes non verrouillées (plages, restos, visites) sont remplacées ; le planning reste manuel ensuite, sauf si vous activez « Dynamique ».' })) ensurePois().then(() => proposeTrip()); };
     $('#trip-auto').onclick = () => { t.auto = !t.auto; t.autoBy = t.auto ? state.me : null; save(); renderTrip(); if (t.auto) { toast('Planning dynamique : recalculé à chaque mise à jour des prévisions'); ensurePois().then(() => proposeTrip({ silent: true })); } };
     $('#trip-config').onclick = () => setView('config');
     $('#trip-share').onclick = share;
@@ -1458,7 +1473,8 @@
     });
   }
   function pickStop(di) {
-    const dlg = $('#dlg-pick'), day = state.trip.days[di], fi = forecastIdx(dayIso(di));
+    const dlg = $('#dlg-pick'); if (dlg.open) dlg.close();
+    const day = state.trip.days[di], fi = forecastIdx(dayIso(di));
     const inDay = new Set(day.stops.map((st) => st.t + ':' + (st.id || st.text)));
     $('#pick-title').textContent = `Ajouter au jour ${di + 1} · ${dayLabel(di)}`;
     const scoreTag = (s) => { if (fi < 0 || !state.bulk) return ''; const r = scoreOf(s, fi); return `<span class="sub" style="color:var(--${r.cls});font-weight:700">${r.score ?? '—'}</span>`; };
@@ -1494,7 +1510,7 @@
   /* Confirmation dans le dialogue de l'application (remplace confirm()). */
   function confirmDlg(title, { ok = 'Confirmer', danger = false, hint = '' } = {}) {
     return new Promise((resolve) => {
-      const dlg = $('#dlg-pick');
+      const dlg = $('#dlg-pick'); if (dlg.open) dlg.close();
       $('#pick-title').textContent = title;
       $('#pick-list').innerHTML = `${hint ? `<span class="hint">${esc(hint)}</span>` : ''}<div class="menu"><button type="button" data-a="ok" class="${danger ? 'danger' : ''}">${I(danger ? 'trash' : 'check', { size: 16 })}${esc(ok)}</button><button type="button" data-a="no">${I('x', { size: 16 })}Annuler</button></div>`;
       let res = false;
@@ -1506,8 +1522,8 @@
   function pickDayFor(stopOrId, label, after) {
     ensureTrip();
     const stop = typeof stopOrId === 'string' ? { t: 's', id: stopOrId } : stopOrId;
-    const dlg = $('#dlg-pick');
-    $('#pick-title').textContent = `${label ? esc(label) + ' · ' : ''}Ajouter à quel jour ?`;
+    const dlg = $('#dlg-pick'); if (dlg.open) dlg.close();
+    $('#pick-title').textContent = `${label ? label + ' · ' : ''}Ajouter à quel jour ?`;
     $('#pick-list').innerHTML = `<div class="menu">` + state.trip.days.map((d, i) => { const fi = forecastIdx(dayIso(i)); const s = stop.t === 's' ? spotById(stop.id) : null; const r = s && fi >= 0 && state.bulk ? scoreOf(s, fi) : null;
       const has = d.stops.some((x) => x.t === stop.t && x.id === stop.id);
       return `<button type="button" data-i="${i}" ${has ? 'disabled style="opacity:.5"' : ''}><span class="n" style="width:26px;height:26px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span><span>Jour ${i + 1} · ${dayLabel(i)}</span><span class="sub">${has ? 'déjà' : d.stops.length + ' étape' + (d.stops.length > 1 ? 's' : '')}${r ? ` · <b style="color:var(--${r.cls})">${r.score ?? '—'}</b>` : ''}</span></button>`; }).join('') +
@@ -1526,7 +1542,7 @@
   /* Menu d'actions d'une étape (mobile) : voir, monter, descendre, déplacer, retirer. */
   function stepMenu(di, k) {
     const t = state.trip, d = t.days[di], st = d.stops[k], info = stopInfo(st); if (!info) return;
-    const dlg = $('#dlg-pick');
+    const dlg = $('#dlg-pick'); if (dlg.open) dlg.close();
     $('#pick-title').textContent = info.name;
     const others = t.days.map((_, i) => i).filter((i) => i !== di);
     $('#pick-list').innerHTML = `<div class="menu">
@@ -1543,7 +1559,7 @@
       manualEdit();
       if (act === 'up') [d.stops[k - 1], d.stops[k]] = [d.stops[k], d.stops[k - 1]];
       else if (act === 'down') [d.stops[k + 1], d.stops[k]] = [d.stops[k], d.stops[k + 1]];
-      else if (act === 'move') { d.stops.splice(k, 1); t.days[+b.dataset.i].stops.push(st); }
+      else if (act === 'move') { const key = (x) => x.t + ':' + (x.id || x.text); if (t.days[+b.dataset.i].stops.some((x) => key(x) === key(st))) { toast('Déjà dans ce jour'); return; } d.stops.splice(k, 1); t.days[+b.dataset.i].stops.push(st); }
       else if (act === 'rm') d.stops.splice(k, 1);
       save(); renderTabs(); renderTrip(); paintMarkers(); buzz();
     });

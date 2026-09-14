@@ -112,7 +112,7 @@ try:
     check(c == 200 and 'Access-Control-Allow-Origin' not in str(r.get('_headers', {})), 'CORS : origine inconnue sans en-tête (corps JSON, pas d\'en-tête reflété)')
     c, r = call('POST', None, {}, path='/api/auth/logout', token=tb)
     c, r = call('GET', None, path='/api/me', token=tb)
-    check(c == 401, 'déconnexion : jeton invalidé')
+    check(c == 401, 'déconnexion : jeton invalidé (corps de la déconnexion consommé, connexion alignée)')
     c, r = call('POST', None, {'password': 'faux', 'newPassword': 'nouveaumdp9'}, path='/api/auth/password', token=ta)
     check(c == 401, 'mot de passe : l\'actuel est vérifié')
     c, r = call('POST', None, {'email': 'ana@example.org', 'password': 'motdepasse1'}, path='/api/auth/login'); ta2 = r['token']
@@ -128,7 +128,7 @@ try:
     c, r = call('PUT', None, {'newInvite': True, 'name': '<b>Été</b> 2026'}, path=f"/api/w/{ws['id']}", token=ta)
     check(c == 200 and r['workspace']['invite'] != old_inv and r['workspace']['name'] == 'bÉté/b 2026', 'nouveau code sur demande, nom nettoyé des balises')
     c, r = call('POST', None, {'email': 'bo@example.org', 'password': 'motdepasse2'}, path='/api/auth/login'); tb = r['token']
-    c, r = call('POST', None, {}, path=f"/api/w/{ws['id']}/leave", token=tb)
+    c, r = call('POST', None, None, path=f"/api/w/{ws['id']}/leave", token=tb)   # sans corps, comme l'application
     c, r2 = call('GET', None, path=f"/api/w/{ws['id']}", token=ta)
     check(c == 200 and len(r2['workspace']['members']) == 1 and r2['workspace']['invite'] != r['workspace']['invite'] if False else (len(r2['workspace']['members']) == 1), 'quitter : membre retiré')
     c, r3 = call('POST', None, {'code': old_inv}, path='/api/workspaces/join', token=tb)

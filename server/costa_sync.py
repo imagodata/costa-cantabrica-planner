@@ -56,6 +56,7 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 EMPTY = {"users": {"a": {"name": "Voyageur 1", "wish": [], "suggest": []}, "b": {"name": "Voyageur 2", "wish": [], "suggest": []}},
          "plans": {}, "trip": {"base": None, "start": None, "days": [], "auto": False, "autoBy": None}, "prefs": None, "log": []}
 RATE = defaultdict(deque)   # limitation des tentatives par (type, adresse) et par compte
+RATE_LOCK = threading.Lock()
 STATE_MAX = 256 * 1024      # taille sérialisée maximale d'un séjour
 DUMMY_HASH = None           # hachage factice pour égaliser le temps de réponse d'une connexion sur compte inconnu
 CTRL_RE = re.compile(r"[<>\x00-\x1f\x7f]")
@@ -168,6 +169,7 @@ def clean_text(v, n):
 
 
 def rate_ok(key, limit=20, window=600):
+  with RATE_LOCK:
     if len(RATE) > 5000:   # purge des files vides ou anciennes
         for k in [k for k, q in RATE.items() if not q or q[-1] < time.time() - window]:
             RATE.pop(k, None)
@@ -228,7 +230,7 @@ def clean_days(days):
                 continue
             t = st.get("t")
             lock = {"lock": True} if st.get("lock") is True else {}
-            if t in ("s", "p") and isinstance(st.get("id"), str):
+            if t in ("s", "p") and isinstance(st.get("id"), str) and ID_RE.match(st["id"]):
                 stops.append({"t": t, "id": st["id"][:32], **lock})
             elif t == "x" and isinstance(st.get("text"), str) and st["text"].strip():
                 stops.append({"t": "x", "text": st["text"].strip()[:80], **lock})
@@ -348,23 +350,30 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def _body(self):
+    def _body(self, optional=False):
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
+            self.close_connection = True
             raise Http(400, {"error": "Content-Length invalide"})
         if n <= 0:
+            if optional:
+                return {}
             raise Http(400, {"error": "corps requis"})
-        if n > MAX_BODY:   # on consomme (borné) avant de refuser, pour que le client reçoive bien le 413
+        if n > MAX_BODY:   # on consomme (borné) avant de refuser, pour que le client reçoive bien le 413 ; au-delà, la connexion est fermée
             left = min(n, 4 * MAX_BODY)
             while left > 0:
                 chunk = self.rfile.read(min(65536, left))
                 if not chunk:
                     break
                 left -= len(chunk)
+            self.close_connection = True
             raise Http(413, {"error": "corps trop volumineux"})
+        raw = self.rfile.read(n)   # toujours consommé : la connexion persistante reste alignée
+        if optional and not raw.strip():
+            return {}
         try:
-            body = json.loads(self.rfile.read(n).decode("utf-8"))
+            body = json.loads(raw.decode("utf-8"))
             assert isinstance(body, dict)
             return body
         except Exception:
@@ -413,7 +422,7 @@ class H(BaseHTTPRequestHandler):
     def _route(self, method):
         path = self.path.split("?")[0].rstrip("/") or "/"
         try:
-            body = self._body() if method in ("PUT", "POST") and path not in ("/api/auth/logout",) else None   # lu hors verrou
+            body = self._body(optional=path == "/api/auth/logout" or path.endswith("/leave")) if method in ("PUT", "POST") else None   # lu hors verrou
             if path in ("/api/auth/register", "/api/auth/login") and method == "POST":   # hachage scrypt hors verrou global
                 return self._register(body) if path.endswith("register") else self._login(body)
             if path == "/api/auth/password" and method == "POST":
@@ -478,6 +487,8 @@ class H(BaseHTTPRequestHandler):
         self._send(200, {"token": token, "user": {"id": row["id"], "email": row["email"], "name": row["name"]}})
 
     def _password(self, b):
+        if not rate_ok(("password", self._ip()), limit=10, window=900):
+            raise Http(429, {"error": "trop de tentatives, réessayez plus tard"})
         with LOCK, db() as con:
             user = self._account(con)
             if not user:

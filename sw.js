@@ -1,8 +1,9 @@
 /* Service worker : coquille hors-ligne, données en cache (stale-while-revalidate, clés versionnées),
    tuiles OSM en cache avec expiration ; API météo et imagerie Esri toujours en réseau. */
-const VERSION = 'v202609142049';
-const SHELL = ['./', './index.html', './app.html', './login.html', './css/style.css', './css/site.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js',
-  './js/swipe.js', './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
+const VERSION = 'v202609142057';
+const V = VERSION.slice(1);   // les pages demandent ces ressources avec ?v=… : le pré-cache doit porter la même clé
+const SHELL = ['./', './index.html', './app.html', './login.html', ...['./css/style.css', './css/site.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js', './js/swipe.js'].map((u) => u + '?v=' + V),
+  './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
   './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './img/cover.jpg'];
 const TILE_MAX_AGE = 7 * 24 * 3600 * 1000, TILE_MAX = 600, PAGE_MAX = 80;
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
@@ -24,7 +25,7 @@ async function navigate(req) {
 }
 async function staleWhileRevalidate(req) {
   const cache = await caches.open(VERSION);
-  const cached = await cache.match(req);           // clé complète, paramètre ?v= inclus : une version = une entrée
+  const cached = (await cache.match(req)) || (await cache.match(req, { ignoreSearch: true }));   // clé versionnée, repli sans paramètre
   const net = fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
   return cached || (await net) || new Response('Hors ligne', { status: 503 });
 }

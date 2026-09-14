@@ -17,14 +17,14 @@ if [ "${1:-}" = "--init" ]; then
   USERS=""
   for pair in "$@"; do
     U="${pair%%:*}"; P="${pair#*:}"
-    H=$(ssh "$VPS" "caddy hash-password --plaintext '$P'")
+    H=$(printf '%s' "$P" | ssh "$VPS" "caddy hash-password")   # mot de passe transmis sur l'entrée standard, jamais interpolé
     USERS="$USERS		$U $H
 "
   done
   # retire un éventuel bloc précédent (entre les marqueurs), sauvegarde, puis ajoute le nouveau
   ssh "$VPS" "mkdir -p $DIR && cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-costa-\$(date +%s) \
-    && awk '/^# --- Costa Cantábrica \(version protégée\)/{skip=1} /^# --- \/Costa ---/{skip=0; next} !skip' /etc/caddy/Caddyfile > /etc/caddy/Caddyfile.new && mv /etc/caddy/Caddyfile.new /etc/caddy/Caddyfile \
-    && cat >> /etc/caddy/Caddyfile <<'CADDY'
+    && awk '/^# --- Costa Cantábrica/{skip=1} /^# --- \/Costa ---/{skip=0; next} !skip' /etc/caddy/Caddyfile > /etc/caddy/Caddyfile.new \
+    && cat >> /etc/caddy/Caddyfile.new <<'CADDY'
 # --- Costa Cantábrica (version protégée) : $HOST ---
 $HOST {
 	encode zstd gzip
@@ -48,15 +48,15 @@ $USERS	}
 }
 # --- /Costa ---
 CADDY
-caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy && echo 'Caddy rechargé'"
+caddy validate --config /etc/caddy/Caddyfile.new --adapter caddyfile && mv /etc/caddy/Caddyfile.new /etc/caddy/Caddyfile && systemctl reload caddy && echo 'Caddy rechargé'"
 fi
 
 if [ "${1:-}" = "--open" ]; then
   # Site ouvert : plus de mot de passe Caddy, l'identité est celle des comptes de l'application ;
   # l'en-tête X-User d'un client est retiré (le mode hérité /api/state ne peut plus être usurpé).
   ssh "$VPS" "mkdir -p $DIR && cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-costa-\$(date +%s) \
-    && awk '/^# --- Costa Cantábrica/{skip=1} /^# --- \/Costa ---/{skip=0; next} !skip' /etc/caddy/Caddyfile > /etc/caddy/Caddyfile.new && mv /etc/caddy/Caddyfile.new /etc/caddy/Caddyfile \
-    && cat >> /etc/caddy/Caddyfile <<'CADDY'
+    && awk '/^# --- Costa Cantábrica/{skip=1} /^# --- \/Costa ---/{skip=0; next} !skip' /etc/caddy/Caddyfile > /etc/caddy/Caddyfile.new \
+    && cat >> /etc/caddy/Caddyfile.new <<'CADDY'
 # --- Costa Cantábrica (comptes dans l'application) : $HOST ---
 $HOST {
 	encode zstd gzip
@@ -76,7 +76,7 @@ $HOST {
 }
 # --- /Costa ---
 CADDY
-caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy && echo 'Caddy rechargé : site ouvert, connexion par compte'"
+caddy validate --config /etc/caddy/Caddyfile.new --adapter caddyfile && mv /etc/caddy/Caddyfile.new /etc/caddy/Caddyfile && systemctl reload caddy && echo 'Caddy rechargé : site ouvert, connexion par compte'"
   shift
 fi
 

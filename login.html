@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0b6e99">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/site.css?v=202609142049">
+  <link rel="stylesheet" href="css/site.css?v=202609142057">
 </head>
 <body>
 <div class="wrap" style="max-width:520px">
@@ -75,7 +75,7 @@
   </section>
   <footer><a href="./">Retour à l'accueil</a></footer>
 </div>
-<script src="js/config.js?v=202609142049"></script>
+<script src="js/config.js?v=202609142057"></script>
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), C = window.CCP.CONFIG, LS_AUTH = 'ccp:auth:v1', KEY = 'ccp:state:v' + C.version;
@@ -94,7 +94,8 @@
   let mode = 'login';
   const setMode = (m) => { mode = m; $('#t-login').classList.toggle('on', m === 'login'); $('#t-register').classList.toggle('on', m === 'register'); $('#l-name').hidden = m !== 'register'; $('#a-go').textContent = m === 'login' ? 'Se connecter' : 'Créer mon compte'; $('#a-pw').autocomplete = m === 'login' ? 'current-password' : 'new-password'; err($('#a-err')); };
   $('#t-login').onclick = () => setMode('login'); $('#t-register').onclick = () => setMode('register');
-  $('#f-auth').onsubmit = async () => {
+  $('#f-auth').addEventListener('submit', async (e) => {
+    e.preventDefault();
     err($('#a-err')); $('#a-go').disabled = true;
     try {
       const body = { email: $('#a-email').value.trim(), password: $('#a-pw').value };
@@ -103,8 +104,8 @@
       auth = { token: j.token, user: j.user, ws: null }; localStorage.setItem(LS_AUTH, JSON.stringify(auth));
       await listWs();
     } catch (e) { err($('#a-err'), e.message === 'Failed to fetch' ? 'Service injoignable : vérifiez la connexion.' : e.message); }
-    $('#a-go').disabled = false; return false;
-  };
+    $('#a-go').disabled = false;
+  });
   // ---- séjours
   async function listWs() {
     const me = await call('api/me', null, 'GET');
