@@ -66,6 +66,8 @@
   /* Vue aérienne : mosaïque de tuiles satellite centrée sur le point (aucune bibliothèque). */
   const AERIAL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
   const AERIAL_CREDIT = 'Vue aérienne · Imagerie © Esri, Maxar, Earthstar Geographics';
+  const PNOA_URL = 'https://www.ign.es/wmts/pnoa-ma?request=GetTile&service=WMTS&version=1.0.0&layer=OI.OrthoimageCoverage&style=default&format=image/jpeg&tilematrixset=GoogleMapsCompatible&tilematrix={z}&tilerow={y}&tilecol={x}';
+  const TERRAIN_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
   function tilePx(lat, lon, z) {
     const n = 2 ** z, x = (lon + 180) / 360 * n, latR = lat * Math.PI / 180;
     const y = (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n;
@@ -554,14 +556,24 @@
   function initMap() {
     map = L.map('map', { zoomControl: true, attributionControl: true, tapTolerance: 20, zoomSnap: 0.5, wheelPxPerZoomLevel: 90, preferCanvas: true }).setView(C.center, C.zoom);
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · prévisions <a href="https://open-meteo.com/">Open-Meteo</a>' });
-    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics · <a href="https://www.openstreetmap.org/copyright">OSM</a>' });
     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
-    baseLayers = { osm, sat, topo };
-    let base = 'sat'; try { base = localStorage.getItem('ccp:base') || 'sat'; } catch (e) { }   // vue aérienne par défaut, choix mémorisé
-    (baseLayers[base] || sat).addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
-    map.on('baselayerchange', (e) => { const k = { Plan: 'osm', Satellite: 'sat', Relief: 'topo' }[e.name]; if (k) try { localStorage.setItem('ccp:base', k); } catch (x) { } });
-    L.control.layers({ 'Plan': osm, 'Satellite': sat, 'Relief': topo }, null, { position: 'bottomright' }).addTo(map);
+    // Orthophoto officielle espagnole (PNOA, 25 cm, CC BY 4.0 IGN) : plus fine qu'Esri sur la côte
+    const pnoa = L.tileLayer(PNOA_URL, { maxZoom: 19, attribution: 'PNOA © <a href="https://www.ign.es/">IGN</a> (CC BY 4.0) · <a href="https://www.openstreetmap.org/copyright">OSM</a>' });
+    // Étiquettes (villes, villages) et ombrage du relief, superposables au satellite
+    const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, pane: 'overlayPane', zIndex: 3 });
+    const hill = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, opacity: .55, className: 'hill-tiles', pane: 'overlayPane', zIndex: 2 });
+    baseLayers = { osm, sat, pnoa, topo, labels, hill };
+    let base = 'sat', ov = { labels: true, hill: true };
+    try { base = localStorage.getItem('ccp:base') || 'sat'; Object.assign(ov, JSON.parse(localStorage.getItem('ccp:overlays') || '{}')); } catch (e) { }   // vue aérienne par défaut, choix mémorisés
+    (baseLayers[base] || sat).addTo(map); if (ov.hill) hill.addTo(map); if (ov.labels) labels.addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
+    const NAMES = { Plan: 'osm', Satellite: 'sat', 'Ortho IGN (PNOA)': 'pnoa', Relief: 'topo' };
+    map.on('baselayerchange', (e) => { const k = NAMES[e.name]; if (k) try { localStorage.setItem('ccp:base', k); } catch (x) { } });
+    const saveOv = () => { try { localStorage.setItem('ccp:overlays', JSON.stringify({ labels: map.hasLayer(labels), hill: map.hasLayer(hill) })); } catch (x) { } };
+    map.on('overlayadd overlayremove', saveOv);
+    L.control.layers({ 'Plan': osm, 'Satellite': sat, 'Ortho IGN (PNOA)': pnoa, 'Relief': topo }, { 'Noms de lieux': labels, 'Relief (ombrage)': hill }, { position: 'bottomright' }).addTo(map);
     L.control.scale({ imperial: false }).addTo(map);
+    map.attributionControl.setPrefix(false);   // place gagnée sur téléphone
     for (const s of state.spots) {
       const m = L.circleMarker(latlng(s), { radius: 7, weight: 2, color: '#fff', fillColor: '#9aa0a6', fillOpacity: .95 })
         .bindTooltip(s.properties.name, { className: 'spot-tip', direction: 'top', offset: [0, -6] })
@@ -726,11 +738,71 @@
   /* Fond satellite centré sur la plage : accès, parking, rochers se lisent mieux qu'en vue fixe. */
   function showSatellite(s) {
     if (!baseLayers) return;
-    for (const l of Object.values(baseLayers)) if (l !== baseLayers.sat && map.hasLayer(l)) map.removeLayer(l);
-    if (!map.hasLayer(baseLayers.sat)) baseLayers.sat.addTo(map);
+    if (!map.hasLayer(baseLayers.pnoa)) { for (const k of ['osm', 'topo', 'sat']) if (map.hasLayer(baseLayers[k])) map.removeLayer(baseLayers[k]); baseLayers.sat.addTo(map); }
     progMove(() => map.setView(latlng(s), Math.max(16, aerialZoom(s, map.getSize().x, 14, 17)), { animate: false }));
     if (isMobile()) setSheet('peek');
     toast('Fond satellite · le contrôle des couches (en bas à droite) ramène au plan');
+  }
+  /* ------------------------------------------------------------------ vue 3D du relief (MapLibre GL, chargé à la demande)
+     Terrain : tuiles d'altitude Terrarium (Mapzen / AWS Open Data) ; imagerie drapée : Esri ou PNOA selon le fond
+     courant ; étiquettes Esri. Caméra inclinée, orientée depuis la mer vers la côte (C.coastBearing). */
+  let gl = null, glReady = null, glHome = null;
+  function loadMaplibre() {
+    if (window.maplibregl) return Promise.resolve();
+    if (glReady) return glReady;
+    glReady = new Promise((res, rej) => {
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'vendor/maplibre/maplibre-gl.css?v=' + assetVer; document.head.appendChild(l);
+      const s = document.createElement('script'); s.src = 'vendor/maplibre/maplibre-gl.js?v=' + assetVer; s.onload = res; s.onerror = () => rej(new Error('MapLibre introuvable')); document.head.appendChild(s);
+    });
+    return glReady;
+  }
+  async function open3d({ lat, lon, zoom = 14, name = '', bearing = C.coastBearing ?? 180 } = {}) {
+    const box = $('#view3d'); box.hidden = false; $('#v3-title').textContent = name; $('#v3-hint').classList.remove('off');
+    $('#gl').innerHTML = '<div class="loading" style="color:#fff">Chargement de la vue 3D…</div>';
+    try { await loadMaplibre(); } catch (e) { $('#gl').innerHTML = '<div class="v3-err">Vue 3D indisponible hors ligne.</div>'; return; }
+    const probe = document.createElement('canvas'), ctx = probe.getContext('webgl2') || probe.getContext('webgl');   // MapLibre ≥ 3 n'expose plus supported()
+    if (!ctx) { $('#gl').innerHTML = '<div class="v3-err">La 3D (WebGL) n\'est pas disponible sur cet appareil.</div>'; return; }
+    const usePnoa = map && baseLayers && map.hasLayer(baseLayers.pnoa);
+    const imagery = usePnoa ? PNOA_URL.replace('{z}', '{z}').replace('{y}', '{y}').replace('{x}', '{x}') : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    glHome = { center: [lon, lat], zoom, pitch: 62, bearing };
+    if (gl) { gl.getSource('sat') && gl.getSource('sat').setTiles && gl.getSource('sat').setTiles([imagery]); gl.jumpTo(glHome); place3dMarker(lat, lon, name); gl.resize(); return; }
+    $('#gl').innerHTML = '';
+    try {
+      gl = new maplibregl.Map({
+        container: 'gl', center: glHome.center, zoom, pitch: 62, bearing, maxPitch: 80, attributionControl: false, antialias: false,
+        style: { version: 8,
+          sources: {
+            sat: { type: 'raster', tiles: [imagery], tileSize: 256, maxzoom: 18, attribution: usePnoa ? 'PNOA © IGN' : '© Esri' },
+            labels: { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 17 },
+            dem: { type: 'raster-dem', tiles: [TERRAIN_URL], tileSize: 256, maxzoom: 15, encoding: 'terrarium', attribution: 'Terrain Tiles, Mapzen / AWS Open Data' },
+          },
+          layers: [{ id: 'sat', type: 'raster', source: 'sat' }, { id: 'labels', type: 'raster', source: 'labels', paint: { 'raster-opacity': .9 } }],
+          terrain: { source: 'dem', exaggeration: 1.35 },
+          sky: { 'sky-color': '#9fc8e6', 'horizon-color': '#dbe9f3', 'fog-color': '#c7d8e4', 'fog-ground-blend': .55, 'horizon-fog-blend': .7, 'sky-horizon-blend': .6, 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 10, 1, 12, 0] },
+        },
+      });
+      gl.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: true }), 'top-right');
+      gl.touchZoomRotate.enableRotation(); gl.dragRotate.enable();
+      gl.on('error', (e) => { if (e && e.error && /WebGL|context/i.test(String(e.error.message || ''))) $('#gl').innerHTML = '<div class="v3-err">La 3D (WebGL) n\'est pas disponible sur cet appareil.</div>'; });
+      gl.once('pointerdown', () => $('#v3-hint').classList.add('off')); setTimeout(() => $('#v3-hint').classList.add('off'), 6000);
+      place3dMarker(lat, lon, name);
+    } catch (e) { $('#gl').innerHTML = '<div class="v3-err">La 3D n\'est pas disponible sur cet appareil.</div>'; gl = null; }
+  }
+  let glMarker = null;
+  function place3dMarker(lat, lon, name) {
+    if (!gl) return;
+    if (glMarker) glMarker.remove();
+    if (!name) { glMarker = null; return; }
+    const el = document.createElement('div'); el.className = 'num-pin both'; el.style.background = 'var(--accent)'; el.style.width = el.style.height = '22px'; el.textContent = '';
+    glMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lon, lat]).addTo(gl);
+  }
+  function close3d() { $('#view3d').hidden = true; }
+  function init3d() {
+    $('#btn-3d').textContent = '3D'; $('#v3-close').innerHTML = I('x', { size: 20 }); $('#v3-reset').innerHTML = I('locate', { size: 20 });
+    $('#btn-3d').onclick = () => { const c = map.getCenter(); const s = state.selected && spotById(state.selected); const [lat, lon] = s ? latlng(s) : [c.lat, c.lng]; open3d({ lat, lon, zoom: Math.max(13, Math.min(16, map.getZoom())), name: s ? s.properties.name : '' }); };
+    $('#v3-close').onclick = close3d;
+    $('#v3-reset').onclick = () => { if (gl && glHome) gl.flyTo({ ...glHome, duration: 900 }); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#view3d').hidden) { close3d(); e.stopImmediatePropagation(); } }, true);
   }
   function fitAll() {
     if (!state.spots.length) return;
@@ -1514,6 +1586,7 @@
         <div id="plan-slot"></div>
         <div class="links">
           <button type="button" id="btn-sat" title="Voir la plage en satellite sur la carte">${I('layers', { size: 14 })}Satellite</button>
+          <button type="button" id="btn-3d-spot" title="Voir le relief en 3D, depuis la mer">${I('boot', { size: 14 })}Relief 3D</button>
           <a href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(p.name)})">${I('pin', { size: 14 })}GPS</a>
           ${wiki ? `<a href="${wiki}" target="_blank" rel="noopener">${I('book', { size: 14 })}Wikipédia</a>` : ''}
           <a href="${commons}" target="_blank" rel="noopener">${I('camera', { size: 14 })}Photos</a>
@@ -1524,6 +1597,7 @@
       </div>`;
     $('#btn-close').onclick = () => closeDetail();
     $('#btn-sat').onclick = () => showSatellite(s);
+    $('#btn-3d-spot').onclick = () => open3d({ lat, lon, zoom: 14.5, name: p.name });
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
     $('#btn-suggest') && ($('#btn-suggest').onclick = () => toggleSuggest(p.id));
@@ -1866,7 +1940,7 @@
     state.spots = fc.features; state.photos = photos || {};
     state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
     routed = !shared && applyRoute();
-    renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
+    renderChrome(); initSheet(); initMap(); initPois(); init3d(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
     if (state.view !== 'explore') setView(state.view);
     $('#q').value = state.filters.q;
     if (!shared && !routed) showIntro();

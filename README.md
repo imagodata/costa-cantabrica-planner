@@ -88,8 +88,13 @@ deux listes sur l'autre téléphone.
   d'erreur avec nouvel essai, bouton retour du navigateur qui ferme la fiche, touche Échap,
   focus clavier visible, mouvements réduits respectés, service worker (coquille et données
   disponibles hors ligne, tuiles en cache), thème sombre, panneau latéral sur grand écran.
-- Fonds de carte : **satellite Esri par défaut**, plan OSM, relief OpenTopoMap ; le choix est mémorisé
-  sur l'appareil (le fond satellite n'est pas mis en cache hors ligne, conformément aux conditions d'Esri).
+- Fonds de carte : **satellite Esri par défaut**, **orthophoto PNOA © IGN** (25 cm, CC BY 4.0), plan
+  OSM, relief OpenTopoMap ; superpositions **Noms de lieux** et **Relief (ombrage)** ; choix mémorisés
+  sur l'appareil (les fonds satellite ne sont pas mis en cache hors ligne).
+- **Vue 3D du relief** (bouton « 3D » sur la carte, « Relief 3D » dans une fiche) : MapLibre GL hébergé
+  localement (`vendor/maplibre/`, chargé à la demande), terrain issu des Terrain Tiles Mapzen (AWS Open
+  Data), orthophoto drapée (Esri, ou PNOA si c'est le fond courant), étiquettes ; caméra inclinée
+  depuis la mer vers la côte (`coastBearing` dans `js/config.js`), inclinaison et rotation au doigt.
 
 ## Sources de données
 
@@ -99,6 +104,8 @@ deux listes sur l'autre téléphone.
 | Météo | [Open-Meteo](https://open-meteo.com) `forecast` | gratuit, sans clé, usage non commercial |
 | Houle, niveau de la mer, T° eau | Open-Meteo `marine` (`cell_selection=sea`) | grille marine grossière près des côtes (~10–20 km) : la houle est celle du large, pas celle de la plage abritée |
 | Marées | dérivées du `sea_level_height_msl` horaire d'Open-Meteo | approximation (±20 min) ; pour une sortie qui dépend de la marée (Gulpiyuri, grottes…), vérifier avec les tables officielles |
+| Orthophoto | [PNOA](https://pnoa.ign.es) © Instituto Geográfico Nacional | CC BY 4.0, WMTS `pnoa-ma` |
+| Relief 3D | [Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) (Mapzen, AWS Open Data), étiquettes Esri | encodage Terrarium, zoom 15 max |
 | Photos | [Wikimedia Commons](https://commons.wikimedia.org) via Wikidata (P18), Wikipédia ou recherche géographique ; repli [Openverse](https://openverse.org) (Flickr…) | licences libres, crédit affiché ; `python3 scripts/fetch_photos.py` → `data/photos.json` |
 
 Les prévisions sont mises en cache dans le navigateur pendant 60 min.

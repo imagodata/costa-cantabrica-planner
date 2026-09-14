@@ -5,6 +5,7 @@ CCP.CONFIG = {
   center: [43.45, -5.0],
   zoom: 8,
   forecastDays: 7,
+  coastBearing: 180,   // vue 3D : la caméra regarde vers cet azimut (180 = vers le sud, depuis la mer pour une côte exposée au nord)
   cacheTtlMin: 180,
   timezone: 'Europe/Madrid',
   // Service (comptes, séjours partagés) : même origine par défaut ; depuis GitHub Pages, le VPS.

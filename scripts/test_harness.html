@@ -81,6 +81,10 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     check(!!$('.hero .aerial.slide .scalebar') && /m$/.test($('.hero .aerial.slide .scalebar').textContent) && $$('.hero .aerial.slide img').length >= 2, `aérien · vue aérienne avec échelle « ${$('.hero .aerial.slide .scalebar') && $('.hero .aerial.slide .scalebar').textContent} » et ${$$('.hero .aerial.slide img').length} tuiles`);
     $('#btn-sat').click(); await wait(() => D().querySelector('.leaflet-tile-pane img[src*="arcgisonline"]'), 8000, 'fond satellite');
     check(!!D().querySelector('.leaflet-tile-pane img[src*="arcgisonline"]') && $('#sheet').classList.contains('peek'), 'aérien · « Satellite » bascule le fond de carte et replie le panneau');
+    check(!!D().querySelector('.leaflet-overlay-pane img[src*="World_Boundaries_and_Places"]') || !!D().querySelector('.leaflet-tile-pane img[src*="World_Boundaries_and_Places"]'), 'carte · étiquettes des lieux superposées par défaut');
+    $('#btn-3d-spot').click(); await wait(() => !$('#view3d').hidden && (D().querySelector('#gl canvas') || $('#gl .v3-err')), 20000, 'vue 3D');
+    check(!$('#view3d').hidden && $('#v3-title').textContent.length > 0 && !!W().maplibregl, `3D · vue ouverte (${D().querySelector('#gl canvas') ? 'WebGL actif' : 'WebGL indisponible ici, message affiché'})`);
+    $('#v3-close').click(); check($('#view3d').hidden, '3D · fermeture');
     $('#sheet').classList.remove('peek'); $('#sheet').classList.add('full');
     $('.nearby li').click(); await wait(() => vis('#panel-poi'), 5000, 'fiche de lieu à nouveau');
     W().history.back(); await wait(() => !vis('#panel-poi') && vis('#panel-detail'), 5000, 'retour au lieu');
