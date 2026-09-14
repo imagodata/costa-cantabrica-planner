@@ -556,8 +556,10 @@
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · prévisions <a href="https://open-meteo.com/">Open-Meteo</a>' });
     const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
-    osm.addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
     baseLayers = { osm, sat, topo };
+    let base = 'sat'; try { base = localStorage.getItem('ccp:base') || 'sat'; } catch (e) { }   // vue aérienne par défaut, choix mémorisé
+    (baseLayers[base] || sat).addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
+    map.on('baselayerchange', (e) => { const k = { Plan: 'osm', Satellite: 'sat', Relief: 'topo' }[e.name]; if (k) try { localStorage.setItem('ccp:base', k); } catch (x) { } });
     L.control.layers({ 'Plan': osm, 'Satellite': sat, 'Relief': topo }, null, { position: 'bottomright' }).addTo(map);
     L.control.scale({ imperial: false }).addTo(map);
     for (const s of state.spots) {

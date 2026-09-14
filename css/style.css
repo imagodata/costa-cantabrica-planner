@@ -61,7 +61,7 @@ svg.ic { flex: 0 0 auto; vertical-align: -3px; }
 .linkbtn { color: var(--accent); font-weight: 600; font-size: 13.5px; min-height: 40px; display: inline-flex; align-items: center; gap: 4px; padding: 0 4px; }
 
 /* ---------- carte ---------- */
-#map { position: fixed; inset: var(--topbar) 0 0 0; z-index: 1; background: #cfe3ee; }
+#map { position: fixed; inset: var(--topbar) 0 0 0; z-index: 1; background: #1b3a4b; }
 .leaflet-container { font: inherit; }
 .leaflet-control-zoom, .leaflet-control-scale { display: none; }   /* sur téléphone : pincer pour zoomer ; la légende occupe le coin */
 .leaflet-bottom { bottom: calc(var(--sheet-h, 58vh) + 2px); transition: bottom .25s; }

@@ -88,7 +88,8 @@ deux listes sur l'autre téléphone.
   d'erreur avec nouvel essai, bouton retour du navigateur qui ferme la fiche, touche Échap,
   focus clavier visible, mouvements réduits respectés, service worker (coquille et données
   disponibles hors ligne, tuiles en cache), thème sombre, panneau latéral sur grand écran.
-- Fonds de carte : plan OSM, satellite Esri, relief OpenTopoMap.
+- Fonds de carte : **satellite Esri par défaut**, plan OSM, relief OpenTopoMap ; le choix est mémorisé
+  sur l'appareil (le fond satellite n'est pas mis en cache hors ligne, conformément aux conditions d'Esri).
 
 ## Sources de données
 
