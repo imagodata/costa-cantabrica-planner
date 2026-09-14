@@ -25,12 +25,16 @@
     sort: 'score',
     users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } },
     me: 'a',
+    fresh: new Set(),   // envies de l'autre reçues depuis la dernière consultation de l'onglet Envies
   };
   const scoreCache = new Map();
   let map, markers = new Map(), userMarker = null, sheet, detailData = null, detailDay = 0, detailReq = 0, listScroll = 0;
   let poiLayer = null, poiMarkers = new Map(), wishLayer = null, tripLayer = null, planLayer = null;
   const DAY_COLORS = ['#0b6e99', '#b45309', '#7c3aed', '#0a9396', '#d64545', '#4361ee', '#f0a202'];
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  /* Disposition : panneau latéral sur grand écran, en paysage bas et sur tablette (même requête que le CSS). */
+  const SIDE_MQ = matchMedia('(min-width: 900px), (orientation: landscape) and (max-height: 500px) and (min-width: 640px)');
+  const isMobile = () => !SIDE_MQ.matches;
 
   /* ------------------------------------------------------------------ utilitaires */
   const dayNames = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
@@ -79,11 +83,11 @@
   let toastT;
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 
-  function save() {
-    syncPush();
+  function persistLocal() {
     try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort,
       poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort, prefs: state.prefs })); } catch (e) { }
   }
+  function save() { persistLocal(); syncPush(); }
   function restore() {
     try {
       const j = JSON.parse(localStorage.getItem(LS_STATE) || 'null'); if (!j) return;
@@ -91,7 +95,7 @@
       if (j.me) state.me = j.me;
       if (j.profile && C.profiles[j.profile]) state.profile = j.profile;
       if (j.filters) Object.assign(state.filters, j.filters);
-      if (j.sort) state.sort = j.sort;
+      if (j.sort) state.sort = j.sort === 'dist' ? 'score' : j.sort;   // la position n'est pas mémorisée : ce tri n'a de sens qu'après « Ma position »
       if (j.poiOn) Object.assign(state.poiOn, j.poiOn);
       if (j.plans) state.plans = j.plans;
       if (j.wishWho) state.wishWho = j.wishWho;
@@ -123,76 +127,218 @@
   }
   function applyRoute() {
     const mp = location.hash.match(/^#poi=([nwr]\d+)$/);
-    if (mp) { ensurePois().then(() => { const x = poiById(mp[1]); if (x) showPoi(x); }); return 'poi'; }
+    if (mp) { ensurePois().then(() => { const x = poiById(mp[1]); if (x && currentPoi !== x.id) showPoi(x, { fromHistory: true }); }); return 'poi'; }
     const m = location.hash.match(/^#([a-z0-9-]+)$/);
     if (!m) return false;
     const s = spotBySlug(m[1]); if (!s) return false;
     state.selected = s.properties.id; return true;
   }
   /* ------------------------------------------------------------------ synchronisation serveur (version connectée)
-     Chaque écriture part au nom du profil authentifié : le serveur ne remplace que la liste de ce
-     voyageur ; programmes et séjour sont partagés (dernier écrivain gagnant, versionné). */
-  const sync = { on: false, version: null, timer: null, pushing: false, dirty: false, poll: null };
+     Le client garde le dernier état serveur connu (base) et n'envoie que la différence : sa liste
+     d'envies, les programmes touchés, les champs du séjour modifiés, les préférences. Le serveur fusionne
+     clé par clé (voir server/costa_sync.py). En cas de conflit de version (409), la différence locale
+     est rejouée sur l'état reçu puis renvoyée : rien n'est perdu. Hors ligne, la différence attend
+     (persistée) et repart au retour du réseau ou au lancement suivant. */
+  const LS_SYNC = 'ccp:sync:v' + C.version;
+  const sync = { on: false, version: null, timer: null, pushing: false, dirty: false, poll: null, base: null, err: false, at: 0, log: [], pending: 0 };
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const stable = (o) => Array.isArray(o) ? o.map(stable) : (o && typeof o === 'object') ? Object.fromEntries(Object.keys(o).sort().map((k) => [k, stable(o[k])])) : o;
+  const same = (a, b) => JSON.stringify(stable(a ?? null)) === JSON.stringify(stable(b ?? null));
+  const EMPTY_BASE = () => ({ users: { a: { name: DEFAULT_NAMES[0], wish: [] }, b: { name: DEFAULT_NAMES[1], wish: [] } }, plans: {}, trip: { base: null, start: null, days: [], auto: false }, prefs: clone(state.prefs) });
+  const snapshot = () => clone({ users: { a: { name: state.users.a.name, wish: state.users.a.wish }, b: { name: state.users.b.name, wish: state.users.b.wish } }, plans: state.plans, trip: state.trip, prefs: state.prefs });
+  const saveSyncMeta = () => { try { localStorage.setItem(LS_SYNC, JSON.stringify({ version: sync.version, base: sync.base, fresh: [...state.fresh] })); } catch (e) { } };
+  const validBase = (b) => !!(b && b.users && b.users.a && b.users.b && Array.isArray(b.users.a.wish) && Array.isArray(b.users.b.wish) && b.plans && typeof b.plans === 'object' && b.trip && Array.isArray(b.trip.days));
+  const restoreSyncMeta = () => {
+    try {
+      const j = JSON.parse(localStorage.getItem(LS_SYNC) || 'null'); if (!j) return;
+      const hasState = !!localStorage.getItem(LS_STATE);   // état local effacé (remise à zéro) : la base ne doit pas être rejouée comme une suppression
+      if (hasState && typeof j.version === 'number' && validBase(j.base)) { sync.version = j.version; sync.base = j.base; }
+      if (Array.isArray(j.fresh)) state.fresh = new Set(j.fresh.filter((x) => typeof x === 'string'));
+    } catch (e) { }
+  };
+  const nameOf = (id) => spotById(id)?.properties.name || 'une plage';
+  const itemName = (it) => it.text || poiById(it.poi)?.p.name || 'un lieu';
+  const emptyPlan = () => ({ notes: { a: '', b: '' }, items: [] });
+  /* Différence entre l'état local et la base, avec un résumé lisible de chaque changement (journal). */
+  function syncDiff(base) {
+    base = base || EMPTY_BASE();
+    const cur = snapshot(), me = state.me, other = me === 'a' ? 'b' : 'a', body = {}, log = [];
+    let n = 0;
+    if (!same(cur.users[me], base.users[me])) {
+      body.users = { [me]: cur.users[me] }; n++;
+      const was = new Set(base.users[me].wish || []), now = new Set(cur.users[me].wish);
+      for (const id of cur.users[me].wish) if (!was.has(id)) log.push(`a ajouté ${nameOf(id)} à ses envies`);
+      for (const id of base.users[me].wish || []) if (!now.has(id)) log.push(`a retiré ${nameOf(id)} de ses envies`);
+      if (cur.users[me].name !== base.users[me].name) log.push(`s'appelle désormais ${cur.users[me].name}`);
+    }
+    if (cur.users[other].name !== base.users[other].name) { body.users = { ...(body.users || {}), [other]: { name: cur.users[other].name } }; n++; }
+    const plans = {};
+    for (const id of new Set([...Object.keys(cur.plans), ...Object.keys(base.plans || {})])) {
+      if (same(cur.plans[id], (base.plans || {})[id])) continue;
+      plans[id] = cur.plans[id] || null; n++;
+      const c = cur.plans[id] || emptyPlan(), b = (base.plans || {})[id] || emptyPlan(), key = (it) => it.poi || 't:' + it.text;
+      const bk = new Set(b.items.map(key)), ck = new Set(c.items.map(key));
+      for (const it of c.items) if (!bk.has(key(it))) log.push(`a ajouté ${itemName(it)} au programme de ${nameOf(id)}`);
+      for (const it of b.items) if (!ck.has(key(it))) log.push(`a retiré ${itemName(it)} du programme de ${nameOf(id)}`);
+      if ((c.notes[me] || '') !== (b.notes[me] || '')) log.push(`a ${c.notes[me] ? 'modifié' : 'effacé'} sa note sur ${nameOf(id)}`);
+    }
+    if (Object.keys(plans).length) body.plans = plans;
+    const tr = {}, bt = base.trip || {};
+    for (const f of ['base', 'start', 'auto', 'autoBy']) if (!same(cur.trip[f], bt[f])) { tr[f] = cur.trip[f] ?? null; n++; }
+    if (!same(cur.trip.days, bt.days)) {
+      tr.days = cur.trip.days; n++;
+      const bd = bt.days || [];
+      cur.trip.days.forEach((d, i) => { if (!same(d, bd[i])) log.push(`a modifié le jour ${i + 1} du séjour`); });
+      if (cur.trip.days.length < bd.length) log.push(`a retiré ${bd.length - cur.trip.days.length} jour${bd.length - cur.trip.days.length > 1 ? 's' : ''} du séjour`);
+    }
+    if ('base' in tr) log.push(tr.base ? `a placé l'hébergement : ${tr.base.name}` : `a retiré l'hébergement`);
+    if ('start' in tr && tr.start) log.push(`a fixé l'arrivée au ${tr.start.split('-').reverse().join('/')}`);
+    if ('auto' in tr) log.push(tr.auto ? 'a activé le planning dynamique' : 'a figé le planning');
+    if (Object.keys(tr).length) body.trip = tr;
+    if (!same(cur.prefs, base.prefs)) { body.prefs = cur.prefs; n++; }
+    return { body, log, n, cur };
+  }
+  /* Fusion d'un programme : ma note et mes compléments, la note et les compléments de l'autre tels que le serveur les connaît. */
+  function mergePlan(local, server, me) {
+    const other = me === 'a' ? 'b' : 'a', l = local || emptyPlan(), s = server || emptyPlan(), key = (it) => it.poi || 't:' + it.text;
+    const sk = new Set(s.items.map(key)), lk = new Set(l.items.map(key));
+    const items = [...l.items.filter((it) => it.by === me || sk.has(key(it))), ...s.items.filter((it) => it.by !== me && !lk.has(key(it)))];
+    return { notes: { [me]: l.notes[me] || '', [other]: s.notes[other] || '' }, items };
+  }
+  /* Rejoue une différence locale sur l'état courant (après réception d'un état serveur). */
+  function applyDiff({ body, cur }) {
+    const me = state.me, other = me === 'a' ? 'b' : 'a', srv = sync.base || EMPTY_BASE();
+    if (body.users && body.users[me]) state.users[me] = clone(cur.users[me]);
+    if (body.users && body.users[other] && body.users[other].name) state.users[other].name = body.users[other].name;
+    for (const [id, p] of Object.entries(body.plans || {})) { if (p) state.plans[id] = mergePlan(p, srv.plans[id], me); else delete state.plans[id]; }
+    if (body.trip) for (const [f, v] of Object.entries(body.trip)) state.trip[f] = clone(v);
+    if (body.prefs) Object.assign(state.prefs, clone(body.prefs));
+  }
+  const fetchSync = (opts = {}) => fetch('api/state', { cache: 'no-store', ...opts, ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(15000) } : {}) });
+  const cleanUser = (u, fallback) => ({ name: String((u && u.name) || fallback.name).slice(0, 14), wish: ((u && u.wish) || []).filter((x) => typeof x === 'string') });
   const syncApply = (st) => {
-    const other = state.me === 'a' ? 'b' : 'a';
-    state.users[other] = { name: String(st.users[other].name || state.users[other].name).slice(0, 14), wish: (st.users[other].wish || []).filter((x) => typeof x === 'string') };
-    state.users[state.me] = { name: String(st.users[state.me].name || state.users[state.me].name).slice(0, 14), wish: (st.users[state.me].wish || []).filter((x) => typeof x === 'string') };
+    const me = state.me, other = me === 'a' ? 'b' : 'a';
+    const known = new Set(sync.base ? (sync.base.users[other].wish || []) : (st.users[other].wish || []));   // sans base connue : rien n'est « nouveau »
+    for (const id of st.users[other].wish || []) if (!known.has(id)) state.fresh.add(id);
+    state.users[other] = cleanUser(st.users[other], state.users[other]);
+    state.users[me] = cleanUser(st.users[me], state.users[me]);
     if (st.plans && typeof st.plans === 'object') state.plans = st.plans;
     if (st.trip && Array.isArray(st.trip.days)) state.trip = { auto: false, ...st.trip };
-    sync.version = st.version;
+    if (st.prefs && typeof st.prefs === 'object') Object.assign(state.prefs, st.prefs);
+    if (Array.isArray(st.log)) sync.log = st.log;
+    sync.version = st.version; sync.at = Date.now();
+    sync.base = clone({ users: { a: state.users.a, b: state.users.b }, plans: state.plans, trip: state.trip, prefs: state.prefs });
+    saveSyncMeta();
   };
   async function syncLoad() {
     try {
-      const r = await fetch('api/state', { cache: 'no-store' }); if (!r.ok) return false;
+      const r = await fetchSync(); if (!r.ok) return false;
       const st = await r.json(); if (!st || typeof st.version !== 'number') return false;
-      syncApply(st); sync.on = true; return true;
+      if (st.me === 'a' || st.me === 'b') state.me = st.me;
+      const local = sync.base ? syncDiff(sync.base) : null;   // modifications faites hors ligne ou avant une coupure : rejouées
+      const first = sync.base ? null : snapshot();             // première connexion de cet appareil : son travail local est ajouté, jamais écrasé
+      syncApply(st); sync.on = true; sync.err = false;
+      if (local && local.n) { applyDiff(local); persistLocal(); syncPush(); }
+      else if (first) mergeFirst(first);
+      return true;
     } catch (e) { return false; }
+  }
+  function mergeFirst(loc) {
+    const me = state.me;
+    state.users[me].wish = [...new Set([...state.users[me].wish, ...loc.users[me].wish])].slice(0, 500);
+    for (const [id, p] of Object.entries(loc.plans)) if (p && (p.items.length || p.notes[me])) state.plans[id] = mergePlan(p, state.plans[id], me);
+    if (!state.trip.days.some((d) => d.stops.length) && loc.trip.days.some((d) => d.stops.length)) state.trip = { ...state.trip, start: loc.trip.start, days: loc.trip.days };
+    if (!state.trip.base && loc.trip.base) state.trip.base = loc.trip.base;
+    if (syncDiff(sync.base).n) { persistLocal(); syncPush(); toast('Vos envies et programmes locaux ont été ajoutés au séjour partagé'); }
   }
   function syncPush() {
     if (!sync.on) return;
     sync.dirty = true; clearTimeout(sync.timer); sync.timer = setTimeout(syncFlush, 700);
   }
+  let flushWaits = 0;
   async function syncFlush() {
     if (!sync.on || sync.pushing) return;
+    if (!state.spots.length && flushWaits++ < 20) { clearTimeout(sync.timer); sync.timer = setTimeout(syncFlush, 800); return; }   // les noms de plages servent au journal
+    const diff = syncDiff(sync.base);
+    if (!diff.n) { sync.dirty = false; sync.pending = 0; renderSyncDot(); return; }
     sync.pushing = true; sync.dirty = false;
     try {
-      const body = { users: { a: { name: state.users.a.name, wish: state.users.a.wish }, b: { name: state.users.b.name, wish: state.users.b.wish } }, plans: state.plans, trip: state.trip };
-      const r = await fetch('api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': String(sync.version) }, body: JSON.stringify(body) });
-      if (r.status === 409) { const st = await r.json(); const mine = state.users[state.me]; syncApply(st); state.users[state.me] = mine; sync.pushing = false; syncPush(); rerenderAll(); return; }
+      const body = { ...diff.body, log: diff.log.slice(0, 6).map((text) => ({ text })) };
+      const r = await fetchSync({ method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': String(sync.version) }, body: JSON.stringify(body) });
+      if (r.status === 409) {   // l'autre a écrit entre-temps : son état, puis ma différence (y compris ce qui a été saisi pendant l'envoi), puis renvoi
+        const st = await r.json(); sync.pushing = false;
+        const late = syncDiff(sync.base);
+        syncApply(st); applyDiff(late); persistLocal(); rerenderAll({ soft: true }); syncPush(); return;
+      }
+      if (r.status === 403) { sync.on = false; sync.err = true; toast('Ce compte n\'est pas connu du serveur de synchronisation'); return; }
+      if (r.status >= 400 && r.status < 500) { sync.base = diff.cur; toast('Modification refusée par le serveur'); return; }   // définitif : on n'insiste pas
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      const st = await r.json(); sync.version = st.version; $('#sync-dot')?.classList.remove('err');
-    } catch (e) { $('#sync-dot')?.classList.add('err'); toast('Synchronisation impossible pour le moment'); }
-    sync.pushing = false;
-    if (sync.dirty) syncPush();
-  }
-  async function syncPoll() {
-    if (!sync.on || document.hidden || sync.pushing || sync.dirty) return;
-    try {
-      const r = await fetch('api/state', { cache: 'no-store' }); if (!r.ok) return;
       const st = await r.json();
-      if (st.version !== sync.version) { syncApply(st); try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort, poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort, prefs: state.prefs })); } catch (e) { } rerenderAll(); toast(`Mis à jour par ${esc(st.by === state.serverUser ? 'vous' : (st.by || 'l\'autre voyageur'))}`); }
-    } catch (e) { }
+      sync.version = st.version; sync.base = diff.cur; sync.at = Date.now(); sync.err = false;
+      if (Array.isArray(st.log)) sync.log = st.log;
+      saveSyncMeta();
+    } catch (e) { sync.err = true; sync.dirty = true; }
+    finally { sync.pushing = false; }
+    sync.pending = sync.dirty ? syncDiff(sync.base).n : 0; renderSyncDot();
+    if (sync.dirty && !sync.err) syncPush();
   }
-  function rerenderAll() {
+  const isTyping = () => { const a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.closest('#sheet')); };
+  async function syncPoll() {
+    if (document.hidden) return;
+    if (!sync.on) { if (state.serverUser && await syncLoad()) { rerenderAll(); renderWho(); } return; }
+    if (sync.pushing) return;
+    if (sync.dirty) { syncFlush(); return; }
+    try {
+      const r = await fetchSync(); if (!r.ok) { sync.err = true; renderSyncDot(); return; }
+      const st = await r.json(); sync.err = false; sync.at = Date.now();
+      if (st.version !== sync.version) {
+        if (isTyping() || sync.dirty || sync.pushing) { renderSyncDot(); return; }   // saisie en cours ou envoi en attente : au prochain sondage
+        const seen = sync.version;
+        syncApply(st); persistLocal(); rerenderAll();
+        const news = sync.log.filter((e) => (e.v || 0) > seen && e.by !== state.me);
+        if (news.length) { const last = news[news.length - 1]; toast(`${last.name} ${last.text}${news.length > 1 ? ` (+${news.length - 1})` : ''}`); }
+        else toast(`Mis à jour par ${st.by === state.serverUser ? 'vous' : (st.by || 'l\'autre voyageur')}`);
+      }
+      renderSyncDot();
+    } catch (e) { sync.err = true; renderSyncDot(); }
+  }
+  function syncOnline() { if (!state.serverUser) return; if (sync.dirty) syncFlush(); else syncPoll(); }
+  const ago = (ms) => { const s = Math.max(0, Math.round((Date.now() - ms) / 1000)); if (s < 60) return `il y a ${s} s`; if (s < 3600) return `il y a ${Math.round(s / 60)} min`; if (s < 86400) return `il y a ${Math.round(s / 3600)} h`; const d = new Date(ms); return `le ${d.getDate()}/${d.getMonth() + 1} à ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  function syncStatusText() {
+    if (!sync.on) return state.serverUser ? 'Serveur injoignable : les modifications restent sur cet appareil' : 'Version sans serveur';
+    const pend = sync.pending ? ` · ${sync.pending} modification${sync.pending > 1 ? 's' : ''} en attente` : '';
+    if (sync.err) return (navigator.onLine === false ? 'Hors ligne' : 'Serveur injoignable') + pend;
+    if (sync.pending) return `${sync.pending} modification${sync.pending > 1 ? 's' : ''} à envoyer`;
+    return `Synchronisé ${sync.at ? ago(sync.at) : ''}`.trim();
+  }
+  function renderSyncDot() {
+    const d = $('#sync-dot'); if (!d) return;
+    d.classList.toggle('err', !sync.on || sync.err); d.classList.toggle('pending', sync.on && !sync.err && (sync.dirty || sync.pending > 0));
+    d.parentElement.title = syncStatusText();
+  }
+  function rerenderAll({ soft = false } = {}) {
     renderTabs(); renderWho();
+    if (soft && isTyping()) { paintMarkers(); return; }
     if (state.selected && !$('#panel-detail').hidden) { renderDetailHead(); renderDetailDay(detailDay); }
-    else if (state.view === 'wishes') renderWishes(); else if (state.view === 'trip') renderTrip(); else if (state.view === 'config') renderConfig(); else renderList();
+    else if (state.view === 'wishes') renderWishes(); else if (state.view === 'trip') renderTrip(); else if (state.view === 'config') renderConfig(); else renderList({ keep: true });
     paintMarkers();
   }
-  const canEdit = (who) => !sync.on || who === state.me;
-  /* Version protégée (VPS) : l'utilisateur authentifié (/whoami) devient le voyageur actif. */
+  const canEdit = (who) => !state.serverUser || who === state.me;
+  /* Version protégée (VPS) : l'utilisateur authentifié (/whoami) devient le voyageur actif ; le serveur
+     renvoie le voyageur correspondant (me) dans l'état. Le sondage reprend aussi la synchro si le serveur
+     était injoignable au lancement. */
   async function applyServerIdentity() {
     try {
       const r = await fetch('whoami', { cache: 'no-store' });
       if (!r.ok) return;
       const id = (await r.text()).trim().toLowerCase();
       if (!id || id.includes('<')) return;
-      const k = id === state.users.b.name.toLowerCase() ? 'b' : id === state.users.a.name.toLowerCase() ? 'a' : (id === 'marie' ? 'b' : id === 'simon' ? 'a' : null);
-      if (!k) return;
-      if (state.me !== k) { state.me = k; }
       state.serverUser = id;
+      restoreSyncMeta();
       await syncLoad();
-      if (sync.on) { sync.poll = setInterval(syncPoll, 20000); document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPoll(); }); }
+      if (!sync.on) { const k = id === 'marie' ? 'b' : id === 'simon' ? 'a' : id === state.users.b.name.toLowerCase() ? 'b' : id === state.users.a.name.toLowerCase() ? 'a' : null; if (k) state.me = k; }
+      sync.poll = setInterval(syncPoll, 20000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPoll(); });
     } catch (e) { /* version publique : pas de serveur */ }
   }
   /* #view=explore|wishes|trip|config ouvre directement une vue (combinable : #share=…&view=explore). */
@@ -237,6 +383,10 @@
       save(); toast('Sélection partagée importée'); return true;
     } catch (e) { return false; }
   }
+  async function copyCode() {
+    const url = shareUrl();
+    try { await navigator.clipboard.writeText(url); toast('Code séjour copié : à coller dans « Code séjour » sur l\'autre téléphone'); } catch (e) { prompt('Copiez ce code :', url); }
+  }
   async function share() {
     const url = shareUrl(), title = 'Costa Cantábrica – nos envies de plages';
     try { if (navigator.share) { await navigator.share({ title, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
@@ -269,7 +419,7 @@
     buzz();
     const list = state.users[who].wish, i = list.indexOf(id);
     if (i >= 0) list.splice(i, 1); else list.push(id);
-    save(); renderTabs(); if (state.view === 'wishes') renderWishes(); else renderList(); paintMarkers();
+    save(); renderTabs(); if (state.view === 'wishes') renderWishes(); else renderList({ keep: true }); paintMarkers();
     if (state.selected === id) renderDetailHead();
   }
   function filtered({ ignoreScore = false } = {}) {
@@ -300,11 +450,13 @@
     else if (state.bulk) arr.sort((a, b) => (scoreOf(b).score ?? -1) - (scoreOf(a).score ?? -1) || a.properties.name.localeCompare(b.properties.name, 'es'));
     return arr;
   }
-  const filtersActive = () => { const f = state.filters; return f.province !== 'all' || f.type !== 'all' || f.surface !== 'all' || f.lifeguard || f.dog || f.wish !== 'all' || f.minScore > 0; };
+  const filtersCount = () => { const f = state.filters; return [f.province !== 'all', f.type !== 'all', f.surface !== 'all', f.lifeguard, f.dog, f.wish !== 'all', f.minScore > 0].filter(Boolean).length; };
+  const filtersActive = () => filtersCount() > 0;
+  function renderFiltersBtn() { const n = filtersCount(); $('#btn-filters').classList.toggle('on', n > 0); $('#btn-filters').innerHTML = I('sliders', { size: 20 }) + (n ? `<b class="cnt">${n}</b>` : ''); }
 
   /* ------------------------------------------------------------------ carte */
   function initMap() {
-    map = L.map('map', { zoomControl: true, attributionControl: true, tapTolerance: 20, zoomSnap: 0.5, wheelPxPerZoomLevel: 90 }).setView(C.center, C.zoom);
+    map = L.map('map', { zoomControl: true, attributionControl: true, tapTolerance: 20, zoomSnap: 0.5, wheelPxPerZoomLevel: 90, preferCanvas: true }).setView(C.center, C.zoom);
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · prévisions <a href="https://open-meteo.com/">Open-Meteo</a>' });
     const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
@@ -317,12 +469,12 @@
         .on('click', () => select(s.properties.id, { pan: false }));
       m.addTo(map); markers.set(s.properties.id, m);
     }
-    map.on('dragstart', () => { if (window.innerWidth < 900 && !sheet.classList.contains('peek')) setSheet('peek'); });
+    map.on('dragstart', () => { if (isMobile() && !sheet.classList.contains('peek')) setSheet('peek'); });
     map.on('click', (e) => {
       if (!state.pickBase) return;
       state.pickBase = false; ensureTrip();
       state.trip.base = { name: `Hébergement (${e.latlng.lat.toFixed(3)}, ${e.latlng.lng.toFixed(3)})`, lat: +e.latlng.lat.toFixed(5), lon: +e.latlng.lng.toFixed(5) };
-      save(); if (state.view === 'config') renderConfig(); else renderTrip(); paintMarkers(); if (window.innerWidth < 900) setSheet('half'); toast('Résidence placée');
+      save(); if (state.view === 'config') renderConfig(); else renderTrip(); paintMarkers(); if (isMobile()) setSheet('half'); toast('Résidence placée');
     });
     fitAll();
     $('#legend').innerHTML = C.scoreClasses.map((c) => `<span><i style="background:var(--${c.key})"></i>${c.label}</span>`).join('');
@@ -378,10 +530,10 @@
     map.on('moveend zoomend', renderPois);
     renderLayerChips(); renderPois();
   }
-  let poiReturn = null;
-  function showPoi(x, { pan = true } = {}) {
+  let poiReturn = null, currentPoi = null;
+  function showPoi(x, { pan = true, fromHistory = false } = {}) {
     state.poiOn[poiGroupOf(x.p.kind)] = true;
-    const mobile = window.innerWidth < 900;
+    const mobile = isMobile();
     if (pan) {
       const z = Math.max(map.getZoom(), C.poiMinZoom + 2), p = map.project([x.lat, x.lon], z);
       if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
@@ -391,16 +543,19 @@
     map.closePopup();
     // mémorise d'où l'on vient pour le bouton retour
     const openPanel = ['panel-detail', 'panel-list', 'panel-wishes', 'panel-trip', 'panel-config'].find((id) => !$('#' + id).hidden);
-    if (openPanel !== 'panel-poi') poiReturn = { panel: openPanel, scroll: $('#panels').scrollTop };
+    if (openPanel) poiReturn = { panel: openPanel, scroll: $('#panels').scrollTop };
     for (const id of ['panel-list', 'panel-wishes', 'panel-trip', 'panel-config', 'panel-detail']) $('#' + id).hidden = true;
     $('#panel-poi').hidden = false; $('#panels').scrollTop = 0;
-    renderPoiPanel(x);
+    renderPoiPanel(x); currentPoi = x.id;
+    if (!fromHistory && !(history.state && history.state.poi === x.id)) history.pushState({ poi: x.id, spot: state.selected }, '', location.pathname + location.search + '#poi=' + x.id);
     if (mobile && sheet.classList.contains('peek')) setSheet('half');
     buzz(8);
   }
-  function closePoi() {
-    $('#panel-poi').hidden = true;
+  function closePoi(fromHistory = false) {
+    if (!fromHistory && history.state && history.state.poi) { history.back(); return; }   // le bouton retour du navigateur fait le reste
+    $('#panel-poi').hidden = true; currentPoi = null;
     const back = poiReturn || { panel: 'panel-list', scroll: 0 }; poiReturn = null;
+    if (!fromHistory && /^#poi=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + (back.panel === 'panel-detail' && state.selected && spotById(state.selected)?.properties.slug ? '#' + spotById(state.selected).properties.slug : ''));
     if (back.panel === 'panel-detail' && state.selected) { $('#panel-detail').hidden = false; renderDetailHead(); renderDetailDay(detailDay); }
     else { const v = { 'panel-wishes': 'wishes', 'panel-trip': 'trip', 'panel-config': 'config' }[back.panel] || 'explore'; if (state.selected && back.panel !== 'panel-detail') state.selected = null; state.view = v; setView(v); }
     $('#panels').scrollTop = back.scroll || 0;
@@ -454,13 +609,14 @@
 
   function fitAll() {
     if (!state.spots.length) return;
-    const b = L.latLngBounds(state.spots.map(latlng)), mobile = window.innerWidth < 900;
+    const b = L.latLngBounds(state.spots.map(latlng)), mobile = isMobile();
     const bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
     map.fitBounds(b, { paddingTopLeft: [16, 16], paddingBottomRight: [16, bottom + 16], animate: false });
   }
   function paintMarkers() {
     const vis = new Set(filtered().map((s) => s.properties.id));
     const colA = cssVar('--a'), colB = cssVar('--b'), colBoth = cssVar('--both');
+    const cols = { none: cssVar('--none') }; for (const c of C.scoreClasses) cols[c.key] = cssVar('--' + c.key);
     for (const s of state.spots) {
       const id = s.properties.id, m = markers.get(id);
       if (!vis.has(id)) { if (map.hasLayer(m)) map.removeLayer(m); continue; }
@@ -469,10 +625,10 @@
       if (state.view === 'wishes' || state.view === 'trip') {
         if (state.view === 'wishes' && (w.a || w.b)) { map.removeLayer(m); continue; }
         if (state.view === 'trip' && tripHasSpot(id)) { map.removeLayer(m); continue; }
-        m.setStyle({ fillColor: cssVar('--' + r.cls), radius: 4, color: '#fff', weight: 1, fillOpacity: .45 });
+        m.setStyle({ fillColor: cols[r.cls], radius: 4, color: '#fff', weight: 1, fillOpacity: .45 });
         continue;
       }
-      m.setStyle({ fillColor: cssVar('--' + r.cls), radius: sel ? 11 : (w.a || w.b ? 9 : 7), fillOpacity: .95,
+      m.setStyle({ fillColor: cols[r.cls], radius: sel ? 11 : (w.a || w.b ? 9 : 7), fillOpacity: .95,
         color: sel ? '#111' : w.a && w.b ? colBoth : w.a ? colA : w.b ? colB : '#fff', weight: sel ? 3 : (w.a || w.b ? 3 : 2) });
       if (sel) m.bringToFront();
     }
@@ -502,7 +658,7 @@
     if (state.view !== 'trip' && state.trip.base) L.marker([state.trip.base.lat, state.trip.base.lon], { icon: L.divIcon({ className: '', html: `<div class="home-pin" style="opacity:.75">${I('home', { size: 15 })}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }), title: state.trip.base.name, zIndexOffset: 800, interactive: false }).addTo(planLayer);
   }
   function panTo(s) {
-    const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = window.innerWidth < 900, p = map.project(latlng(s), z);
+    const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = isMobile(), p = map.project(latlng(s), z);
     if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheet.getBoundingClientRect().height / 2);
     map.setView(map.unproject(p, z), z, { animate: true });
   }
@@ -513,17 +669,24 @@
     $('#brand-mark').innerHTML = I('wave', { size: 18 });
     $('#brand-name').textContent = state.region.short || state.region.name;
     $('#brand-sub').textContent = state.region.subtitle || 'plages & criques';
-    $('#btn-filters').innerHTML = I('sliders', { size: 20 });
-    $('#btn-settings').innerHTML = I('users', { size: 20 });
+    renderFiltersBtn();
+    $('#btn-settings').innerHTML = I('gear', { size: 20 });
     $('#btn-locate').innerHTML = I('locate', { size: 20 });
     $('#btn-share').innerHTML = I('share', { size: 20 });
     $('#search-ic').innerHTML = I('search', { size: 18 });
-    $('.close', $('#dlg-settings')).innerHTML = I('x', { size: 18 });
     $('.close', $('#dlg-pick')).innerHTML = I('x', { size: 18 });
   }
   function renderWho() {
-    $('#who').innerHTML = (sync.on ? `<span class="sync-dot" id="sync-dot" title="Synchronisé avec le serveur"></span>` : '') + ['a', 'b'].map((k) => `<button class="avatar ${k} ${state.me === k ? 'on' : ''}" data-k="${k}" title="Je suis ${esc(state.users[k].name)}"><span>${esc(String(state.users[k].name || '?')[0].toUpperCase())}</span></button>`).join('');
-    $('#who').querySelectorAll('button').forEach((b) => { b.onclick = () => { if (sync.on) { toast(`Connecté·e en tant que ${state.users[state.me].name}`); return; } state.me = b.dataset.k; save(); renderWho(); if (state.selected) renderPlanCard(state.selected); toast(`Envies et notes de ${state.users[state.me].name}`); }; });
+    const me = state.me, other = me === 'a' ? 'b' : 'a', ini = (k) => esc(String(state.users[k].name || '?')[0].toUpperCase());
+    $('#who').innerHTML = (state.serverUser ? `<button type="button" class="sync-btn" id="sync-btn" aria-label="État de la synchronisation"><span class="sync-dot" id="sync-dot"></span></button>` : '')
+      + `<button type="button" class="me" data-k="${me}" title="Sur cet appareil, je suis ${esc(state.users[me].name)}" aria-label="Je suis ${esc(state.users[me].name)}"><span class="avatar ${me} on"><span>${ini(me)}</span></span><span class="n">${esc(state.users[me].name)}</span></button>`
+      + `<button type="button" class="avatar ${other} other" data-k="${other}" title="${sync.on ? esc(state.users[other].name) : 'Passer à ' + esc(state.users[other].name)}" aria-label="${sync.on ? esc(state.users[other].name) : 'Passer à ' + esc(state.users[other].name)}"><span>${ini(other)}</span></button>`;
+    if ($('#sync-btn')) { $('#sync-btn').onclick = () => { toast(syncStatusText()); if (sync.dirty && !sync.pushing) syncFlush(); else if (!sync.on) syncPoll(); }; renderSyncDot(); }
+    $('#who').querySelectorAll('button[data-k]').forEach((b) => b.onclick = () => {
+      if (sync.on) { toast(b.dataset.k === me ? `Connecté·e en tant que ${state.users[me].name}` : `${state.users[other].name} : envies et notes en lecture seule ici`); return; }
+      if (b.dataset.k === me) { toast(`Envies et notes de ${state.users[me].name}`); return; }
+      state.me = b.dataset.k; save(); renderWho(); if (state.selected) renderPlanCard(state.selected); renderList({ keep: true }); toast(`Sur cet appareil : ${state.users[state.me].name}`);
+    });
   }
   function bestDot(i) {
     if (!state.bulk) return 'none';
@@ -537,7 +700,7 @@
     const dates = state.bulk ? state.bulk.dates : Array.from({ length: C.forecastDays }, (_, i) => addDays(F.todayLocal(), i));
     dates.forEach((iso, i) => {
       const { lbl, sub } = fmtDay(iso, i), b = document.createElement('button');
-      b.className = 'day' + (i === state.day ? ' on' : ''); b.type = 'button';
+      b.className = 'day' + (i === state.day ? ' on' : ''); b.type = 'button'; b.setAttribute('aria-pressed', String(i === state.day));
       b.innerHTML = `<b>${lbl}</b><small>${sub}</small><i style="background:var(--${bestDot(i)})"></i>`;
       b.onclick = () => { state.day = i; renderDays(); renderList(); paintMarkers(); if (state.selected) renderDetailDay(i); };
       el.appendChild(b);
@@ -553,19 +716,21 @@
   /* ------------------------------------------------------------------ onglets & vue Envies */
   function renderTabs() {
     $('#btn-settings').classList.toggle('on', state.view === 'config');
-    const n = wishedIds().length, nt = state.trip.days.reduce((k, d) => k + d.stops.length, 0);
+    const n = wishedIds().length, nt = state.trip.days.reduce((k, d) => k + d.stops.length, 0), nf = [...state.fresh].filter((id) => { const w = wishOf(id); return (w.a || w.b) && spotById(id); }).length;
     $('#tabs').innerHTML = `<button type="button" role="tab" aria-selected="${state.view === 'explore'}" data-v="explore" class="${state.view === 'explore' ? 'on' : ''}">${I('compass', { size: 16 })}Explorer</button>
-      <button type="button" role="tab" aria-selected="${state.view === 'wishes'}" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Envies${n ? `<b>${n}</b>` : ''}</button>
+      <button type="button" role="tab" aria-selected="${state.view === 'wishes'}" data-v="wishes" class="${state.view === 'wishes' ? 'on' : ''}">${I('heart', { size: 16, fill: state.view === 'wishes' })}Envies${nf ? `<b class="new" title="${nf} nouvelle${nf > 1 ? 's' : ''} envie${nf > 1 ? 's' : ''} de ${esc(state.users[state.me === 'a' ? 'b' : 'a'].name)}">+${nf}</b>` : n ? `<b>${n}</b>` : ''}</button>
       <button type="button" role="tab" aria-selected="${state.view === 'trip'}" data-v="trip" class="${state.view === 'trip' ? 'on' : ''}">${I('calendar', { size: 16 })}Séjour${nt ? `<b>${nt}</b>` : ''}</button>`;
     $('#tabs').querySelectorAll('button').forEach((b) => b.onclick = () => setView(b.dataset.v));
   }
   function setView(v) {
+    if (state.view === 'wishes' && v !== 'wishes' && state.fresh.size) { state.fresh.clear(); saveSyncMeta(); }
     state.view = v;
     if (state.selected && !$('#panel-detail').hidden) closeDetail();
-    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip'; $('#panel-config').hidden = v !== 'config'; $('#panel-poi').hidden = true;
+    $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip'; $('#panel-config').hidden = v !== 'config'; $('#panel-poi').hidden = true; currentPoi = null;
+    if (/^#poi=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     renderTabs(); paintMarkers();
     if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else if (v === 'config') { renderConfig(); } else { renderList(); }
-    if (v === 'config' && window.innerWidth < 900) setSheet('full');
+    if (v === 'config' && isMobile()) setSheet('full');
     if (v !== 'explore' && !state.pois.length) ensurePois().then(() => { if (state.view === v) { v === 'wishes' ? renderWishes() : renderTrip(); paintMarkers(); } });
   }
   function wishList() {
@@ -577,16 +742,22 @@
     return arr;
   }
   function planSummary(id) {
+    const pn = state.plans[id]; if (!pn || !pn.items.length) return '';
+    return pn.items.map((it) => it.text || (poiById(it.poi)?.p.name ?? '…')).slice(0, 3).join(', ') + (pn.items.length > 3 ? ` +${pn.items.length - 3}` : '');
+  }
+  /* Notes des deux voyageurs, chacune avec son initiale (liste des envies). */
+  function notesHtml(id) {
     const pn = state.plans[id]; if (!pn) return '';
-    const parts = [];
-    if (pn.items.length) parts.push(pn.items.map((it) => it.text || (poiById(it.poi)?.p.name ?? '…')).slice(0, 3).join(', ') + (pn.items.length > 3 ? ` +${pn.items.length - 3}` : ''));
-    const note = pn.notes.a || pn.notes.b; if (note) parts.push('« ' + note.slice(0, 40) + (note.length > 40 ? '…' : '') + ' »');
-    return parts.join(' · ');
+    const rows = ['a', 'b'].filter((k) => pn.notes[k]).map((k) => `<span><i style="background:var(--${k})">${esc(String(state.users[k].name || '?')[0].toUpperCase())}</i>${esc(pn.notes[k].slice(0, 70))}${pn.notes[k].length > 70 ? '…' : ''}</span>`);
+    return rows.length ? `<div class="notes">${rows.join('')}</div>` : '';
   }
   function renderWishes() {
     const dot = (k) => `<i style="width:10px;height:10px;border-radius:50%;background:var(--${k});display:inline-block"></i>`;
     seg($('#w-who'), [['all', 'Tous'], ['a', dot('a') + esc(state.users.a.name)], ['b', dot('b') + esc(state.users.b.name)], ['both', 'Communes']], state.wishWho, (v) => { state.wishWho = v; save(); renderWishes(); paintMarkers(); fitWishes(); }, { a: 'a', b: 'b', both: 'both' });
     seg($('#w-sort'), [['coast', "D'ouest en est"], ['score', 'Meilleur score']], state.wishSort, (v) => { state.wishSort = v; save(); renderWishes(); paintMarkers(); });
+    const act = $('#w-activity'), entries = (sync.log || []).slice(-6).reverse();
+    act.hidden = !sync.on || !entries.length;
+    if (!act.hidden) act.innerHTML = `<div class="h"><span>${I('bell', { size: 14 })} Activité</span><span style="font-weight:400;color:var(--muted)">${syncStatusText()}</span></div><ul>${entries.map((e) => `<li><span>${e.text.startsWith('a ') ? (e.by === state.me ? 'Vous avez ' : esc(e.name) + ' a ') + esc(e.text.slice(2)) : (e.by === state.me ? 'Vous ' : esc(e.name) + ' ') + esc(e.text)}</span><small>${ago(e.t * 1000)}</small></li>`).join('')}</ul>`;
     const list = wishList(), ul = $('#w-list');
     const wa = state.users.a.wish.length, wb = state.users.b.wish.length, both = state.users.a.wish.filter((id) => state.users.b.wish.includes(id)).length;
     $('#w-summary').innerHTML = `<span>${dot('a')} ${wa} · ${dot('b')} ${wb} · ${dot('both')} ${both} commune${both > 1 ? 's' : ''}</span><span>${list.length} plage${list.length > 1 ? 's' : ''}</span>`;
@@ -605,16 +776,16 @@
         <div class="num c-${r ? r.cls : 'none'}">${i + 1}<small style="background:var(--${who})">${who === 'both' ? '2' : esc(state.users[who].name[0].toUpperCase())}</small></div>
         ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], 16, 56, 56, 'thumb')}
         <div class="body">
-          <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span></div>
+          <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}</div>
           <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
-          ${hasPlan(p.id) ? `<div class="plan">${I('note', { size: 13 })}${esc(planSummary(p.id))}</div>` : `<div class="cond">${cond}</div>`}
+          ${planSummary(p.id) ? `<div class="plan">${I('note', { size: 13 })}${esc(planSummary(p.id))}</div>` : `<div class="cond">${cond}</div>`}${notesHtml(p.id)}
         </div>
         <div class="hearts">
-          <button type="button" class="heart a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a">${I('heart', { size: 15, fill: w.a })}</button>
-          <button type="button" class="heart b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b">${I('heart', { size: 15, fill: w.b })}</button>
+          <button type="button" class="heart a ${w.a ? 'on' : ''} ${canEdit('a') ? '' : 'ro'}" data-who="a" aria-label="Envie de ${esc(state.users.a.name)}" aria-pressed="${w.a}">${I('heart', { size: 15, fill: w.a })}</button>
+          <button type="button" class="heart b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b" aria-label="Envie de ${esc(state.users.b.name)}" aria-pressed="${w.b}">${I('heart', { size: 15, fill: w.b })}</button>
         </div>`;
       li.querySelectorAll('.heart').forEach((h) => h.onclick = (e) => { e.stopPropagation(); toggleWish(p.id, h.dataset.who); });
-      li.onclick = () => select(p.id, { pan: true });
+      li.onclick = () => select(p.id, { pan: true, full: true });
       frag.appendChild(li);
     });
     ul.innerHTML = ''; ul.appendChild(frag);
@@ -624,12 +795,13 @@
     else if (pts.length > 1) { const mid = pts.slice(1, -1).slice(0, 9); gmaps = `https://www.google.com/maps/dir/?api=1&origin=${pts[0].join(',')}&destination=${pts[pts.length - 1].join(',')}${mid.length ? '&waypoints=' + mid.map((x) => x.join(',')).join('|') : ''}`; }
     $('#w-foot').innerHTML = `<a class="btn primary big" style="display:flex;align-items:center;justify-content:center;gap:8px" href="${gmaps}" target="_blank" rel="noopener">${I('route', { size: 18 })}Itinéraire Google Maps · ${Math.min(pts.length, 11)} étape${pts.length > 1 ? 's' : ''}</a>
       ${pts.length > 11 ? '<span class="hint">Google Maps accepte 11 étapes au plus : les premières d\'ouest en est sont retenues.</span>' : ''}
-      <div class="row"><button type="button" class="btn ghost" id="w-share" style="flex:1">Partager le lien</button><button type="button" class="btn ghost" id="w-export" style="flex:1">Exporter (GeoJSON)</button></div>`;
-    $('#w-share').onclick = share; $('#w-export').onclick = exportSelection;
+      <div class="row"><button type="button" class="btn ghost" id="w-share" style="flex:1">Partager le lien</button>${sync.on ? '' : `<button type="button" class="btn ghost" id="w-code" style="flex:1">${I('copy', { size: 14 })} Copier le code</button>`}<button type="button" class="btn ghost" id="w-export" style="flex:1">Exporter (GeoJSON)</button></div>
+      ${sync.on ? '' : '<span class="hint">Le lien est un instantané : il ajoute les envies, programmes et séjour sur l\'autre téléphone, sans jamais en retirer. Sur iPhone, si le lien s\'ouvre hors de l\'application installée, collez plutôt le code dans « Code séjour » à la connexion.</span>'}`;
+    $('#w-share').onclick = share; $('#w-export').onclick = exportSelection; $('#w-code') && ($('#w-code').onclick = copyCode);
   }
   function fitWishes() {
     const list = wishList(); if (!list.length) return;
-    const b = L.latLngBounds(list.map(latlng)), mobile = window.innerWidth < 900, bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
+    const b = L.latLngBounds(list.map(latlng)), mobile = isMobile(), bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
     map.fitBounds(b.pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 });
   }
   function paintWishLayer() {
@@ -732,9 +904,10 @@
   /* Séjour dynamique : à chaque mise à jour des prévisions, le planning est recalculé (mode auto). */
   function autoReplan() {
     if (!state.trip.auto || !state.bulk) return;
+    if (sync.on && state.trip.autoBy && state.trip.autoBy !== state.me) return;   // l'appareil qui a activé le mode dynamique recalcule, pas les deux
     ensurePois().then(() => { proposeTrip({ silent: true }); });
   }
-  function manualEdit() { if (state.trip.auto) { state.trip.auto = false; save(); toast('Planning figé : modifications manuelles conservées'); } }
+  function manualEdit() { if (state.trip.auto) { state.trip.auto = false; state.trip.autoBy = null; save(); toast('Planning figé : modifications manuelles conservées'); } }
   function renderTrip() {
     ensureTrip();
     const t = state.trip, el = $('#trip');
@@ -753,7 +926,7 @@
         if (info.kind === 'spot' && fi >= 0) { const r = scoreOf(info.spot, fi); sc = `<span class="sc"><i style="background:var(--${r.cls})"></i>${r.score ?? '—'}</span>`; }
         const badge = info.kind === 'spot' ? `<span class="n">${k + 1}</span>` : info.kind === 'poi' ? `<span class="n poi" style="background:${info.color}">${I(info.icon, { size: 12 })}</span>` : `<span class="n poi">${I('compass', { size: 12 })}</span>`;
         return `<li data-k="${k}">${badge}<span class="t">${esc(info.name)} <small>· ${esc(info.sub)}</small></span><span class="d">${sc} ${leg}</span>
-          <button type="button" class="ib menu-btn" data-k="${k}" aria-label="Actions">${I('sliders', { size: 16 })}</button></li>`;
+          <span class="grip" title="Glisser pour réordonner" aria-hidden="true">${I('grip', { size: 16 })}</span><button type="button" class="ib menu-btn" data-k="${k}" aria-label="Actions">${I('sliders', { size: 16 })}</button></li>`;
       }).join('');
       let wx = '';
       if (fi >= 0 && d.stops.some((st) => st.t === 's')) { const s0 = spotById(d.stops.find((st) => st.t === 's').id); const dd = F.dayOf(state.bulk, s0, fi); wx = `${wIcon(dd.code, 16)} ${n0(dd.tmax, '°')}`; }
@@ -791,21 +964,55 @@
         box.querySelectorAll('button').forEach((b) => b.onclick = () => { const h = hits[+b.dataset.k]; t.base = { name: h.name, lat: h.lat, lon: h.lon }; save(); renderTrip(); paintMarkers(); fitTrip(); });
       };
       $('#base-geo').onclick = () => navigator.geolocation?.getCurrentPosition((pos) => { t.base = { name: 'Ma position', lat: +pos.coords.latitude.toFixed(5), lon: +pos.coords.longitude.toFixed(5) }; save(); renderTrip(); paintMarkers(); fitTrip(); }, () => toast('Position introuvable'));
-      $('#base-map').onclick = () => { state.pickBase = !state.pickBase; renderTrip(); toast(state.pickBase ? 'Touchez la carte pour placer l\'hébergement' : 'Sélection annulée'); if (state.pickBase && window.innerWidth < 900) setSheet('peek'); };
+      $('#base-map').onclick = () => { state.pickBase = !state.pickBase; renderTrip(); toast(state.pickBase ? 'Touchez la carte pour placer l\'hébergement' : 'Sélection annulée'); if (state.pickBase && isMobile()) setSheet('peek'); };
     }
     // jours
     $('#days-minus').onclick = () => { if (t.days.length > 1) { t.days.pop(); save(); renderTabs(); renderTrip(); paintMarkers(); } };
     $('#days-plus').onclick = () => { if (t.days.length < 14) { t.days.push({ stops: [] }); save(); renderTrip(); } };
-    $('#trip-propose').onclick = () => { if (!t.days.some((d) => d.stops.length) || confirm('Remplacer les étapes actuelles par une proposition ?')) { t.auto = true; ensurePois().then(() => proposeTrip()); } };
-    $('#trip-auto').onclick = () => { t.auto = !t.auto; save(); renderTrip(); if (t.auto) { toast('Planning dynamique : recalculé à chaque mise à jour des prévisions'); ensurePois().then(() => proposeTrip({ silent: true })); } };
+    $('#trip-propose').onclick = async () => { if (!t.days.some((d) => d.stops.length) || await confirmDlg('Remplacer les étapes actuelles par une proposition ?', { ok: 'Remplacer', hint: 'Une proposition unique : le planning reste manuel ensuite, sauf si vous activez « Dynamique ».' })) ensurePois().then(() => proposeTrip()); };
+    $('#trip-auto').onclick = () => { t.auto = !t.auto; t.autoBy = t.auto ? state.me : null; save(); renderTrip(); if (t.auto) { toast('Planning dynamique : recalculé à chaque mise à jour des prévisions'); ensurePois().then(() => proposeTrip({ silent: true })); } };
     $('#trip-config').onclick = () => setView('config');
     $('#trip-share').onclick = share;
-    $('#trip-clear').onclick = () => { if (confirm('Effacer hébergement et étapes ?')) { state.trip = { base: null, start: null, days: [] }; save(); renderTabs(); renderTrip(); paintMarkers(); } };
+    $('#trip-clear').onclick = async () => { if (await confirmDlg('Effacer hébergement et étapes ?', { ok: 'Tout effacer', danger: true })) { state.trip = { base: null, start: null, days: [], auto: false }; save(); renderTabs(); renderTrip(); paintMarkers(); } };
     el.querySelectorAll('.add-stop').forEach((b) => b.onclick = () => pickStop(+b.dataset.i));
     el.querySelectorAll('.day-card').forEach((card) => {
       const i = +card.dataset.i, d = t.days[i];
       card.querySelectorAll('.menu-btn').forEach((b) => b.onclick = (e) => { e.stopPropagation(); stepMenu(i, +b.dataset.k); });
-      card.querySelectorAll('.stops li').forEach((li) => li.onclick = () => stepMenu(i, +li.dataset.k));
+      card.querySelectorAll('.stops li').forEach((li) => li.onclick = () => {
+        const st = d.stops[+li.dataset.k]; if (!st) return;
+        if (st.t === 's') select(st.id, { pan: true, full: true }); else if (st.t === 'p' && poiById(st.id)) showPoi(poiById(st.id)); else stepMenu(i, +li.dataset.k);
+      });
+      const ul = card.querySelector('.stops'); if (ul) bindStopDrag(ul, i);
+    });
+  }
+  /* Réordonner les étapes au doigt : la poignée (touch-action: none) démarre le glissement sans appui long. */
+  function bindStopDrag(ul, di) {
+    let drag = null;
+    ul.querySelectorAll('.grip').forEach((g) => {
+      g.addEventListener('click', (e) => e.stopPropagation());
+      g.addEventListener('pointerdown', (e) => {
+        const li = g.closest('li'); if (!li) return;
+        e.preventDefault(); e.stopPropagation(); g.setPointerCapture?.(e.pointerId);
+        drag = { li, from: +li.dataset.k, id: e.pointerId }; li.classList.add('dragging'); buzz(8);
+      });
+      g.addEventListener('pointermove', (e) => {
+        if (!drag || e.pointerId !== drag.id) return;
+        for (const other of [...ul.children]) {
+          if (other === drag.li) continue;
+          const r = other.getBoundingClientRect(), mid = r.top + r.height / 2, after = !!(other.compareDocumentPosition(drag.li) & Node.DOCUMENT_POSITION_FOLLOWING);
+          if (after && e.clientY < mid) { ul.insertBefore(drag.li, other); buzz(4); break; }
+          if (!after && e.clientY > mid) { ul.insertBefore(drag.li, other.nextSibling); buzz(4); break; }
+        }
+      });
+      const end = (e) => {
+        if (!drag || e.pointerId !== drag.id) return;
+        drag.li.classList.remove('dragging');
+        const order = [...ul.children].map((li) => +li.dataset.k), d = state.trip.days[di]; drag = null;
+        const complete = order.length === d.stops.length && new Set(order).size === order.length && order.every((k) => k >= 0 && k < d.stops.length);
+        if (!complete || order.every((k, i) => k === i)) { if (!complete) renderTrip(); return; }   // étapes non rendues (lieux pas encore chargés) : on ne réordonne pas à l'aveugle
+        d.stops = order.map((k) => d.stops[k]); manualEdit(); save(); renderTabs(); renderTrip(); paintMarkers();
+      };
+      g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
     });
   }
   function pickStop(di) {
@@ -827,6 +1034,18 @@
     $('#pick-text-add').onclick = () => { const v = $('#pick-text').value.trim(); if (v) { manualEdit(); addStop(di, { t: 'x', text: v }); done(); } };
     dlg.showModal();
   }
+  /* Confirmation dans le dialogue de l'application (remplace confirm()). */
+  function confirmDlg(title, { ok = 'Confirmer', danger = false, hint = '' } = {}) {
+    return new Promise((resolve) => {
+      const dlg = $('#dlg-pick');
+      $('#pick-title').textContent = title;
+      $('#pick-list').innerHTML = `${hint ? `<span class="hint">${esc(hint)}</span>` : ''}<div class="menu"><button type="button" data-a="ok" class="${danger ? 'danger' : ''}">${I(danger ? 'trash' : 'check', { size: 16 })}${esc(ok)}</button><button type="button" data-a="no">${I('x', { size: 16 })}Annuler</button></div>`;
+      let res = false;
+      $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => { res = b.dataset.a === 'ok'; dlg.close(); });
+      dlg.addEventListener('close', () => resolve(res), { once: true });
+      dlg.showModal();
+    });
+  }
   function pickDayFor(stopOrId, label, after) {
     ensureTrip();
     const stop = typeof stopOrId === 'string' ? { t: 's', id: stopOrId } : stopOrId;
@@ -837,6 +1056,7 @@
       return `<button type="button" data-i="${i}" ${has ? 'disabled style="opacity:.5"' : ''}><span class="n" style="width:26px;height:26px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span><span>Jour ${i + 1} · ${dayLabel(i)}</span><span class="sub">${has ? 'déjà' : d.stops.length + ' étape' + (d.stops.length > 1 ? 's' : '')}${r ? ` · <b style="color:var(--${r.cls})">${r.score ?? '—'}</b>` : ''}</span></button>`; }).join('') +
       `<button type="button" data-i="new"><span class="n" style="width:26px;height:26px;border-radius:50%;background:var(--line);display:grid;place-items:center">${I('plus', { size: 14 })}</span><span>Nouveau jour</span></button></div>`;
     $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => {
+      if (b.dataset.i === 'new' && state.trip.days.length >= 14) { toast('14 jours au plus'); return; }
       let i = b.dataset.i === 'new' ? (state.trip.days.push({ stops: [] }), state.trip.days.length - 1) : +b.dataset.i;
       manualEdit(); const ok = addStop(i, stop); dlg.close(); renderTabs(); paintMarkers(); buzz();
       toast(ok ? `Ajouté au jour ${i + 1}` : 'Déjà dans ce jour');
@@ -860,7 +1080,7 @@
       <button type="button" data-a="rm" class="danger">${I('trash', { size: 16 })}Retirer de ce jour</button></div>`;
     $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => {
       const act = b.dataset.a; dlg.close();
-      if (act === 'view') { if (st.t === 's') select(st.id, { pan: true }); else showPoi(poiById(st.id)); return; }
+      if (act === 'view') { if (st.t === 's') select(st.id, { pan: true, full: true }); else showPoi(poiById(st.id)); return; }
       manualEdit();
       if (act === 'up') [d.stops[k - 1], d.stops[k]] = [d.stops[k], d.stops[k - 1]];
       else if (act === 'down') [d.stops[k + 1], d.stops[k]] = [d.stops[k], d.stops[k + 1]];
@@ -875,7 +1095,7 @@
     if (state.trip.base) pts.push([state.trip.base.lat, state.trip.base.lon]);
     for (const d of state.trip.days) for (const st of d.stops) { const x = stopInfo(st); if (x && x.lat != null) pts.push([x.lat, x.lon]); }
     if (!pts.length) return;
-    const mobile = window.innerWidth < 900, bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
+    const mobile = isMobile(), bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
     map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 });
   }
   function paintTripLayer() {
@@ -928,7 +1148,8 @@
         <label class="f">Profil d'activité par défaut<div class="seg" id="c-profile"></div></label>
         ${sw('c-food', state.poiOn.food, 'Restos & bars sur la carte')}${sw('c-visit', state.poiOn.visit, 'Sites et visites sur la carte')}</div>
       <div class="card"><div class="h"><h3>${I('download', { size: 13 })} Données</h3></div>
-        <div class="btns"><button type="button" class="btn ghost" id="c-share">${I('share', { size: 14 })} Partager le lien</button><button type="button" class="btn ghost" id="c-export">${I('download', { size: 14 })} Exporter (GeoJSON)</button><button type="button" class="btn ghost" id="c-refresh">${I('refresh', { size: 14 })} Rafraîchir les prévisions</button><button type="button" class="btn ghost" id="c-intro">${I('info', { size: 14 })} Revoir le guide</button><button type="button" class="btn ghost" id="c-reset" style="color:var(--bad)">${I('trash', { size: 14 })} Tout effacer</button></div></div>
+        ${sync.on ? `<span class="hint">Connecté au serveur : envies, programmes et séjour se synchronisent entre vos appareils (${esc(syncStatusText().toLowerCase())}).</span>` : '<span class="hint">Sans serveur, le lien de partage est un instantané fusionné sur l\'autre téléphone (ajouts seulement). « Copier le code » donne le même contenu à coller dans « Code séjour » à la connexion.</span>'}
+        <div class="btns"><button type="button" class="btn ghost" id="c-share">${I('share', { size: 14 })} Partager le lien</button>${sync.on ? '' : `<button type="button" class="btn ghost" id="c-code">${I('copy', { size: 14 })} Copier le code</button>`}<button type="button" class="btn ghost" id="c-export">${I('download', { size: 14 })} Exporter (GeoJSON)</button><button type="button" class="btn ghost" id="c-refresh">${I('refresh', { size: 14 })} Rafraîchir les prévisions</button><button type="button" class="btn ghost" id="c-intro">${I('info', { size: 14 })} Revoir le guide</button><button type="button" class="btn ghost" id="c-reset" style="color:var(--bad)">${I('trash', { size: 14 })} Tout effacer</button></div></div>
       <div class="card"><div class="h"><h3>${I('info', { size: 13 })} À propos</h3></div>
         <span class="hint">${esc(state.region.name)} · ${state.spots.length} plages et criques · ${state.pois.length ? state.pois.length + ' lieux' : 'lieux chargés à la demande'} · version ${esc(assetVer || '—')}</span>
         <span class="hint">Données © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) · prévisions <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0) · photos Wikimedia Commons, Flickr, Openverse (licences indiquées) · imagerie Esri · <a href="https://github.com/imagodata/costa-cantabrica-planner" target="_blank" rel="noopener">code source</a>.</span></div>`;
@@ -952,35 +1173,36 @@
     if (!state.pois.length) ensurePois();
     $('#c-base-geo').onclick = () => { if (!navigator.geolocation) return toast('Géolocalisation indisponible'); toast('Recherche de la position…');
       navigator.geolocation.getCurrentPosition((pos) => setBase({ name: t.base?.name && !/^Ma position|^Hébergement \(/.test(t.base.name) ? t.base.name : 'Ma position', lat: +pos.coords.latitude.toFixed(5), lon: +pos.coords.longitude.toFixed(5) }), () => toast('Position introuvable'), { enableHighAccuracy: true, timeout: 12000 }); };
-    $('#c-base-map').onclick = () => { state.pickBase = !state.pickBase; renderConfig(); if (state.pickBase) { toast('Touchez la carte pour placer la résidence'); if (window.innerWidth < 900) setSheet('peek'); } };
+    $('#c-base-map').onclick = () => { state.pickBase = !state.pickBase; renderConfig(); if (state.pickBase) { toast('Touchez la carte pour placer la résidence'); if (isMobile()) setSheet('peek'); } };
     $('#c-base-clear') && ($('#c-base-clear').onclick = () => setBase(null));
     $('#c-base-name').onchange = (e) => { if (t.base) { t.base.name = e.target.value.trim().slice(0, 60) || 'Résidence'; save(); renderConfig(); paintMarkers(); } };
     const setDays = (n) => { n = Math.max(1, Math.min(14, n)); while (t.days.length < n) t.days.push({ stops: [] }); t.days.length = n; };
     $('#c-start').onchange = (e) => { if (e.target.value) { const n = t.days.length; t.start = e.target.value; setDays(n); save(); renderConfig(); autoReplan(); } };
-    $('#c-end').onchange = (e) => { if (e.target.value) { const n = Math.round((new Date(e.target.value) - new Date(t.start)) / 86400000) + 1; setDays(n); save(); renderTabs(); renderConfig(); autoReplan(); } };
-    $('#c-auto').onclick = () => { t.auto = !t.auto; save(); renderConfig(); if (t.auto) ensurePois().then(() => proposeTrip({ silent: true })); };
+    $('#c-end').onchange = (e) => { if (e.target.value) { const n = Math.round((new Date(e.target.value) - new Date(t.start)) / 86400000) + 1; if (n < 1) { toast('Le départ précède l\'arrivée'); renderConfig(); return; } setDays(n); save(); renderTabs(); renderConfig(); autoReplan(); } };
+    $('#c-auto').onclick = () => { t.auto = !t.auto; t.autoBy = t.auto ? state.me : null; save(); renderConfig(); if (t.auto) ensurePois().then(() => proposeTrip({ silent: true })); };
     $('#c-round').onclick = () => { pr.roundTrip = !pr.roundTrip; save(); renderConfig(); };
     $('#c-lunch').onclick = () => { pr.lunch = !pr.lunch; save(); renderConfig(); autoReplan(); };
     $('#c-perday').onchange = (e) => { pr.perDay = +e.target.value; save(); autoReplan(); };
     $('#c-radius').onchange = (e) => { pr.radiusKm = +e.target.value; save(); autoReplan(); };
     $('#c-food').onclick = () => { state.poiOn.food = !state.poiOn.food; save(); renderLayerChips(); renderPois(); renderConfig(); };
     $('#c-visit').onclick = () => { state.poiOn.visit = !state.poiOn.visit; save(); renderLayerChips(); renderPois(); renderConfig(); };
-    $('#c-share').onclick = share; $('#c-export').onclick = exportSelection; $('#c-refresh').onclick = () => loadForecast(true);
+    $('#c-share').onclick = share; $('#c-code') && ($('#c-code').onclick = copyCode); $('#c-export').onclick = exportSelection; $('#c-refresh').onclick = () => loadForecast(true);
     $('#c-intro').onclick = () => { try { localStorage.removeItem('ccp:intro'); } catch (e) { } showIntro(); };
-    $('#c-reset').onclick = () => { if (confirm('Effacer envies, programmes, séjour et préférences sur cet appareil ?')) { try { localStorage.removeItem(LS_STATE); } catch (e) { } location.hash = ''; location.reload(); } };
+    $('#c-reset').onclick = async () => { if (await confirmDlg('Effacer envies, programmes, séjour et préférences sur cet appareil ?', { ok: 'Tout effacer', danger: true })) { try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); } catch (e) { } location.hash = ''; location.reload(); } };
   }
 
   /* ------------------------------------------------------------------ liste */
   const LIST_CHUNK = 60;
   let listShown = LIST_CHUNK, listObserver = null;
-  function renderList({ more = false } = {}) {
-    if (!more) listShown = LIST_CHUNK;
+  function renderList({ more = false, keep = false } = {}) {
+    if (!more && !keep) listShown = LIST_CHUNK;
     const ul = $('#list'), list = sorted(filtered());
     let ideal = 0, good = 0;
     if (state.bulk) for (const s of list) { const c = scoreOf(s).cls; if (c === 'ideal') ideal++; else if (c === 'good') good++; }
     const fetched = state.bulk ? new Date(state.bulk.fetchedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
     $('#summary').innerHTML = (state.bulk ? `<span><b>${ideal} idéale${ideal > 1 ? 's' : ''}</b> · ${good} bonne${good > 1 ? 's' : ''} · ${list.length} spot${list.length > 1 ? 's' : ''}</span>` : `<span>${list.length} spots</span>`) +
-      (fetched ? `<span><a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Open-Meteo</a> ${fetched}</span>` : `<span class="warn">prévisions indisponibles</span>`);
+      (fetched ? `<button type="button" class="linkbtn" id="sum-refresh" title="Rafraîchir les prévisions (Open-Meteo)" style="min-height:28px;color:inherit;font-weight:500">${I('refresh', { size: 12 })}${fetched}</button>` : `<span class="warn">prévisions indisponibles</span>`);
+    $('#sum-refresh') && ($('#sum-refresh').onclick = () => loadForecast(true));
     const frag = document.createDocumentFragment();
     for (const s of list.slice(0, listShown)) {
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id), ph = photoOf(p.id);
@@ -993,7 +1215,7 @@
         <div class="score c-${r ? r.cls : 'none'}"><b>${r && r.score != null ? r.score : '—'}</b><small>${r ? esc(r.label) : ''}</small></div>
         ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>${I('wave', { size: 20 }).replace(/"/g, '&quot;')}</div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], 16, 56, 56, 'thumb')}
         <div class="body">
-          <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}</div>
+          <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}</div>
           <div class="meta">${esc(meta)}</div>
           <div class="cond">${cond}</div>
         </div>
@@ -1002,11 +1224,12 @@
           <button type="button" class="heart b ${w.b ? 'on' : ''} ${canEdit('b') ? '' : 'ro'}" data-who="b" aria-label="Envie de ${esc(state.users.b.name)}">${I('heart', { size: 15, fill: w.b })}</button>
         </div>`;
       li.querySelectorAll('.heart').forEach((h) => h.onclick = (e) => { e.stopPropagation(); toggleWish(p.id, h.dataset.who); });
-      li.onclick = () => select(p.id, { pan: true });
+      li.onclick = () => select(p.id, { pan: true, full: true });
       frag.appendChild(li);
     }
     ul.innerHTML = ''; ul.appendChild(frag);
-    if (!list.length) ul.innerHTML = '<li class="loading">Aucun spot ne correspond aux filtres.</li>';
+    if (!list.length) { ul.innerHTML = `<li class="empty-state"><span>Aucune plage ne correspond${state.filters.q ? ` à « ${esc(state.filters.q)} »` : ' aux filtres'}.</span><button type="button" class="btn ghost" id="list-reset">Réinitialiser les filtres</button></li>`;
+      $('#list-reset').onclick = () => { Object.assign(state.filters, { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' }); $('#q').value = ''; save(); renderFiltersBtn(); renderDays(); renderList(); paintMarkers(); }; }
     if (list.length > listShown) {
       const li = document.createElement('li'); li.innerHTML = `<button type="button" class="more">Afficher ${Math.min(LIST_CHUNK, list.length - listShown)} de plus (${list.length - listShown} restants)</button>`;
       li.querySelector('button').onclick = () => { listShown += LIST_CHUNK; renderList({ more: true }); };
@@ -1019,7 +1242,7 @@
 
   /* ------------------------------------------------------------------ détail */
   const spotById = (id) => state.spots.find((s) => s.properties.id === id);
-  async function select(id, { pan = true } = {}) {
+  async function select(id, { pan = true, full = false } = {}) {
     const s = spotById(id); if (!s) return;
     if (!$('#panel-detail').hidden === false) listScroll = $('#panels').scrollTop;
     state.selected = id; detailDay = state.day; detailData = null;
@@ -1028,10 +1251,10 @@
       const url = location.pathname + location.search + '#' + s.properties.slug;
       if (history.state && history.state.spot) history.replaceState({ spot: id }, '', url); else history.pushState({ spot: id }, '', url);
     }
-    nearbyTab = 'all';
+    nearbyTab = 'all'; currentPoi = null;
     paintMarkers();
     $('#panel-list').hidden = true; $('#panel-wishes').hidden = true; $('#panel-trip').hidden = true; $('#panel-config').hidden = true; $('#panel-poi').hidden = true; $('#panel-detail').hidden = false; $('#panels').scrollTop = 0;
-    if (window.innerWidth < 900 && sheet.classList.contains('peek')) setSheet('half');
+    if (isMobile()) { if (full) setSheet('full'); else if (sheet.classList.contains('peek')) setSheet('half'); }
     buzz(8);
     renderDetailHead();
     $('#detail-body').innerHTML = '<div class="loading">Chargement des prévisions horaires…</div>';
@@ -1045,7 +1268,7 @@
     state.selected = null; paintMarkers();
     if (location.hash && !fromHistory) history.replaceState(null, '', location.pathname + location.search);
     $('#panel-detail').hidden = true;
-    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else if (state.view === 'trip') { $('#panel-trip').hidden = false; renderTrip(); } else if (state.view === 'config') { $('#panel-config').hidden = false; renderConfig(); } else { $('#panel-list').hidden = false; renderList(); }
+    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else if (state.view === 'trip') { $('#panel-trip').hidden = false; renderTrip(); } else if (state.view === 'config') { $('#panel-config').hidden = false; renderConfig(); } else { $('#panel-list').hidden = false; renderList({ keep: true }); }
     $('#panels').scrollTop = listScroll;
   }
   function creditHtml(g, ph) {
@@ -1064,7 +1287,7 @@
     const commons = `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(p.name)}&ns6=1`;
     const photosList = ph ? (ph.gallery && ph.gallery.length ? ph.gallery : [{ thumb: ph.thumb, page: ph.page, credit: ph.credit, license: ph.license }]) : [];
     const gal = [...photosList, { aerial: true, credit: AERIAL_CREDIT, license: '', page: '' }];
-    const heroW = Math.min(window.innerWidth, 900) >= 900 ? 440 : window.innerWidth;
+    const heroW = isMobile() ? window.innerWidth : $('#sheet').clientWidth || 440;
     $('#detail-head').innerHTML = `
       <div class="hero ${ph ? '' : 'nophoto'}">
         <div class="slides" id="slides">${gal.map((g, i) => g.aerial
@@ -1259,7 +1482,6 @@
     sheet = $('#sheet'); setSheet('half');
     const order = ['peek', 'half', 'full'], cur = () => order.find((m) => sheet.classList.contains(m));
     const move = (dir) => { const i = order.indexOf(cur()); setSheet(order[Math.max(0, Math.min(2, i + dir))]); };
-    const isMobile = () => window.innerWidth < 900;
     /* Glisser : le panneau suit le doigt ; au relâcher, aimantation vers la hauteur la plus proche
        en tenant compte de la vitesse (un geste vif suffit à changer d'état). */
     let drag = null;
@@ -1296,12 +1518,16 @@
     panel.addEventListener('touchstart', (e) => { y0 = panel.scrollTop === 0 ? e.touches[0].clientY : null; }, { passive: true });
     panel.addEventListener('touchend', (e) => { if (y0 == null) return; const dy = e.changedTouches[0].clientY - y0; if (dy > 70 && panel.scrollTop === 0) move(-1); y0 = null; }, { passive: true });
     // Clavier : la recherche déploie le panneau pour rester visible au-dessus du clavier
-    $('#q').addEventListener('focus', () => { if (isMobile()) setSheet('full'); });
+    sheet.addEventListener('focusin', (e) => {
+      const t = e.target; if (!isMobile() || !t.matches('input, textarea, select')) return;
+      if (!sheet.classList.contains('full')) setSheet('full');
+      setTimeout(() => { try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) { } }, 320);
+    });
   }
 
   /* ------------------------------------------------------------------ filtres & réglages */
   function seg(el, options, value, onPick, tone) {
-    el.innerHTML = options.map(([v, lbl]) => `<button type="button" data-v="${v}" class="${v === value ? 'on' : ''} ${tone && tone[v] ? 'tone-' + tone[v] : ''}">${lbl}</button>`).join('');
+    el.innerHTML = options.map(([v, lbl]) => `<button type="button" data-v="${v}" aria-pressed="${v === value}" class="${v === value ? 'on' : ''} ${tone && tone[v] ? 'tone-' + tone[v] : ''}">${lbl}</button>`).join('');
     el.querySelectorAll('button').forEach((b) => b.onclick = () => { onPick(b.dataset.v); seg(el, options, b.dataset.v, onPick, tone); });
   }
   function initDialogs() {
@@ -1329,25 +1555,22 @@
     $('#btn-filters').onclick = () => { draft = { ...state.filters, sort: state.sort }; renderFilters(); dlg.showModal(); };
     $('#f-apply').onclick = () => { state.sort = draft.sort; delete draft.sort; Object.assign(state.filters, draft); save(); dlg.close(); afterFilter(); };
     $('#f-reset').onclick = () => { draft = { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: draft.q, sort: 'score' }; renderFilters(); };
-    const afterFilter = () => { renderDays(); renderList(); paintMarkers(); $('#btn-filters').classList.toggle('on', filtersActive()); };
+    const afterFilter = () => { renderDays(); renderList(); paintMarkers(); renderFiltersBtn(); if (state.sort === 'dist' && !state.userPos) locate(); };
 
-    const sd = $('#dlg-settings');
     $('#btn-settings').onclick = () => { if (state.selected && !$('#panel-detail').hidden) closeDetail(); setView(state.view === 'config' ? 'explore' : 'config'); };
-    $('#u-save').onclick = () => {
-      state.users.a.name = $('#u-a').value.trim() || DEFAULT_NAMES[0]; state.users.b.name = $('#u-b').value.trim() || DEFAULT_NAMES[1];
-      save(); sd.close(); renderWho(); renderList(); if (state.selected) renderDetailHead();
-    };
-    $('#u-share').onclick = share;
-    $('#u-export').onclick = exportSelection;
-    $('#u-refresh').onclick = () => { sd.close(); loadForecast(true); };
     document.querySelectorAll('dialog .close').forEach((b) => b.onclick = () => b.closest('dialog').close());
     document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
 
     let qTimer = null;
     $('#q').oninput = (e) => { state.filters.q = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { renderList(); paintMarkers(); }, 150); };
+    $('#btn-search').innerHTML = I('search', { size: 20 });
+    const showSearch = (on) => { $('#search-box').hidden = !on; $('#btn-search').classList.toggle('on', on); $('#btn-search').setAttribute('aria-expanded', String(on)); };
+    $('#btn-search').onclick = () => { const on = $('#search-box').hidden; showSearch(on); if (on) $('#q').focus(); else if (state.filters.q) { state.filters.q = ''; $('#q').value = ''; renderList(); paintMarkers(); } };
+    $('#q-clear').onclick = () => { $('#q').value = ''; state.filters.q = ''; renderList(); paintMarkers(); $('#q').focus(); };
+    if (state.filters.q) showSearch(true);
     $('#btn-share').onclick = share;
     $('#btn-locate').onclick = locate;
-    $('#btn-filters').classList.toggle('on', filtersActive());
+    renderFiltersBtn();
   }
   function exportSelection() {
     const feats = state.spots.filter((s) => { const w = wishOf(s.properties.id); return w.a || w.b; })
@@ -1410,28 +1633,30 @@
   }
   async function init() {
     if (/[#&]reset\b/.test(location.hash)) {          // app.html#reset : repartir de zéro (version de test publique)
-      try { localStorage.removeItem(LS_STATE); localStorage.removeItem('ccp:intro'); } catch (e) { }
+      try { localStorage.removeItem(LS_STATE); localStorage.removeItem(LS_SYNC); localStorage.removeItem('ccp:intro'); } catch (e) { }
       history.replaceState(null, '', location.pathname + location.search + location.hash.replace(/[#&]reset\b/, '').replace(/^&/, '#'));
     }
     restore();
-    await applyServerIdentity();
-    const shared = applyShare();
-    let routed = false;
-    if (!shared && applyViewParam()) history.replaceState(null, '', location.pathname + location.search);
     const ver = (document.querySelector('script[src*="app.js"]')?.src.match(/v=(\w+)/) || [])[1] || '';
-    const [fc, photos, pois, region] = await Promise.all([
+    assetVer = ver;
+    const dataP = Promise.all([
       fetch('data/spots.geojson?v=' + ver).then((r) => r.json()),
       fetch('data/photos.json?v=' + ver).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
       fetch('data/pois.geojson?v=' + ver).then((r) => (r.ok ? r.json() : { features: [] })).catch(() => ({ features: [] })),
       fetch('data/region.json?v=' + ver).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
+    await applyServerIdentity();   // en parallèle des données
+    const shared = applyShare();
+    let routed = false;
+    if (!shared && applyViewParam()) history.replaceState(null, '', location.pathname + location.search);
+    const [fc, photos, pois, region] = await dataP;
     state.region = region || { name: 'Plages', short: 'Plages', subtitle: '', areas: [] };
     if (state.region.center) { C.center = state.region.center; C.zoom = state.region.zoom || C.zoom; }
     if (state.region.timezone) C.timezone = state.region.timezone;
     document.title = `${state.region.name} · plages & criques`;
     state.spots = fc.features; state.photos = photos || {};
-    routed = !shared && applyRoute();
     state.pois = (pois.features || []).map((f) => ({ id: f.properties.id, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], p: f.properties }));
+    routed = !shared && applyRoute();
     renderChrome(); initSheet(); initMap(); initPois(); initDialogs(); renderWho(); renderProfiles(); renderTabs(); renderDays(); renderList();
     if (state.view !== 'explore') setView(state.view);
     $('#q').value = state.filters.q;
@@ -1441,8 +1666,9 @@
     window.addEventListener('hashchange', () => { if (/^#share=/.test(location.hash)) return; const r = applyRoute(); if (r === true && state.selected !== (history.state && history.state.spot)) select(state.selected, { pan: true }); });
     window.addEventListener('popstate', () => {
       const r = applyRoute();
+      if (r === 'poi') return;
+      if (!$('#panel-poi').hidden) { closePoi(true); return; }
       if (r === true) select(state.selected, { pan: true });
-      else if (r === 'poi') return;
       else if (state.selected && !$('#panel-detail').hidden) closeDetail(true);
     });
     document.addEventListener('keydown', (e) => {
@@ -1452,8 +1678,7 @@
       if (state.selected && !$('#panel-detail').hidden) closeDetail();
     });
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('sw.js').catch(() => {});
-    window.addEventListener('online', () => { if (!state.bulk) loadForecast(false); });
-    if (!shared && !routed) showIntro();
+    window.addEventListener('online', () => { if (!state.bulk) loadForecast(false); syncOnline(); });
   }
   document.addEventListener('DOMContentLoaded', init);
 })();

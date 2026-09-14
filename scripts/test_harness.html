@@ -1,0 +1,121 @@
+<!doctype html><meta charset="utf-8"><title>Banc de test Costa</title>
+<!-- Banc de test navigateur : pilote l'application dans un cadre (390 px, mobile) contre scripts/dev_server.py + server/costa_sync.py.
+     Voir `make test`. Résultats dans <pre id="out"> ; le titre passe à DONE à la fin. -->
+<style>body{margin:0;display:flex;gap:8px}iframe{width:390px;height:844px;border:1px solid #999}pre{font:12px monospace;white-space:pre-wrap}</style>
+<iframe id="f" src="../app.html"></iframe><pre id="out"></pre>
+<script>
+const f = document.getElementById('f'), out = document.getElementById('out');
+const W = () => f.contentWindow, D = () => f.contentWindow.document, $ = (s) => D().querySelector(s), $$ = (s) => [...D().querySelectorAll(s)];
+let fails = 0;
+const log = (m) => { out.textContent += m + '\n'; };
+const check = (c, m) => { log((c ? 'OK   ' : 'FAIL ') + m); if (!c) fails++; };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function wait(fn, ms = 20000, label = '') { const t0 = Date.now(); while (Date.now() - t0 < ms) { try { const v = fn(); if (v) return v; } catch (e) { } await sleep(50); } throw new Error('attente dépassée ' + label); }
+const api = async (as, method = 'GET', body, version) => { const r = await fetch('/api/state' + (as ? '?as=' + as : ''), { method, headers: { 'Content-Type': 'application/json', ...(version != null ? { 'If-Match': String(version) } : {}) }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, st: await r.json() }; };
+async function waitState(pred, ms = 25000, label = '') { const t0 = Date.now(); let st = null; while (Date.now() - t0 < ms) { st = (await api()).st; if (pred(st)) return st; await sleep(150); } throw new Error('état serveur attendu : ' + label); }
+async function putMarie(body) { for (let i = 0; i < 5; i++) { const v = (await api()).st.version; const r = await api('marie', 'PUT', body, v); if (r.status === 200) return r; await sleep(100); } throw new Error('écriture Marie impossible'); }
+const vis = (s) => { const e = $(s); return e && !e.hidden; };
+const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubbles: true, ...(init || {}) }));
+(async () => {
+  try {
+    await wait(() => $('#list .item') && $('#intro-skip'), 30000, 'chargement');
+    $('#intro-skip').click();
+    await wait(() => $('#sum-refresh'), 30000, 'prévisions');
+    await sleep(500);
+    check(!$('#dlg-intro').open, 'B4 · le guide ne réapparaît pas après les prévisions');
+    check($('#who .me .n') && $('#who .me .n').textContent === 'Simon' && $('#sync-dot'), 'U5/C4 · avatar actif « Simon » et point de synchro');
+    check(!$('#dlg-settings'), 'B10 · dialogue Voyageurs supprimé');
+    // recherche repliée + état vide
+    check($('#search-box').hidden, 'U6 · recherche repliée par défaut');
+    $('#btn-search').click(); check(!$('#search-box').hidden, 'U6 · la loupe déploie la recherche');
+    $('#q').value = 'zzzzqq'; fire($('#q'), 'input');
+    await wait(() => $('#list-reset'), 5000, 'état vide');
+    check(!!$('#list-reset'), 'M7 · état vide avec « Réinitialiser les filtres »');
+    $('#list-reset').click(); await wait(() => $$('#list .item').length > 10, 5000, 'liste rétablie');
+    check($$('#list .item').length > 10 && $('#q').value === '', 'M7 · réinitialisation rétablit la liste');
+    // filtres : pastille
+    $('#btn-filters').click(); await wait(() => $('#dlg-filters').open);
+    $('#f-type button[data-v="cala"]').click(); $('#f-apply').click(); await sleep(300);
+    check($('#btn-filters .cnt') && $('#btn-filters .cnt').textContent === '1', 'M7 · pastille « 1 » filtre actif');
+    $('#btn-filters').click(); await wait(() => $('#dlg-filters').open); $('#f-reset').click(); $('#f-apply').click(); await sleep(300);
+    check(!$('#btn-filters .cnt'), 'M7 · pastille retirée après réinitialisation');
+    // fiche depuis la liste : plein panneau, historique
+    const first = $('#list .item'), firstId = first.dataset.id; first.click();
+    await wait(() => vis('#panel-detail') && $('#btn-close'), 10000, 'fiche');
+    check($('#sheet').classList.contains('full'), 'M2 · la fiche s\'ouvre en plein panneau depuis la liste');
+    check(W().history.state && W().history.state.spot === firstId, 'historique · entrée de fiche');
+    // toast visible en mode déployé
+    $('#sync-btn').click(); await sleep(100);
+    const tr = $('#toast').getBoundingClientRect();
+    check($('#toast').classList.contains('show') && tr.top >= 0 && tr.bottom <= W().innerHeight, `B5 · toast visible en mode full (top ${Math.round(tr.top)}, bottom ${Math.round(tr.bottom)} / ${W().innerHeight})`);
+    // lieu à proximité → historique
+    await wait(() => $('.nearby li'), 15000, 'à proximité');
+    $('.nearby li').click(); await wait(() => vis('#panel-poi'), 5000, 'fiche de lieu');
+    check(W().history.state && W().history.state.poi && /^#poi=/.test(W().location.hash), 'B8 · la fiche de lieu entre dans l\'historique');
+    check($('#poi-plan') && $('#poi-plan').getBoundingClientRect().height >= 44, 'M3 · actions de lieu ≥ 44 px');
+    W().history.back(); await wait(() => !vis('#panel-poi') && vis('#panel-detail'), 5000, 'retour au lieu');
+    check(vis('#panel-detail') && !/^#poi=/.test(W().location.hash), 'B8 · retour du navigateur ferme le lieu et rend la fiche');
+    // programme : ajout d\'une activité + conflit simultané avec Marie
+    const v0 = (await api()).st.version;
+    $('#plan-text').value = 'Kayak test'; fire($('#plan-text'), 'keydown', { key: 'Enter' }); $('#plan-text').dispatchEvent(new (W().KeyboardEvent)('keydown', { key: 'Enter', bubbles: true }));
+    await sleep(50);
+    const cm = await api('marie', 'PUT', { users: { b: { name: 'Marie', wish: ['n-conf'] } }, log: [{ text: 'a ajouté Playa Conflit à ses envies' }] }, v0);
+    check(cm.status === 200, 'conflit · écriture de Marie pendant la latence locale');
+    let st = await waitState((s) => s.plans[firstId] && s.plans[firstId].items.some((it) => it.text === 'Kayak test'), 25000, 'plan Kayak');
+    const plan = st.plans[firstId];
+    check(plan && plan.items.some((it) => it.text === 'Kayak test' && it.by === 'a') && st.users.b.wish.includes('n-conf'), 'B1 · conflit 409 : les deux modifications survivent côté serveur');
+    check($$('.plan-items li').some((li) => li.textContent.includes('Kayak test')), 'B1 · l\'activité reste affichée localement');
+    check(st.log.some((e) => e.by === 'a' && /a ajouté Kayak test au programme de/.test(e.text)), 'C2 · journal : « a ajouté Kayak test au programme de … »');
+    // retour à la liste
+    $('#btn-close').click(); await wait(() => vis('#panel-list'), 5000, 'liste');
+    // cœur après défilement : pas de saut de lot
+    const panels = $('#panels');
+    for (let i = 0; i < 6 && $$('#list .item').length <= 60; i++) { panels.scrollTop = panels.scrollHeight; if ($('#list .more')) $('#list .more').click(); await sleep(400); }
+    await wait(() => $$('#list .item').length > 60, 5000, 'lot suivant');
+    const nBefore = $$('#list .item').length;
+    check(nBefore > 60, `liste · ${nBefore} éléments chargés après défilement`);
+    const target = $$('#list .item')[nBefore - 2], tid = target.dataset.id; target.querySelector('.heart.a').click(); await sleep(300);
+    check($$('#list .item').length >= nBefore, 'B7 · toucher un cœur ne ramène pas la liste au premier lot');
+    check($$('#list .item')[nBefore - 2].querySelector('.heart.a').classList.contains('on'), 'B7 · le cœur est marqué en place');
+    st = await waitState((s) => s.users.a.wish.includes(tid), 25000, 'envie'); 
+    check(st.users.a.wish.includes(tid) && st.log.some((e) => e.by === 'a' && /à ses envies/.test(e.text)), 'sync · envie envoyée avec résumé dans le journal');
+    // envies nouvelles de Marie + sondage
+    const someId = $$('#list .item')[3].dataset.id;
+    await putMarie({ users: { b: { name: 'Marie', wish: ['n-conf', someId] } }, log: [{ text: 'a ajouté ' + $$('#list .item')[3].querySelector('.name span').textContent + ' à ses envies' }] });
+    for (let i = 0; i < 60 && !$('#tabs button[data-v="wishes"] b.new'); i++) { D().dispatchEvent(new (W().Event)('visibilitychange')); await sleep(500); }
+    await wait(() => $('#tabs button[data-v="wishes"] b.new'), 3000, 'pastille nouveau');
+    check($('#tabs button[data-v="wishes"] b.new').textContent === '+1', 'C3 · pastille « +1 » sur l\'onglet Envies');
+    check(/^Marie a ajouté/.test($('#toast').textContent), 'C2 · toast précis : « ' + $('#toast').textContent + ' »');
+    $('#tabs button[data-v="wishes"]').click(); await wait(() => vis('#panel-wishes') && $('#w-list .item'), 5000, 'envies');
+    check(!$('#w-activity').hidden && $('#w-activity').textContent.includes('Marie'), 'C2 · bloc Activité affiché');
+    check(!!$('#w-list .tag.new'), 'C3 · étiquette « nouveau » sur l\'envie de Marie');
+    check($$('#w-list .item').some((li) => li.querySelector('.heart.b.ro')), 'sync · cœurs de Marie en lecture seule');
+    // séjour : étape, poignée, cibles, ligne = voir, confirmation maison
+    $('#tabs button[data-v="trip"]').click(); await wait(() => vis('#panel-trip') && $('.add-stop'), 5000, 'séjour');
+    check(!$('#tabs button[data-v="wishes"] b.new'), 'C3 · marqueurs effacés en quittant l\'onglet Envies');
+    $('.add-stop').click(); await wait(() => $('#dlg-pick').open && $('#pick-list button[data-t]'), 5000, 'choix d\'étape');
+    $('#pick-list button[data-t]').click(); await wait(() => $('.stops li'), 5000, 'étape ajoutée');
+    const ib = $('.stops .menu-btn').getBoundingClientRect(), grip = $('.stops .grip');
+    check(ib.width >= 44 && ib.height >= 44 && !!grip, `B6/M8 · bouton d'actions ${Math.round(ib.width)}×${Math.round(ib.height)} px, poignée présente`);
+    st = await waitState((s) => s.trip.days[0] && s.trip.days[0].stops.length >= 1, 25000, 'étape');
+    check(st.trip.days[0] && st.trip.days[0].stops.length >= 1 && st.log.some((e) => /jour 1 du séjour/.test(e.text)), 'sync · étape envoyée, journal « jour 1 »');
+    $('.stops li').click(); await wait(() => vis('#panel-detail'), 5000, 'fiche depuis l\'étape');
+    check(vis('#panel-detail'), 'M8 · toucher une étape ouvre la fiche');
+    $('#btn-close').click(); await wait(() => vis('#panel-trip'), 5000, 'retour séjour');
+    $('#trip-clear').click(); await wait(() => $('#dlg-pick').open, 5000, 'confirmation');
+    check($('#pick-list button[data-a="ok"]') && $('#pick-list button[data-a="ok"]').textContent.includes('Tout effacer'), 'U3 · confirmation dans le dialogue de l\'application');
+    $('#pick-list button[data-a="no"]').click(); await sleep(200);
+    check($$('.stops li').length >= 1, 'U3 · « Annuler » conserve les étapes');
+    // planning dynamique : qui recalcule
+    $('#trip-auto').click(); st = await waitState((s) => s.trip.auto === true, 25000, 'auto');
+    check(st.trip.auto === true && st.trip.autoBy === 'a', 'C5 · mode dynamique : autoBy = a envoyé');
+    // configuration : réglages, sans bouton code (connecté)
+    $('#btn-settings').click(); await wait(() => vis('#panel-config') && $('#c-a'), 5000, 'config');
+    check(!$('#c-code') && $('#panel-config').textContent.includes('Connecté au serveur'), 'C7 · en mode connecté : pas de « code », phrase de synchro');
+    check($('#sheet').classList.contains('full'), 'config · panneau déployé');
+    $('#c-start').focus(); await sleep(400);
+    check($('#sheet').classList.contains('full'), 'M1 · le focus d\'un champ garde le panneau déployé');
+  } catch (e) { check(false, 'exception : ' + (e && e.message)); }
+  log('ÉCHECS : ' + fails); document.title = 'DONE';
+})();
+</script>

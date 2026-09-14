@@ -1,6 +1,6 @@
 /* Service worker : coquille hors-ligne, données en cache (stale-while-revalidate, clés versionnées),
    tuiles OSM en cache avec expiration ; API météo et imagerie Esri toujours en réseau. */
-const VERSION = 'v202609132207';
+const VERSION = 'v202609141245';
 const SHELL = ['./', './index.html', './app.html', './login.html', './css/style.css', './css/site.css', './js/config.js', './js/icons.js', './js/forecast.js', './js/app.js',
   './js/swipe.js', './vendor/leaflet/leaflet.min.js', './vendor/leaflet/leaflet.min.css', './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
   './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './img/cover.jpg'];
@@ -14,6 +14,7 @@ self.addEventListener('fetch', (e) => {
     if (/(^|\.)tile\.openstreetmap\.org$|opentopomap\.org$/.test(url.host)) e.respondWith(tileCache(e.request));
     return; // Open-Meteo, Esri, Commons, Flickr : réseau
   }
+  if (/(^|\/)(api\/|whoami$)/.test(url.pathname)) return;   // état partagé et identité : toujours le réseau
   if (e.request.mode === 'navigate') { e.respondWith(navigate(e.request)); return; }
   e.respondWith(staleWhileRevalidate(e.request));
 });

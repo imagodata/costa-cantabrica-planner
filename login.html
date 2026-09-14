@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0b6e99">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/site.css?v=202609132207">
+  <link rel="stylesheet" href="css/site.css?v=202609141245">
 </head>
 <body>
 <div class="wrap" style="max-width:520px">
@@ -67,7 +67,7 @@
   };
   $('#reset').onclick = () => {
     if (!confirm('Effacer envies, programmes, séjour et préférences enregistrés sur cet appareil ?')) return;
-    try { localStorage.removeItem(KEY); localStorage.removeItem('ccp:intro'); localStorage.removeItem('ccp:bulk:v1'); } catch (e) { }
+    try { for (const k of Object.keys(localStorage)) if (/^ccp:/.test(k)) localStorage.removeItem(k); } catch (e) { }
     st = null; $('#n-a').value = 'Simon'; $('#n-b').value = 'Marie'; me = 'a'; paint(); $('#code').value = '';
     $('#err').hidden = false; $('#err').style.color = 'var(--accent)'; $('#err').textContent = 'Appareil remis à zéro. Choisissez votre prénom puis « Entrer ».';
   };

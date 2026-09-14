@@ -41,3 +41,7 @@ preview:          ## visionneuse gispulse embarquée sur les spots
 
 publish-map:      ## crée la carte sauvegardée sur un portail gispulse (GISPULSE_API=http://localhost:8001)
 	python3 scripts/publish_gispulse_map.py
+
+test:             ## tests : service de synchro (python) puis banc navigateur (Chromium sans tête de Playwright, si présent)
+	python3 scripts/test_sync.py
+	scripts/run_browser_tests.sh

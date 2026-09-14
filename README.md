@@ -23,16 +23,21 @@ deux listes sur l'autre téléphone.
 - **Filtres** : province, plage/crique, sable ou non, envies (A, B, communes), score
   minimum, tri (score, distance, nom, taille), recherche par nom.
 - **Deux voyageurs** : prénoms personnalisables, envies ♡ distinctes par personne, filtre
-  « envies communes », **partage par lien** (Web Share sur mobile, sinon presse-papiers),
-  export GeoJSON des envies.
+  « envies communes », **partage par lien** (Web Share sur mobile, sinon presse-papiers) ou
+  « Copier le code » à coller à la connexion (utile sur iPhone quand le lien s'ouvre hors de
+  l'application installée), export GeoJSON des envies. Le lien est un instantané : il ajoute
+  envies, programmes et séjour sur l'autre téléphone, sans jamais en retirer.
 - **Lieux sur mobile** : toucher un lieu ouvre sa fiche dans le panneau (horaires, adresse,
   itinéraire, appel, site, OSM) avec « Ajouter au programme de la plage la plus proche » et
   « Ajouter à un jour du séjour » ; lien direct `app.html#poi=<id OSM>`. Chaque étape du
   séjour a un menu d'actions (voir, monter, descendre, déplacer vers un autre jour, retirer).
 - **Mobile et tactile** : panneau glissant qui suit le doigt (trois hauteurs, aimantation selon
-  la vitesse du geste), glisser la carte replie le panneau, toucher un repère le rouvre, la
-  recherche déploie le panneau au-dessus du clavier, liste rendue par lots au défilement, zones
-  sûres iOS, retour haptique, installable sur l'écran d'accueil (manifest PWA), thème sombre.
+  la vitesse du geste), glisser la carte replie le panneau, toucher un repère le rouvre, tout
+  champ de saisie déploie le panneau au-dessus du clavier, la fiche s'ouvre en plein panneau
+  depuis une liste, les étapes du séjour se réordonnent à la poignée, le bouton retour ferme
+  aussi la fiche de lieu, liste rendue par lots au défilement, cibles tactiles de 44 px, zones
+  sûres iOS, retour haptique, installable sur l'écran d'accueil (manifest PWA), thème sombre,
+  panneau latéral sur tablette et en paysage.
 - **Photos** : galerie Wikimedia Commons par spot (jusqu'à 10 images : catégorie Commons,
   Wikidata, photos géolocalisées), repli Openverse, avec crédit et licence, en carrousel en tête
   de fiche et en vignette dans la liste. Chaque galerie se termine par une **vue aérienne**
@@ -129,11 +134,32 @@ avec `HOST=costa.gispulse.dev scripts/deploy_vps.sh --init costa 'motdepasse'`).
   remplacé automatiquement.
 - **Écriture en tant que profil connecté** : `server/costa_sync.py` (service systemd
   `costa-sync`, bibliothèque standard, port local 8095, données dans `/opt/costa-data/state.json`)
-  reçoit l'utilisateur authentifié de Caddy (`X-User`) sur `/api/state`. Chaque voyageur ne peut
-  écrire que sa propre liste d'envies ; programmes et séjour sont partagés (dernier écrivain
-  gagnant, version vérifiée par `If-Match`, 409 sinon). L'application connectée charge l'état au
-  démarrage, pousse chaque modification, se resynchronise toutes les 20 s et au retour au premier
-  plan ; les cœurs, notes et compléments de l'autre voyageur sont en lecture seule.
+  reçoit l'utilisateur authentifié de Caddy (`X-User`) sur `/api/state`. L'application n'envoie
+  que ce qu'elle a changé depuis le dernier état serveur connu (sa liste d'envies, les programmes
+  touchés, les champs du séjour modifiés, les préférences) et le serveur **fusionne clé par clé** :
+  chaque voyageur n'écrit que sa liste d'envies, sa note et ses compléments ; les étapes du séjour
+  sont remplacées jour par jour. La version est vérifiée par `If-Match` ; sur un 409, la
+  différence locale est rejouée sur l'état reçu puis renvoyée, rien n'est perdu. Hors ligne, les
+  modifications attendent (persistées) et repartent au retour du réseau ou au lancement suivant ;
+  le point de synchro (vert, orange = en attente, rouge = injoignable) le dit au toucher.
+  Resynchronisation toutes les 20 s et au retour au premier plan, sans redessiner pendant une
+  saisie. Chaque écriture porte un **résumé lisible** (« Marie a ajouté Playa de Toró à ses
+  envies ») : toast précis, bloc « Activité » en tête de l'onglet Envies, étiquette « nouveau » et
+  pastille sur les envies de l'autre reçues depuis la dernière consultation. En mode dynamique,
+  seul l'appareil qui l'a activé recalcule le planning.
+
+## Tests
+
+```bash
+make test
+```
+
+`scripts/test_sync.py` exerce le service de synchronisation (fusion partielle, conflits 409,
+journal, préférences). `scripts/run_browser_tests.sh` lance ensuite le service et
+`scripts/dev_server.py` (qui joue le rôle de Caddy en local : `/whoami`, relais `/api/state`),
+puis ouvre `scripts/test_harness.html` dans le Chromium sans tête de Playwright (s'il est présent
+dans `~/.cache/ms-playwright`) : l'application y est pilotée dans un cadre de 390 px et une
+quarantaine de comportements mobiles et collaboratifs sont vérifiés.
 
 ## Adapter à une autre côte
 
