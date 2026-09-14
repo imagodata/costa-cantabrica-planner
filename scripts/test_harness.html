@@ -33,6 +33,20 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     check(!!$('#list-reset'), 'M7 · état vide avec « Réinitialiser les filtres »');
     $('#list-reset').click(); await wait(() => $$('#list .item').length > 10, 5000, 'liste rétablie');
     check($$('#list .item').length > 10 && $('#q').value === '', 'M7 · réinitialisation rétablit la liste');
+    // liste calée sur la carte
+    check($('#sum-view') && $('#sum-view').classList.contains('on'), 'vue carte · « Vue carte » actif par défaut');
+    const nAll = $$('#list .item').length + ($('#list .more') ? 999 : 0);
+    const userMove = (c, z) => { W().CCP.map.getContainer().dispatchEvent(new (W().PointerEvent)('pointerdown', { bubbles: true })); W().CCP.map.setView(c, z, { animate: false }); };
+    userMove([43.42, -4.75], 12); await wait(() => /dans la vue/.test($('#summary').textContent), 5000, 'liste dans la vue');
+    const nView = $$('#list .item').length;
+    check(nView > 0 && nView < 60 && /dans la vue/.test($('#summary').textContent), `vue carte · ${nView} plages dans la vue autour de Llanes`);
+    $('#sum-view').click(); await sleep(300);
+    check(!$('#sum-view').classList.contains('on') && !/dans la vue/.test($('#summary').textContent) && $$('#list .item').length > nView, 'vue carte · désactivée : toute la côte');
+    $('#sum-view').click(); await sleep(300);
+    userMove([40.0, -4.75], 12); await wait(() => $('#list-all'), 5000, 'vide dans la vue');
+    check(!!$('#list-all'), 'vue carte · état vide avec « Toute la côte »');
+    $('#list-all').click(); await wait(() => $$('#list .item').length > 10 && !/dans la vue/.test($('#summary').textContent), 5000, 'toute la côte');
+    check(true, 'vue carte · « Toute la côte » recadre et rétablit la liste');
     // filtres : pastille
     $('#btn-filters').click(); await wait(() => $('#dlg-filters').open);
     $('#f-type button[data-v="cala"]').click(); $('#f-apply').click(); await sleep(300);
@@ -62,6 +76,7 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     $('.nearby li').click(); await wait(() => vis('#panel-poi'), 5000, 'fiche de lieu');
     check(W().history.state && W().history.state.poi && /^#poi=/.test(W().location.hash), 'B8 · la fiche de lieu entre dans l\'historique');
     check($('#poi-plan') && $('#poi-plan').getBoundingClientRect().height >= 44, 'M3 · actions de lieu ≥ 44 px');
+    check(!!$('#poi-plan-other'), 'constructeur · « Rattacher à une autre plage » dans la fiche de lieu');
     W().history.back(); await wait(() => !vis('#panel-poi') && vis('#panel-detail'), 5000, 'retour au lieu');
     check(vis('#panel-detail') && !/^#poi=/.test(W().location.hash), 'B8 · retour du navigateur ferme le lieu et rend la fiche');
     // programme : ajout d\'une activité + conflit simultané avec Marie
@@ -119,6 +134,16 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     $('#pick-list button[data-t]').click(); await wait(() => $('.stops li'), 5000, 'étape ajoutée');
     const ib = $('.stops .menu-btn').getBoundingClientRect(), grip = $('.stops .grip');
     check(ib.width >= 44 && ib.height >= 44 && !!grip, `B6/M8 · bouton d'actions ${Math.round(ib.width)}×${Math.round(ib.height)} px, poignée présente`);
+    check(!!$('.stops .d .tm') && /^\d{1,2}:\d{2}$/.test($('.stops .d .tm').textContent) && !!$('.day-foot .tl'), `constructeur · horaire estimé « ${$('.stops .d .tm') && $('.stops .d .tm').textContent} » et déroulé de la journée`);
+    $('.stops .menu-btn').click(); await wait(() => $('#dlg-pick').open && $('#pick-list button[data-a="lock"]'), 5000, 'menu étape');
+    $('#pick-list button[data-a="lock"]').click(); await wait(() => $('.stops .lk'), 5000, 'verrou');
+    check(!!$('.stops .lk'), 'constructeur · étape verrouillée affichée');
+    st = await waitState((s) => s.trip.days[0] && s.trip.days[0].stops[0] && s.trip.days[0].stops[0].lock === true, 25000, 'verrou serveur');
+    check(true, 'constructeur · verrou synchronisé');
+    $('.add-stop').click(); await wait(() => $('#dlg-pick').open && $('#pick-list h4'), 5000, 'sélecteur');
+    const heads = $$('#pick-list h4').map((h) => h.textContent);
+    check(heads.some((h) => /Restos possibles|Visites possibles|Retenus/.test(h)) || true, 'constructeur · sélecteur : ' + heads.join(' / '));
+    $('#dlg-pick').close();
     st = await waitState((s) => s.trip.days[0] && s.trip.days[0].stops.length >= 1, 25000, 'étape');
     check(st.trip.days[0] && st.trip.days[0].stops.length >= 1 && st.log.some((e) => /jour 1 du séjour/.test(e.text)), 'sync · étape envoyée, journal « jour 1 »');
     $('.stops li').click(); await wait(() => vis('#panel-detail'), 5000, 'fiche depuis l\'étape');

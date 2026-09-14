@@ -21,7 +21,9 @@ deux listes sur l'autre téléphone.
   du niveau de la mer horaire, température de l'eau, lever/coucher du soleil, itinéraire
   Google Maps, lien GPS, Wikipédia, OSM.
 - **Filtres** : province, plage/crique, sable ou non, envies (A, B, communes), score
-  minimum, tri (score, distance, nom, taille), recherche par nom.
+  minimum, tri (score, distance, nom, taille), recherche par nom. La liste **suit la carte** :
+  après un geste (glisser, pincer), seules les plages visibles sont listées (puce « Vue carte »
+  pour revenir à toute la côte) ; les recadrages automatiques n'y touchent pas.
 - **Deux voyageurs** : prénoms personnalisables, envies ♡ distinctes par personne, filtre
   « envies communes », **partage par lien** (Web Share sur mobile, sinon presse-papiers) ou
   « Copier le code » à coller à la connexion (utile sur iPhone quand le lien s'ouvre hors de
@@ -31,7 +33,8 @@ deux listes sur l'autre téléphone.
   un cœur l'accepte, « Ignorer » l'écarte.
 - **Lieux sur mobile** : toucher un lieu ouvre sa fiche dans le panneau (horaires, adresse,
   itinéraire, appel, site, OSM) avec « Ajouter au programme de la plage la plus proche » et
-  « Ajouter à un jour du séjour » ; lien direct `app.html#poi=<id OSM>`. Chaque étape du
+  « Ajouter à un jour du séjour », « Rattacher à une autre plage » ; lien direct
+  `app.html#poi=<id OSM>`. Chaque étape du
   séjour a un menu d'actions (voir, monter, descendre, déplacer vers un autre jour, retirer).
 - **Mobile et tactile** : panneau glissant qui suit le doigt (trois hauteurs, aimantation selon
   la vitesse du geste, déplacé par translation sans remise en page), glisser la carte replie le panneau, toucher un repère le rouvre, tout
@@ -57,10 +60,15 @@ deux listes sur l'autre téléphone.
   (resto, monument…) ou activités libres, visibles sur la carte et dans le lien partagé.
 - **Séjour** : hébergement (recherche d'un lieu, position, ou point sur la carte), jours datés,
   étapes ordonnées (plage, resto, visite, étape libre) avec distance par tronçon et aller-retour
-  estimé, ajout d'une plage avec son programme en bloc, « Proposer un planning selon la météo »
+  estimé, **horaires estimés** par étape (départ à l'heure choisie, trajets à 45 km/h, environ
+  2 h 30 par plage, 1 h 15 au resto) avec alertes (déjeuner tardif, journée chargée, plage qui
+  dépend de la marée, pas de déjeuner prévu), ajout d'une plage avec son programme en bloc,
+  **étapes verrouillées** que le planificateur conserve, « Proposer un planning selon la météo »
   (répartit les envies sur les jours selon le score, en pénalisant l'éloignement de
-  l'hébergement), lien Google Maps par jour avec départ et retour à l'hébergement, tout
-  partagé par lien.
+  l'hébergement, autour des étapes verrouillées), sélecteur d'étapes qui propose les
+  **restos et visites retenus dans les programmes**, puis les **restos possibles** à moins de
+  1,5 km et les **visites possibles** à moins de 3 km des plages du jour, lien Google Maps par
+  jour avec départ et retour à l'hébergement, tout partagé par lien.
 - **Page de configuration** (icône voyageurs) : prénoms et « qui je suis », résidence
   (recherche, position GPS, point sur la carte, nom), période du séjour (dates d'arrivée et de
   départ), planning dynamique, retour quotidien, déjeuner proposé, plages par jour, rayon

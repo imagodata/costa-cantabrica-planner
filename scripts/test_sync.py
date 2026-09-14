@@ -58,16 +58,18 @@ try:
     check(c == 200 and st['version'] == 7 and st['users']['a']['wish'] == ['n1', 'n2'] and st['users']['a']['name'] == 'Simón', 'prénom seul : liste d\'envies conservée')
     c, st = call('PUT', 'simon', {'trip': {'base': {'name': 'x', 'lat': True, 'lon': False}}}, version=7)
     check(c == 200 and st['trip']['base'] is None, 'booléens refusés comme coordonnées')
+    c, st = call('PUT', 'simon', {'trip': {'days': [{'stops': [{'t': 's', 'id': 'n1', 'lock': True}, {'t': 'x', 'text': 'marché', 'lock': 'oui'}]}]}}, version=8)
+    check(c == 200 and st['trip']['days'][0]['stops'][0].get('lock') is True and 'lock' not in st['trip']['days'][0]['stops'][1], 'verrou d\'étape conservé (booléen strict)')
     # propositions : simon propose à marie (écrit users.b.suggest) ; marie ne peut pas écrire sa propre liste suggest
-    c, st = call('PUT', 'simon', {'users': {'b': {'suggest': ['n9']}}}, version=8)
+    c, st = call('PUT', 'simon', {'users': {'b': {'suggest': ['n9']}}}, version=9)
     check(c == 200 and st['users']['b']['suggest'] == ['n9'] and st['users']['b']['wish'] == ['n1'], 'proposition écrite chez l\'autre, ses envies intactes')
-    c, st = call('PUT', 'marie', {'users': {'b': {'name': 'Marie', 'wish': ['n1'], 'suggest': ['n9', 'zzz']}}}, version=9)
+    c, st = call('PUT', 'marie', {'users': {'b': {'name': 'Marie', 'wish': ['n1'], 'suggest': ['n9', 'zzz']}}}, version=10)
     check(c == 200 and st['users']['b']['suggest'] == ['n9'], 'le destinataire ne peut pas s\'ajouter de propositions')
-    c, st = call('PUT', 'marie', {'users': {'b': {'name': 'Marie', 'wish': ['n1', 'n9'], 'suggest': ['n9']}}}, version=9)   # l'appel précédent n'a rien changé : version inchangée
+    c, st = call('PUT', 'marie', {'users': {'b': {'name': 'Marie', 'wish': ['n1', 'n9'], 'suggest': ['n9']}}}, version=10)   # l'appel précédent n'a rien changé : version inchangée
     check(c == 200 and st['users']['b']['suggest'] == [] and 'n9' in st['users']['b']['wish'], 'accepter : une plage en envie sort des propositions')
     # persistance : relecture
     st = call('GET', 'marie')[1]
-    check(st['version'] == 10 and st['me'] == 'b' and len(st['log']) == 1, 'état relu, journal persistant')
+    check(st['version'] == 11 and st['me'] == 'b' and len(st['log']) == 1, 'état relu, journal persistant')
 finally:
     srv.terminate()
 print('ÉCHECS :', fails); sys.exit(1 if fails else 0)

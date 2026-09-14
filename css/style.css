@@ -240,7 +240,15 @@ button:focus:not(:focus-visible) { outline: none; }
 .stops .n.poi { background: var(--muted); }
 .stops .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stops .t small { color: var(--muted); }
-.stops .d { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.stops .d { font-size: 12.5px; color: var(--muted); white-space: nowrap; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.2; }
+.stops .d .tm { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 600; font-style: normal; }
+.stops .d .tm.late { color: var(--mid); }
+.stops .lk { color: var(--accent); margin-right: 3px; vertical-align: -2px; }
+.stops .tide { color: var(--mid); margin-left: 3px; vertical-align: -2px; }
+.day-foot .tl { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.day-warn { display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: var(--mid); }
+.day-warn svg { flex: 0 0 auto; margin-top: 2px; }
+.pick .sub.by { color: var(--accent); }
 .stops .ib { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; color: var(--muted); }
 .stops .ib:disabled { opacity: .25; }
 .day-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
@@ -306,7 +314,10 @@ button:focus:not(:focus-visible) { outline: none; }
 .search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; height: 100%; color: var(--text); }
 .search input::-webkit-search-cancel-button { display: none; }
 .search .clear { width: 36px; height: 36px; border-radius: 50%; color: var(--muted); font-size: 14px; display: grid; place-items: center; }
-.summary { display: flex; justify-content: space-between; align-items: center; padding: 0 14px 6px; font-size: 13px; color: var(--muted); gap: 8px; }
+.summary { display: flex; justify-content: space-between; align-items: center; padding: 0 14px 6px; font-size: 13px; color: var(--muted); gap: 6px 8px; flex-wrap: wrap; }
+.summary .right { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.chip-mini { height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-size: 12px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.chip-mini.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 .summary b { color: var(--ideal); font-weight: 700; } .summary .warn { color: var(--bad); }
 
 /* ---------- liste ---------- */

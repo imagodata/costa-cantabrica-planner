@@ -20,7 +20,8 @@
     poiOn: { food: true, visit: true },
     view: 'explore', wishWho: 'all', wishSort: 'coast', plans: {},
     trip: { base: null, start: null, days: [], auto: false }, pickBase: false,
-    prefs: { perDay: 2, radiusKm: 60, lunch: true, roundTrip: true },
+    prefs: { perDay: 2, radiusKm: 60, lunch: true, roundTrip: true, startHour: 10 },
+    mapFilter: true,   // liste Explorer calée sur l'emprise visible de la carte
     filters: { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' },
     sort: 'score',
     users: { a: { name: DEFAULT_NAMES[0], wish: [], suggest: [] }, b: { name: DEFAULT_NAMES[1], wish: [], suggest: [] } },   // suggest : plages proposées à ce voyageur par l'autre
@@ -85,7 +86,7 @@
 
   function persistLocal() {
     try { localStorage.setItem(LS_STATE, JSON.stringify({ users: state.users, me: state.me, profile: state.profile, filters: state.filters, sort: state.sort,
-      poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort, prefs: state.prefs })); } catch (e) { }
+      poiOn: state.poiOn, plans: state.plans, trip: state.trip, wishWho: state.wishWho, wishSort: state.wishSort, prefs: state.prefs, mapFilter: state.mapFilter })); } catch (e) { }
   }
   function save() { persistLocal(); syncPush(); }
   function restore() {
@@ -102,6 +103,7 @@
       if (j.wishSort) state.wishSort = j.wishSort;
       if (j.trip && Array.isArray(j.trip.days)) state.trip = { auto: false, ...j.trip };
       if (j.prefs) Object.assign(state.prefs, j.prefs);
+      if (typeof j.mapFilter === 'boolean') state.mapFilter = j.mapFilter;
     } catch (e) { }
   }
 
@@ -112,7 +114,7 @@
     const pl = {};
     for (const [id, pn] of Object.entries(state.plans)) if (pn.items.length || pn.notes.a || pn.notes.b) pl[id] = { n: pn.notes, i: pn.items.map((it) => [it.poi || ('t:' + it.text), it.by]) };
     const tr = state.trip.days.some((d) => d.stops.length) || state.trip.base
-      ? { b: state.trip.base, s: state.trip.start, a: state.trip.auto ? 1 : 0, d: state.trip.days.map((d) => d.stops.map((st) => [st.t, st.id || st.text])) } : undefined;
+      ? { b: state.trip.base, s: state.trip.start, a: state.trip.auto ? 1 : 0, d: state.trip.days.map((d) => d.stops.map((st) => st.lock ? [st.t, st.id || st.text, 1] : [st.t, st.id || st.text])) } : undefined;
     const p = { na: state.users.a.name, nb: state.users.b.name, a: state.users.a.wish, b: state.users.b.wish, sa: state.users.a.suggest, sb: state.users.b.suggest, d: state.day, p: state.profile, s: state.selected, pl, tr };
     return location.origin + location.pathname + '#share=' + b64e(JSON.stringify(p));
   }
@@ -391,7 +393,7 @@
         state.trip = { base: p.tr.b && Number.isFinite(p.tr.b.lat) && Number.isFinite(p.tr.b.lon) ? { name: String(p.tr.b.name || 'Hébergement').slice(0, 60), lat: p.tr.b.lat, lon: p.tr.b.lon } : state.trip.base,
           start: typeof p.tr.s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.tr.s) ? p.tr.s : null,
           auto: p.tr.a === 1,
-          days: p.tr.d.slice(0, 14).map((stops) => ({ stops: (stops || []).slice(0, 30).map(([t, v]) => t === 'x' ? { t: 'x', text: String(v).slice(0, 80) } : { t: t === 'p' ? 'p' : 's', id: String(v) }) })) };
+          days: p.tr.d.slice(0, 14).map((stops) => ({ stops: (stops || []).slice(0, 30).map(([t, v, lk]) => ({ ...(t === 'x' ? { t: 'x', text: String(v).slice(0, 80) } : { t: t === 'p' ? 'p' : 's', id: String(v) }), ...(lk === 1 ? { lock: true } : {}) })) })) };
       }
       if ((p.a && p.a.length) || (p.b && p.b.length)) state.view = 'wishes';
       if (p.tr && Array.isArray(p.tr.d) && p.tr.d.some((d) => d && d.length)) state.view = 'trip';
@@ -450,10 +452,25 @@
     const sg = state.users[state.me].suggest || [], i = sg.indexOf(id); if (i >= 0) sg.splice(i, 1);
     state.fresh.delete(id); saveSyncMeta(); save(); renderTabs(); renderWishes(); paintMarkers(); toast('Proposition ignorée');
   }
-  function filtered({ ignoreScore = false } = {}) {
-    const f = state.filters, q = f.q.trim().toLowerCase();
+  /* Liste Explorer calée sur la carte : seule l'emprise laissée par un geste de l'utilisateur compte
+     (glisser, pincer, molette). Les recadrages automatiques (fiche, envies, séjour, « Toute la côte »)
+     ne la rétrécissent pas. Sur téléphone, l'emprise est la partie visible au-dessus du panneau. */
+  let viewBounds = null, movingProg = false;
+  const progMove = (fn) => { movingProg = true; fn(); };   // déplacement programmé : ignoré par le suivi
+  function liveBounds() {
+    const size = map.getSize(); let h = size.y;
+    if (isMobile() && !sheet.classList.contains('full')) h = Math.max(60, sheet.getBoundingClientRect().top - map.getContainer().getBoundingClientRect().top);
+    return L.latLngBounds(map.containerPointToLatLng([0, h]), map.containerPointToLatLng([size.x, 0]));
+  }
+  function mapBounds() {
+    if (!map || !state.mapFilter || !viewBounds) return null;
+    return state.spots.every((s) => viewBounds.contains(latlng(s))) ? null : viewBounds;
+  }
+  function filtered({ ignoreScore = false, inView = false } = {}) {
+    const f = state.filters, q = f.q.trim().toLowerCase(), b = inView ? mapBounds() : null;
     return state.spots.filter((s) => {
       const p = s.properties;
+      if (b && !b.contains(latlng(s))) return false;
       if (f.province !== 'all' && p.province !== f.province) return false;
       if (f.type !== 'all' && p.type !== f.type) return false;
       if (f.surface === 'sand' && p.surface !== 'sand') return false;
@@ -488,7 +505,7 @@
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · prévisions <a href="https://open-meteo.com/">Open-Meteo</a>' });
     const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics, and the GIS User Community · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' });
-    osm.addTo(map);
+    osm.addTo(map); CCP.map = map;   // exposé pour le banc de test et le débogage
     L.control.layers({ 'Plan': osm, 'Satellite': sat, 'Relief': topo }, null, { position: 'bottomright' }).addTo(map);
     L.control.scale({ imperial: false }).addTo(map);
     for (const s of state.spots) {
@@ -556,6 +573,9 @@
   function initPois() {
     poiLayer = L.layerGroup().addTo(map);
     map.on('moveend zoomend', renderPois);
+    let mvT = null;   // la liste Explorer suit l'emprise laissée par un geste
+    for (const ev of ['pointerdown', 'wheel', 'touchstart']) map.getContainer().addEventListener(ev, () => { movingProg = false; }, { passive: true });
+    map.on('moveend', () => { if (movingProg) { movingProg = false; return; } viewBounds = liveBounds(); clearTimeout(mvT); mvT = setTimeout(() => { if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList(); } }, 120); });
     renderLayerChips(); renderPois();
   }
   let poiReturn = null, currentPoi = null;
@@ -565,7 +585,7 @@
     if (pan) {
       const z = Math.max(map.getZoom(), C.poiMinZoom + 2), p = map.project([x.lat, x.lon], z);
       if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
-      map.setView(map.unproject(p, z), z, { animate: false });
+      progMove(() => map.setView(map.unproject(p, z), z, { animate: false }));
     }
     renderPois();
     map.closePopup();
@@ -613,6 +633,7 @@
       </div>
       <div class="poi-actions">
         ${beach ? `<button type="button" class="btn ghost wide ${inPlan ? 'on' : ''}" id="poi-plan">${I(inPlan ? 'check' : 'plus', { size: 16 })}${inPlan ? 'Dans le programme de ' : 'Ajouter au programme de '}${esc(beach.properties.name)}</button>` : ''}
+        <button type="button" class="btn ghost wide" id="poi-plan-other">${I('note', { size: 16 })}${beach ? 'Rattacher à une autre plage' : 'Rattacher au programme d\'une plage'}</button>
         <button type="button" class="btn ghost wide ${inTrip ? 'on' : ''}" id="poi-trip">${I('calendar', { size: 16 })}${inTrip ? 'Dans le séjour · ajouter à un autre jour' : 'Ajouter à un jour du séjour'}</button>
         <a class="btn primary" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}" target="_blank" rel="noopener">${I('navigation', { size: 16 })}Itinéraire</a>
         ${tel ? `<a class="btn ghost" href="tel:${esc(tel)}">${I('users', { size: 16 })}Appeler</a>` : `<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' ' + (p.addr_city || ''))}" target="_blank" rel="noopener">${I('pin', { size: 16 })}Google Maps</a>`}
@@ -627,6 +648,19 @@
       renderTabs(); paintMarkers(); renderPoiPanel(x);
     };
     $('#poi-trip').onclick = () => pickDayFor({ t: 'p', id: x.id }, x.p.name, () => renderPoiPanel(x));
+    $('#poi-plan-other').onclick = () => pickBeachFor(x, () => renderPoiPanel(x));
+  }
+  /* Choisir la plage au programme de laquelle rattacher un lieu : plages proches (10 km), envies d'abord. */
+  function pickBeachFor(x, after) {
+    const dlg = $('#dlg-pick');
+    const near = state.spots.map((s) => ({ s, d: distKm([x.lat, x.lon], latlng(s)) })).filter((o) => o.d <= 10).sort((a, b) => a.d - b.d);
+    const wished = near.filter((o) => { const w = wishOf(o.s.properties.id); return w.a || w.b; }), others = near.filter((o) => !wished.includes(o)).slice(0, 8);
+    const row = (o) => { const sid = o.s.properties.id, w = wishOf(sid), has = (state.plans[sid]?.items || []).some((it) => it.poi === x.id);
+      return `<button type="button" data-id="${esc(sid)}" ${has ? 'disabled style="opacity:.5"' : ''}>${I('wave', { size: 14 })}<span>${esc(o.s.properties.name)}${w.a || w.b ? ` <i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--${w.a && w.b ? 'both' : w.a ? 'a' : 'b'})"></i>` : ''}</span><span class="sub">${has ? 'déjà' : (o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km')}</span></button>`; };
+    $('#pick-title').textContent = `${x.p.name} · au programme de quelle plage ?`;
+    $('#pick-list').innerHTML = (wished.length ? `<h4>Vos envies</h4>${wished.map(row).join('')}` : '') + (others.length ? `<h4>Plages proches</h4>${others.map(row).join('')}` : '') + (!near.length ? '<span class="hint">Aucune plage à moins de 10 km.</span>' : '');
+    $('#pick-list').querySelectorAll('button[data-id]').forEach((b) => b.onclick = () => { const sid = b.dataset.id; dlg.close(); if (planAdd(sid, { poi: x.id })) { toast(`Ajouté au programme de ${spotById(sid).properties.name}`); buzz(); } renderTabs(); paintMarkers(); if (after) after(); });
+    dlg.showModal();
   }
   function nearbyOf(s, km = C.nearbyKm) {
     const c = latlng(s), sname = s.properties.name.toLowerCase();
@@ -637,9 +671,10 @@
 
   function fitAll() {
     if (!state.spots.length) return;
+    viewBounds = null;
     const b = L.latLngBounds(state.spots.map(latlng)), mobile = isMobile();
     const bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
-    map.fitBounds(b, { paddingTopLeft: [16, 16], paddingBottomRight: [16, bottom + 16], animate: false });
+    progMove(() => map.fitBounds(b, { paddingTopLeft: [16, 16], paddingBottomRight: [16, bottom + 16], animate: false }));
   }
   function paintMarkers() {
     const vis = new Set(filtered().map((s) => s.properties.id));
@@ -688,7 +723,7 @@
   function panTo(s) {
     const z = Math.max(map.getZoom(), C.poiMinZoom + 1), mobile = isMobile(), p = map.project(latlng(s), z);
     if (mobile) p.y += (sheet.classList.contains('full') ? 0 : sheetVisible() / 2);
-    map.setView(map.unproject(p, z), z, { animate: true });
+    progMove(() => map.setView(map.unproject(p, z), z, { animate: true }));
   }
 
   /* ------------------------------------------------------------------ en-tête, jours, profil */
@@ -719,7 +754,7 @@
   function bestDot(i) {
     if (!state.bulk) return 'none';
     let best = -1;
-    for (const s of filtered({ ignoreScore: true })) { const sc = scoreOf(s, i).score; if (sc != null && sc > best) best = sc; }
+    for (const s of filtered({ ignoreScore: true, inView: true })) { const sc = scoreOf(s, i).score; if (sc != null && sc > best) best = sc; }
     if (best < 0) return 'none';
     return C.scoreClasses.find((c) => best >= c.min).key;
   }
@@ -836,8 +871,9 @@
   }
   function fitWishes() {
     const list = wishList(); if (!list.length) return;
+    viewBounds = null;
     const b = L.latLngBounds(list.map(latlng)), mobile = isMobile(), bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
-    map.fitBounds(b.pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 });
+    progMove(() => map.fitBounds(b.pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 }));
   }
   function paintWishLayer() {
     if (!wishLayer) wishLayer = L.layerGroup().addTo(map);
@@ -894,6 +930,29 @@
     } else if (seq.length === 1) url = `https://www.google.com/maps/dir/?api=1&destination=${seq[0].join(',')}`;
     return { km: km * 1.3, url, pts, seq };
   }
+  /* Déroulé horaire estimé d'une journée : départ à l'heure choisie, trajets à 45 km/h sur la distance
+     corrigée, durées par type d'étape ; le déjeuner attend 12 h 30 s'il arrive trop tôt. */
+  const DUR = { playa: 150, cala: 90, restaurant: 75, beach_bar: 75, bar: 45, cafe: 30, culture: 60, tourism: 60, text: 45 };
+  const hm = (min) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, '0')}`;
+  const isMeal = (info) => info.kind === 'poi' && ['restaurant', 'beach_bar'].includes(info.poi.p.kind);
+  function dayTimeline(day) {
+    const start = (state.prefs.startHour || 10) * 60, base = state.trip.base ? { lat: state.trip.base.lat, lon: state.trip.base.lon } : null;
+    let t = start, prev = base; const slots = [], warns = [];
+    day.stops.forEach((st) => {
+      const info = stopInfo(st); if (!info) { slots.push(null); return; }
+      if (info.lat != null && prev && prev.lat != null) t += distKm([prev.lat, prev.lon], [info.lat, info.lon]) * 1.3 / 45 * 60;
+      let late = false;
+      if (isMeal(info)) { if (t < 12 * 60 + 30) t = 12 * 60 + 30; if (t > 14 * 60 + 30) { late = true; warns.push(`Déjeuner à ${hm(t)} chez ${info.name} : tard. Avancer l'étape ?`); } }
+      const d = info.kind === 'spot' ? DUR[info.spot.properties.type] || DUR.playa : info.kind === 'poi' ? DUR[info.poi.p.kind] || 60 : DUR.text;
+      slots.push({ start: t, end: t + d, late }); t += d;
+      if (info.kind === 'spot' && info.spot.properties.tidal === 'yes') warns.push(`${info.name} dépend de la marée : vérifier l'heure de pleine mer dans sa fiche.`);
+      if (info.lat != null) prev = info;
+    });
+    if (base && state.prefs.roundTrip && prev && prev.lat != null && prev !== base) t += distKm([prev.lat, prev.lon], [base.lat, base.lon]) * 1.3 / 45 * 60;
+    if (slots.some(Boolean) && t > 19 * 60 + 30) warns.push(`Retour vers ${hm(t)} : journée chargée, retirer une étape ?`);
+    if (state.prefs.lunch && day.stops.length && !day.stops.map(stopInfo).some((x) => x && isMeal(x))) warns.push('Pas de déjeuner prévu : « Ajouter une étape » propose les restos possibles.');
+    return { slots, end: t, start, warns };
+  }
   function proposeTrip({ silent = false } = {}) {
     ensureTrip();
     const t = state.trip, n = t.days.length;
@@ -902,8 +961,10 @@
     if (!state.bulk) { if (!silent) toast('Prévisions nécessaires pour proposer un planning'); return; }
     const base = t.base ? [t.base.lat, t.base.lon] : null;
     if (base && state.prefs.radiusKm) cands = cands.filter((s) => distKm(base, latlng(s)) <= state.prefs.radiusKm) .length ? cands.filter((s) => distKm(base, latlng(s)) <= state.prefs.radiusKm) : cands;
-    const perDay = Math.max(1, Math.min(state.prefs.perDay || 2, Math.ceil(cands.length / n)));
-    // score jour × spot ; pénalité de distance à l'hébergement ; 2 à 3 plages par jour maximum
+    const lockedIds = new Set(t.days.flatMap((d) => d.stops.filter((st) => st.lock && st.t === 's').map((st) => st.id)));
+    cands = cands.filter((s) => !lockedIds.has(s.properties.id));
+    const perDay = Math.max(1, Math.min(state.prefs.perDay || 2, Math.ceil((cands.length + lockedIds.size) / n)));
+    // score jour × spot ; pénalité de distance à l'hébergement ; 2 à 3 plages par jour maximum ; les étapes verrouillées restent
     const scored = [];
     for (const s of cands) for (let i = 0; i < n; i++) {
       const fi = forecastIdx(dayIso(i)); if (fi < 0) continue;
@@ -912,26 +973,25 @@
       scored.push({ s, i, v: sc - pen });
     }
     scored.sort((a, b) => b.v - a.v);
-    const used = new Set(), counts = Array(n).fill(0);
-    t.days.forEach((d) => { d.stops = []; });
+    const used = new Set(), counts = t.days.map((d) => d.stops.filter((st) => st.lock && st.t === 's').length), picked = t.days.map(() => []);
     const wished = wishedIds().length > 0;
     for (const { s, i } of scored) {
       if (used.has(s.properties.id) || counts[i] >= perDay) continue;
       if (!wished && counts.reduce((a, b) => a + b, 0) >= n * 2) break;
       used.add(s.properties.id); counts[i]++;
-      t.days[i].stops.push({ t: 's', id: s.properties.id });
+      picked[i].push({ t: 's', id: s.properties.id });
     }
-    t.days.forEach((d) => {
-      d.stops.sort((x, y) => (spotById(x.id)?.geometry.coordinates[0] ?? 0) - (spotById(y.id)?.geometry.coordinates[0] ?? 0));
-      const spots = d.stops.slice(); d.stops = [];
-      spots.forEach((st, k) => {
-        addStop(t.days.indexOf(d), st);
-        if (state.prefs.lunch && k === 0 && !d.stops.some((x) => x.t === 'p' && ['restaurant', 'beach_bar'].includes(poiById(x.id)?.p.kind))) {
-          const s0 = spotById(st.id), c = latlng(s0);
-          const r = state.pois.filter((x) => ['restaurant', 'beach_bar'].includes(x.p.kind)).map((x) => ({ x, dd: distKm(c, [x.lat, x.lon]) })).filter((o) => o.dd < 1.5).sort((a, b) => a.dd - b.dd)[0];
-          if (r) addStop(t.days.indexOf(d), { t: 'p', id: r.x.id });
-        }
-      });
+    t.days.forEach((d, i) => {
+      const locked = d.stops.filter((st) => st.lock), lockedKeys = new Set(locked.map((st) => st.t + ':' + (st.id || st.text)));
+      const spots = picked[i].sort((x, y) => (spotById(x.id)?.geometry.coordinates[0] ?? 0) - (spotById(y.id)?.geometry.coordinates[0] ?? 0));
+      d.stops = locked.slice();   // les étapes verrouillées restent, dans leur ordre
+      spots.forEach((st) => { if (!lockedKeys.has('s:' + st.id)) addStop(i, st); });
+      const beaches = d.stops.filter((st) => st.t === 's');
+      if (state.prefs.lunch && beaches.length && !d.stops.some((x) => x.t === 'p' && ['restaurant', 'beach_bar'].includes(poiById(x.id)?.p.kind))) {
+        const c = latlng(spotById(beaches[0].id));   // resto retenu dans un programme du jour, sinon le plus proche de la première plage
+        const r = state.pois.filter((x) => ['restaurant', 'beach_bar'].includes(x.p.kind)).map((x) => ({ x, dd: distKm(c, [x.lat, x.lon]) })).filter((o) => o.dd < 1.5).sort((a, b) => a.dd - b.dd)[0];
+        if (r) { addStop(i, { t: 'p', id: r.x.id }); const k = d.stops.findIndex((x) => x.t === 'p' && x.id === r.x.id); if (k > 1) { const [m] = d.stops.splice(k, 1); d.stops.splice(1, 0, m); } }
+      }
     });
     save(); renderTabs(); if (state.view === 'trip') { renderTrip(); paintMarkers(); if (!silent) fitTrip(); }
     if (!silent) toast(wished ? 'Planning proposé à partir de vos envies' : 'Planning proposé avec les meilleures plages');
@@ -952,15 +1012,16 @@
          <div class="base-search"><input type="search" id="base-q" placeholder="Rechercher un lieu, un village, une plage…" autocomplete="off"><button type="button" class="iconbtn" id="base-geo" title="Ma position" aria-label="Ma position">${I('locate', { size: 18 })}</button><button type="button" class="iconbtn ${state.pickBase ? 'on' : ''}" id="base-map" title="Choisir sur la carte" aria-label="Choisir sur la carte">${I('pin', { size: 18 })}</button></div>
          <div class="sugg" id="base-sugg" hidden></div>`;
     const daysHtml = t.days.map((d, i) => {
-      const fi = forecastIdx(dayIso(i)), route = dayRoute(d);
+      const fi = forecastIdx(dayIso(i)), route = dayRoute(d), tl = dayTimeline(d);
       const stops = d.stops.map((st, k) => {
         const info = stopInfo(st); if (!info) return '';
+        const slot = tl.slots[k], tm = slot ? `<em class="tm ${slot.late ? 'late' : ''}">${hm(slot.start)}</em>` : '';
         const prev = k > 0 ? stopInfo(d.stops[k - 1]) : (t.base ? { lat: t.base.lat, lon: t.base.lon } : null);
         const leg = info.lat != null && prev && prev.lat != null ? `${(distKm([prev.lat, prev.lon], [info.lat, info.lon]) * 1.3).toFixed(0)} km` : '';
         let sc = '';
         if (info.kind === 'spot' && fi >= 0) { const r = scoreOf(info.spot, fi); sc = `<span class="sc"><i style="background:var(--${r.cls})"></i>${r.score ?? '—'}</span>`; }
         const badge = info.kind === 'spot' ? `<span class="n">${k + 1}</span>` : info.kind === 'poi' ? `<span class="n poi" style="background:${info.color}">${I(info.icon, { size: 12 })}</span>` : `<span class="n poi">${I('compass', { size: 12 })}</span>`;
-        return `<li data-k="${k}">${badge}<span class="t">${esc(info.name)} <small>· ${esc(info.sub)}</small></span><span class="d">${sc} ${leg}</span>
+        return `<li data-k="${k}">${badge}<span class="t">${st.lock ? `<span class="lk" title="Étape conservée par le planificateur">${I('lock', { size: 12 })}</span>` : ''}${esc(info.name)}${info.kind === 'spot' && info.spot.properties.tidal === 'yes' ? `<span class="tide" title="Dépend de la marée">${I('clock', { size: 12 })}</span>` : ''} <small>· ${esc(info.sub)}</small></span><span class="d">${tm}<span>${sc} ${leg}</span></span>
           <span class="grip" title="Glisser pour réordonner" aria-hidden="true">${I('grip', { size: 16 })}</span><button type="button" class="ib menu-btn" data-k="${k}" aria-label="Actions">${I('sliders', { size: 16 })}</button></li>`;
       }).join('');
       let wx = '';
@@ -968,9 +1029,10 @@
       return `<div class="card day-card" style="--dc:${dayColor(i)}" data-i="${i}">
         <div class="h"><div><b>Jour ${i + 1}</b> <small>· ${dayLabel(i)}</small></div><span style="display:flex;align-items:center;gap:6px">${wx}</span></div>
         ${stops ? `<ul class="stops">${stops}</ul>` : '<span class="hint">Aucune étape. Ajoutez une plage : son programme (resto, visite…) suit automatiquement.</span>'}
+        ${tl.warns.map((w) => `<div class="day-warn">${I('info', { size: 14 })}<span>${esc(w)}</span></div>`).join('')}
         <div class="day-foot">
           <button type="button" class="linkbtn add-stop" data-i="${i}">${I('plus', { size: 14 })} Ajouter une étape</button>
-          ${route.url ? `<span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base && state.prefs.roundTrip ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
+          ${route.url ? `<span class="tl">${I('clock', { size: 14 })} ${hm(tl.start)} → ${hm(tl.end)}</span><span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base && state.prefs.roundTrip ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
         </div></div>`;
     }).join('');
     el.innerHTML = `
@@ -980,7 +1042,7 @@
         <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
           <button type="button" class="auto-chip ${t.auto ? 'on' : ''}" id="trip-auto" title="Recalculer le planning à chaque mise à jour des prévisions">${I('refresh', { size: 13 })}${t.auto ? 'Dynamique' : 'Manuel'}</button>
           <button type="button" class="auto-chip" id="trip-config">${I('sliders', { size: 13 })}Réglages</button>
-          <span class="hint" style="flex-basis:100%">${t.auto ? 'Le planning suit les prévisions : il est recalculé à chaque rafraîchissement, sauf si vous modifiez une étape.' : 'Vos étapes sont conservées telles quelles.'}</span>
+          <span class="hint" style="flex-basis:100%">${t.auto ? 'Le planning suit les prévisions : il est recalculé à chaque rafraîchissement, sauf si vous modifiez une étape. Les étapes verrouillées (menu d\'une étape) sont toujours conservées.' : 'Vos étapes sont conservées telles quelles. Horaires estimés : départ ' + (state.prefs.startHour || 10) + ' h, trajets à 45 km/h, environ 2 h 30 par plage, 1 h 15 au resto.'}</span>
         </div>
         <button type="button" class="btn ghost" id="trip-propose" style="display:flex;align-items:center;justify-content:center;gap:8px">${I('wand', { size: 16 })}Proposer un planning selon la météo</button></div>
       ${daysHtml}
@@ -1060,12 +1122,26 @@
     const scoreTag = (s) => { if (fi < 0 || !state.bulk) return ''; const r = scoreOf(s, fi); return `<span class="sub" style="color:var(--${r.cls});font-weight:700">${r.score ?? '—'}</span>`; };
     const wish = wishedIds().map(spotById).filter((s) => !inDay.has('s:' + s.properties.id));
     const best = state.bulk && fi >= 0 ? state.spots.filter((s) => !inDay.has('s:' + s.properties.id) && !wish.includes(s)).sort((a, b) => (scoreOf(b, fi).score ?? -1) - (scoreOf(a, fi).score ?? -1)).slice(0, 8) : [];
+    const beaches = day.stops.filter((st) => st.t === 's').map((st) => spotById(st.id)).filter(Boolean);
     const last = [...day.stops].reverse().map(stopInfo).find((x) => x && x.lat != null);
-    const near = last ? state.pois.map((x) => ({ x, d: distKm([last.lat, last.lon], [x.lat, x.lon]) })).filter((o) => o.d < 2 && !inDay.has('p:' + o.x.id)).sort((a, b) => a.d - b.d).slice(0, 8) : [];
+    const anchors = beaches.length ? beaches.map((s) => ({ name: s.properties.name, lat: latlng(s)[0], lon: latlng(s)[1] })) : (last ? [last] : []);
+    const seen = new Set();
+    // retenus : compléments des programmes des plages du jour (puis des autres programmes), pas encore dans la journée
+    const kept = [];
+    for (const s of [...beaches, ...wishedIds().map(spotById).filter((s) => s && !beaches.includes(s))]) for (const it of (state.plans[s.properties.id]?.items || [])) {
+      const x = it.poi && poiById(it.poi); if (!x || inDay.has('p:' + x.id) || seen.has(x.id)) continue;
+      seen.add(x.id); kept.push({ x, by: it.by, beach: s.properties.name, mine: beaches.includes(s) });
+    }
+    // possibles : restos et bars de plage à moins de 1,5 km, visites à moins de 3 km des plages du jour
+    const around = (kinds, km, n) => { const out = []; for (const a of anchors) for (const x of state.pois) { if (!kinds.includes(x.p.kind) || inDay.has('p:' + x.id) || seen.has(x.id)) continue; const d = distKm([a.lat, a.lon], [x.lat, x.lon]); if (d <= km) out.push({ x, d, beach: a.name }); } return out.sort((p, q) => p.d - q.d).filter((o) => !seen.has(o.x.id) && seen.add(o.x.id)).slice(0, n); };
+    const restos = around(['restaurant', 'beach_bar'], 1.5, 6), visits = around(['culture', 'tourism'], 3, 5);
     const row = (s) => `<button type="button" data-t="s" data-id="${esc(s.properties.id)}">${I('wave', { size: 14 })}<span>${esc(s.properties.name)}</span>${scoreTag(s)}</button>`;
-    $('#pick-list').innerHTML = (wish.length ? `<h4>Vos envies</h4>${wish.map(row).join('')}` : '') +
+    const prow = (o, sub) => { const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism; return `<button type="button" data-t="p" data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color};width:22px;height:22px">${I(k.icon, { size: 12 })}</span><span>${esc(o.x.p.name)}</span><span class="sub ${o.by ? 'by' : ''}">${sub}</span></button>`; };
+    $('#pick-list').innerHTML = (kept.length ? `<h4>Retenus dans vos programmes</h4>${kept.map((o) => prow(o, `${esc(state.users[o.by === 'b' ? 'b' : 'a'].name)} · ${esc(o.beach)}`)).join('')}` : '') +
+      (restos.length ? `<h4>Restos possibles ${anchors.length ? 'autour de ' + esc(anchors.map((a) => a.name).join(', ')) : ''}</h4>${restos.map((o) => prow(o, `${esc((C.poiKinds[o.x.p.kind] || C.poiKinds.tourism).label)} · ${Math.round(o.d * 1000)} m`)).join('')}` : '') +
+      (visits.length ? `<h4>Visites possibles</h4>${visits.map((o) => prow(o, `${esc((C.poiKinds[o.x.p.kind] || C.poiKinds.tourism).label)} · ${o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km'}`)).join('')}` : '') +
+      (wish.length ? `<h4>Vos envies</h4>${wish.map(row).join('')}` : '') +
       (best.length ? `<h4>Meilleures plages ce jour-là</h4>${best.map(row).join('')}` : '') +
-      (near.length ? `<h4>Autour de ${esc(last.name)}</h4>${near.map((o) => { const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism; return `<button type="button" data-t="p" data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color};width:22px;height:22px">${I(k.icon, { size: 12 })}</span><span>${esc(o.x.p.name)}</span><span class="sub">${esc(k.label)} · ${Math.round(o.d * 1000)} m</span></button>`; }).join('')}` : '') +
       `<h4>Autre</h4><div class="plan-add"><input type="text" id="pick-text" maxlength="80" placeholder="Étape libre : marché, pause café…"><button type="button" id="pick-text-add" aria-label="Ajouter">${I('plus', { size: 18 })}</button></div>`;
     const done = () => { dlg.close(); save(); renderTabs(); renderTrip(); paintMarkers(); };
     $('#pick-list').querySelectorAll('button[data-t]').forEach((b) => b.onclick = () => { manualEdit(); addStop(di, { t: b.dataset.t, id: b.dataset.id }); done(); });
@@ -1112,6 +1188,7 @@
     const others = t.days.map((_, i) => i).filter((i) => i !== di);
     $('#pick-list').innerHTML = `<div class="menu">
       ${info.kind !== 'text' ? `<button type="button" data-a="view">${I(info.kind === 'spot' ? 'wave' : 'pin', { size: 16 })}Voir ${info.kind === 'spot' ? 'la plage' : 'le lieu'}</button>` : ''}
+      <button type="button" data-a="lock">${I('lock', { size: 16 })}${st.lock ? 'Libérer cette étape' : 'Garder cette étape'}<span class="sub">${st.lock ? 'le planificateur peut la remplacer' : 'conservée par le planificateur'}</span></button>
       <button type="button" data-a="up" ${k === 0 ? 'disabled style="opacity:.4"' : ''}>${I('up2', { size: 16 })}Monter</button>
       <button type="button" data-a="down" ${k === d.stops.length - 1 ? 'disabled style="opacity:.4"' : ''}>${I('down', { size: 16 })}Descendre</button>
       ${others.map((i) => `<button type="button" data-a="move" data-i="${i}"><span class="n" style="width:22px;height:22px;border-radius:50%;background:${dayColor(i)};color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center">${i + 1}</span>Déplacer vers le jour ${i + 1}<span class="sub">${dayLabel(i)}</span></button>`).join('')}
@@ -1119,6 +1196,7 @@
     $('#pick-list').querySelectorAll('button').forEach((b) => b.onclick = () => {
       const act = b.dataset.a; dlg.close();
       if (act === 'view') { if (st.t === 's') select(st.id, { pan: true, full: true }); else showPoi(poiById(st.id)); return; }
+      if (act === 'lock') { if (st.lock) delete st.lock; else st.lock = true; save(); renderTrip(); buzz(); toast(st.lock ? 'Étape conservée par le planificateur' : 'Étape libérée'); return; }
       manualEdit();
       if (act === 'up') [d.stops[k - 1], d.stops[k]] = [d.stops[k], d.stops[k - 1]];
       else if (act === 'down') [d.stops[k + 1], d.stops[k]] = [d.stops[k], d.stops[k + 1]];
@@ -1129,12 +1207,13 @@
     dlg.showModal();
   }
   function fitTrip() {
+    viewBounds = null;
     const pts = [];
     if (state.trip.base) pts.push([state.trip.base.lat, state.trip.base.lon]);
     for (const d of state.trip.days) for (const st of d.stops) { const x = stopInfo(st); if (x && x.lat != null) pts.push([x.lat, x.lon]); }
     if (!pts.length) return;
     const mobile = isMobile(), bottom = mobile ? Math.round(window.innerHeight * 0.58) : 0;
-    map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 });
+    progMove(() => map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 12 }));
   }
   function paintTripLayer() {
     if (!tripLayer) tripLayer = L.layerGroup().addTo(map);
@@ -1180,6 +1259,7 @@
         ${sw('c-auto', t.auto, 'Planning dynamique', 'Recalculé à chaque mise à jour des prévisions, à partir de vos envies')}
         ${sw('c-round', pr.roundTrip, 'Retour quotidien à la résidence', 'Chaque journée part et revient à la résidence')}
         ${sw('c-lunch', pr.lunch, 'Déjeuner proposé', 'Ajoute le resto ou bar de plage le plus proche de la première plage du jour')}
+        <label class="f">Départ le matin<select id="c-start-h">${[8, 9, 10, 11].map((h) => `<option value="${h}" ${(pr.startHour || 10) === h ? 'selected' : ''}>${h} h</option>`).join('')}</select></label>
         <div class="two"><label class="f">Plages par jour (max.)<select id="c-perday">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${pr.perDay === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
         <label class="f">Rayon depuis la résidence<select id="c-radius">${[20, 40, 60, 100, 200].map((n) => `<option value="${n}" ${pr.radiusKm === n ? 'selected' : ''}>${n} km</option>`).join('')}</select></label></div></div>
       <div class="card"><div class="h"><h3>${I('sliders', { size: 13 })} Affichage</h3></div>
@@ -1221,6 +1301,7 @@
     $('#c-round').onclick = () => { pr.roundTrip = !pr.roundTrip; save(); renderConfig(); };
     $('#c-lunch').onclick = () => { pr.lunch = !pr.lunch; save(); renderConfig(); autoReplan(); };
     $('#c-perday').onchange = (e) => { pr.perDay = +e.target.value; save(); autoReplan(); };
+    $('#c-start-h').onchange = (e) => { pr.startHour = +e.target.value; save(); };
     $('#c-radius').onchange = (e) => { pr.radiusKm = +e.target.value; save(); autoReplan(); };
     $('#c-food').onclick = () => { state.poiOn.food = !state.poiOn.food; save(); renderLayerChips(); renderPois(); renderConfig(); };
     $('#c-visit').onclick = () => { state.poiOn.visit = !state.poiOn.visit; save(); renderLayerChips(); renderPois(); renderConfig(); };
@@ -1234,13 +1315,15 @@
   let listShown = LIST_CHUNK, listObserver = null;
   function renderList({ more = false, keep = false } = {}) {
     if (!more && !keep) listShown = LIST_CHUNK;
-    const ul = $('#list'), list = sorted(filtered());
+    const ul = $('#list'), list = sorted(filtered({ inView: true })), inView = !!mapBounds();
     let ideal = 0, good = 0;
     if (state.bulk) for (const s of list) { const c = scoreOf(s).cls; if (c === 'ideal') ideal++; else if (c === 'good') good++; }
     const fetched = state.bulk ? new Date(state.bulk.fetchedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
-    $('#summary').innerHTML = (state.bulk ? `<span><b>${ideal} idéale${ideal > 1 ? 's' : ''}</b> · ${good} bonne${good > 1 ? 's' : ''} · ${list.length} spot${list.length > 1 ? 's' : ''}</span>` : `<span>${list.length} spots</span>`) +
-      (fetched ? `<button type="button" class="linkbtn" id="sum-refresh" title="Rafraîchir les prévisions (Open-Meteo)" style="min-height:28px;color:inherit;font-weight:500">${I('refresh', { size: 12 })}${fetched}</button>` : `<span class="warn">prévisions indisponibles</span>`);
+    $('#summary').innerHTML = (state.bulk ? `<span><b>${ideal} idéale${ideal > 1 ? 's' : ''}</b> · ${good} bonne${good > 1 ? 's' : ''} · ${list.length} plage${list.length > 1 ? 's' : ''}${inView ? ' dans la vue' : ''}</span>` : `<span>${list.length} plage${list.length > 1 ? 's' : ''}${inView ? ' dans la vue' : ''}</span>`) +
+      `<span class="right"><button type="button" class="chip-mini ${state.mapFilter ? 'on' : ''}" id="sum-view" title="${state.mapFilter ? 'La liste suit la carte : touchez pour afficher toute la côte' : 'Caler la liste sur la carte'}" aria-pressed="${state.mapFilter}">${I('frame', { size: 13 })}Vue carte</button>` +
+      (fetched ? `<button type="button" class="linkbtn" id="sum-refresh" title="Rafraîchir les prévisions (Open-Meteo)" style="min-height:28px;color:inherit;font-weight:500">${I('refresh', { size: 12 })}${fetched}</button>` : `<span class="warn">prévisions indisponibles</span>`) + '</span>';
     $('#sum-refresh') && ($('#sum-refresh').onclick = () => loadForecast(true));
+    $('#sum-view').onclick = () => { state.mapFilter = !state.mapFilter; save(); renderDays(); renderList(); toast(state.mapFilter ? 'Liste calée sur la carte' : 'Toute la côte'); };
     const frag = document.createDocumentFragment();
     for (const s of list.slice(0, listShown)) {
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id), ph = photoOf(p.id);
@@ -1266,8 +1349,9 @@
       frag.appendChild(li);
     }
     ul.innerHTML = ''; ul.appendChild(frag);
-    if (!list.length) { ul.innerHTML = `<li class="empty-state"><span>Aucune plage ne correspond${state.filters.q ? ` à « ${esc(state.filters.q)} »` : ' aux filtres'}.</span><button type="button" class="btn ghost" id="list-reset">Réinitialiser les filtres</button></li>`;
-      $('#list-reset').onclick = () => { Object.assign(state.filters, { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' }); $('#q').value = ''; save(); renderFiltersBtn(); renderDays(); renderList(); paintMarkers(); }; }
+    if (!list.length) { ul.innerHTML = `<li class="empty-state"><span>Aucune plage ${inView ? 'dans cette partie de la carte' : `ne correspond${state.filters.q ? ` à « ${esc(state.filters.q)} »` : ' aux filtres'}`}.</span>${inView ? `<button type="button" class="btn ghost" id="list-all">Toute la côte</button>` : ''}${filtersActive() || state.filters.q ? `<button type="button" class="btn ghost" id="list-reset">Réinitialiser les filtres</button>` : ''}</li>`;
+      $('#list-all') && ($('#list-all').onclick = () => { fitAll(); renderDays(); renderList(); });
+      $('#list-reset') && ($('#list-reset').onclick = () => { Object.assign(state.filters, { province: 'all', type: 'all', surface: 'all', lifeguard: false, dog: false, minScore: 0, wish: 'all', q: '' }); $('#q').value = ''; save(); renderFiltersBtn(); renderDays(); renderList(); paintMarkers(); }); }
     if (list.length > listShown) {
       const li = document.createElement('li'); li.innerHTML = `<button type="button" class="more">Afficher ${Math.min(LIST_CHUNK, list.length - listShown)} de plus (${list.length - listShown} restants)</button>`;
       li.querySelector('button').onclick = () => { listShown += LIST_CHUNK; renderList({ more: true }); };
@@ -1630,8 +1714,8 @@
       state.userPos = [pos.coords.latitude, pos.coords.longitude];
       if (!userMarker) userMarker = L.marker(state.userPos, { icon: L.divIcon({ className: '', html: '<div class="user-dot"></div>', iconSize: [16, 16] }) }).addTo(map);
       else userMarker.setLatLng(state.userPos);
-      map.setView(state.userPos, Math.max(map.getZoom(), 10));
-      state.sort = 'dist'; save(); renderList(); toast('Liste triée par distance');
+      progMove(() => map.setView(state.userPos, Math.max(map.getZoom(), 10), { animate: false })); viewBounds = liveBounds();
+      state.sort = 'dist'; save(); renderDays(); renderList(); toast('Liste triée par distance');
     }, () => toast('Position introuvable'), { enableHighAccuracy: true, timeout: 10000 });
   }
 

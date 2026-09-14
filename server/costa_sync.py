@@ -110,10 +110,11 @@ def clean_days(days):
             if not isinstance(st, dict):
                 continue
             t = st.get("t")
+            lock = {"lock": True} if st.get("lock") is True else {}
             if t in ("s", "p") and isinstance(st.get("id"), str):
-                stops.append({"t": t, "id": st["id"][:32]})
+                stops.append({"t": t, "id": st["id"][:32], **lock})
             elif t == "x" and isinstance(st.get("text"), str) and st["text"].strip():
-                stops.append({"t": "x", "text": st["text"].strip()[:80]})
+                stops.append({"t": "x", "text": st["text"].strip()[:80], **lock})
         out.append({"stops": stops})
     return out
 
