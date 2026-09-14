@@ -214,6 +214,7 @@ button:focus:not(:focus-visible) { outline: none; }
 .poi-panel { padding: 0 12px 16px; display: flex; flex-direction: column; gap: 12px; }
 .poi-head { display: flex; align-items: flex-start; gap: 10px; }
 .poi-head .poi-pin { width: 44px; height: 44px; flex: 0 0 auto; }
+.poi-head #poi-zoom { flex: 0 0 auto; }
 .poi-head .poi-pin svg { width: 20px; height: 20px; }
 .poi-head h2 { margin: 0; font-size: 19px; line-height: 1.2; flex: 1; }
 .poi-head .k { font-size: 13px; font-weight: 600; }

@@ -78,6 +78,9 @@ deux listes sur l'autre téléphone.
 - **Séjour dynamique** : en mode dynamique, le planning est recalculé à chaque mise à jour des
   prévisions à partir des envies et des préférences ; toute modification manuelle d'une étape
   fige le planning (mode manuel), réactivable d'un geste.
+- **Zoom sur une entité** : bouton cible dans la fiche d'une plage (cadrage sur sa taille) et d'un lieu,
+  « Carte » sur chaque jour du séjour (parcours) et sur l'hébergement, bouton cible sur la carte qui zoome
+  sur la sélection ou recadre l'onglet courant (envies, séjour, toute la côte), en 2D comme en 3D.
 - **Carte** : les lieux secondaires retenus dans les programmes (restos, visites) restent
   visibles dans toutes les vues, cerclés et reliés à leur plage, ainsi que le parcours du
   séjour (tracé discret) et la résidence.

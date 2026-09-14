@@ -698,7 +698,8 @@
     $('#panel-poi').innerHTML = `
       <div class="poi-head"><button type="button" class="iconbtn" id="poi-back" aria-label="Retour">${I('back', { size: 20 })}</button>
         <span class="poi-pin" style="background:${k.color}">${I(k.icon, { size: 20 })}</span>
-        <div style="flex:1;min-width:0"><h2>${esc(p.name)}</h2><span class="k" style="color:${k.color}">${esc(k.label)}${p.cuisine ? ' · ' + esc(p.cuisine.split(';').join(', ')) : ''}${p.sub && p.kind !== p.sub && poiGroupOf(p.kind) === 'visit' ? ' · ' + esc(p.sub.replace(/_/g, ' ')) : ''}</span></div></div>
+        <div style="flex:1;min-width:0"><h2>${esc(p.name)}</h2><span class="k" style="color:${k.color}">${esc(k.label)}${p.cuisine ? ' · ' + esc(p.cuisine.split(';').join(', ')) : ''}${p.sub && p.kind !== p.sub && poiGroupOf(p.kind) === 'visit' ? ' · ' + esc(p.sub.replace(/_/g, ' ')) : ''}</span></div>
+        <button type="button" class="iconbtn" id="poi-zoom" title="Zoomer sur le lieu" aria-label="Zoomer sur le lieu">${I('frame', { size: 20 })}</button></div>
       <div class="poi-meta">
         ${beach ? `<span>${I('wave', { size: 14 })}${esc(beach.properties.name)} à ${dist < 1 ? Math.round(dist * 1000) + ' m' : dist.toFixed(1) + ' km'}</span>` : ''}
         ${p.opening_hours ? `<span>${I('clock', { size: 14 })}${esc(p.opening_hours)}</span>` : ''}
@@ -715,6 +716,7 @@
         <a class="btn ghost" href="${osmUrl(p.id)}" target="_blank" rel="noopener">${I('map', { size: 16 })}OSM</a>
       </div>`;
     $('#poi-back').onclick = closePoi;
+    $('#poi-zoom').onclick = () => zoomTo({ poi: x });
     if (beach) $('#poi-plan').onclick = () => {
       const sid = beach.properties.id, pn = planOf(sid), i = pn.items.findIndex((it) => it.poi === x.id);
       if (i >= 0) { if (!canEdit(pn.items[i].by)) return toast(`Ajouté par ${state.users[pn.items[i].by].name}`); planRemove(sid, i); toast('Retiré du programme'); }
@@ -906,6 +908,37 @@
     // bascule automatique : zoomer sur l'orthophoto (geste) fait passer en 3D
     map.on('zoomend', () => { if (glMode !== 'auto' || glOn || glUnsupported || performance.now() - progAt < 700) return; if (map.getZoom() >= GL_IN) set3d(true, { silent: true }); });
   }
+  /* Zoom sur une entité : plage (cadrée sur sa taille), lieu, hébergement ou journée (parcours), en 2D comme en 3D.
+     Sur téléphone, le panneau se replie pour laisser voir la carte. */
+  function zoomTo(target) {
+    if (!map) return;
+    const mobile = isMobile();
+    const go = (lat, lon, z) => {
+      const p = map.project([lat, lon], z); if (mobile) p.y += sheetVisible() / 2 * 0.5;
+      progMove(() => map.setView(map.unproject(p, z), z, { animate: true }));
+      if (is3d()) progMove(() => gl.flyTo({ center: [lon, lat], zoom: z - 1, offset: glOffset(), duration: 900 }));
+    };
+    if (target.spot) { const s = target.spot; go(latlng(s)[0], latlng(s)[1], aerialZoom(s, map.getSize().x, 15, 18)); }
+    else if (target.poi) go(target.poi.lat, target.poi.lon, 17);
+    else if (target.base) go(target.base.lat, target.base.lon, 15);
+    else if (target.day) {
+      const route = dayRoute(target.day), pts = route.seq.length ? route.seq : [];
+      if (!pts.length) { toast('Aucune étape localisée'); return; }
+      const b = L.latLngBounds(pts).pad(0.2), bottom = mobile ? Math.round(window.innerHeight * 0.30) : 0;
+      progMove(() => map.fitBounds(b, { paddingTopLeft: [16, 60], paddingBottomRight: [16, bottom + 16], maxZoom: 15 }));
+      if (is3d()) progMove(() => gl.fitBounds([[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], { padding: { top: 70, left: 16, right: 16, bottom: bottom + 24 }, maxZoom: 14, duration: 800 }));
+    }
+    if (mobile) setSheet('peek');
+    buzz(6);
+  }
+  /* Bouton cible de la carte : la sélection, sinon ce que montre l'onglet courant. */
+  function zoomContext() {
+    if (!$('#panel-poi').hidden && currentPoi && poiById(currentPoi)) return zoomTo({ poi: poiById(currentPoi) });
+    if (state.selected && spotById(state.selected)) return zoomTo({ spot: spotById(state.selected) });
+    if (state.view === 'wishes') { if (wishList().length) { fitWishes(); if (isMobile()) setSheet('peek'); } else toast('Aucune envie à cadrer'); return; }
+    if (state.view === 'trip') { if (state.trip.days.some((d) => d.stops.length) || state.trip.base) { fitTrip(); if (isMobile()) setSheet('peek'); } else toast('Aucune étape à cadrer'); return; }
+    fitAll(); if (isMobile()) setSheet('peek'); toast('Toute la côte');
+  }
   function fitAll() {
     if (!state.spots.length) return;
     viewBounds = null;
@@ -974,6 +1007,7 @@
     renderFiltersBtn();
     $('#btn-settings').innerHTML = I('gear', { size: 20 });
     $('#btn-locate').innerHTML = I('locate', { size: 20 });
+    $('#btn-target').innerHTML = I('frame', { size: 20 });
     $('#btn-share').innerHTML = I('share', { size: 20 });
     $('#search-ic').innerHTML = I('search', { size: 18 });
     $('.close', $('#dlg-pick')).innerHTML = I('x', { size: 18 });
@@ -1250,7 +1284,7 @@
     ensureTrip();
     const t = state.trip, el = $('#trip');
     const baseHtml = t.base
-      ? `<div class="base-name"><span class="home">${I('home', { size: 16 })}</span><span>${esc(t.base.name)}</span><button type="button" class="linkbtn" id="base-clear" style="margin-left:auto">Changer</button></div>`
+      ? `<div class="base-name"><span class="home">${I('home', { size: 16 })}</span><span>${esc(t.base.name)}</span><button type="button" class="linkbtn" id="base-zoom" style="margin-left:auto" title="Voir sur la carte">${I('frame', { size: 14 })}</button><button type="button" class="linkbtn" id="base-clear">Changer</button></div>`
       : `<span class="hint">Définissez votre hébergement : chaque journée part de là et y revient.</span>
          <div class="base-search"><input type="search" id="base-q" placeholder="Rechercher un lieu, un village, une plage…" autocomplete="off"><button type="button" class="iconbtn" id="base-geo" title="Ma position" aria-label="Ma position">${I('locate', { size: 18 })}</button><button type="button" class="iconbtn ${state.pickBase ? 'on' : ''}" id="base-map" title="Choisir sur la carte" aria-label="Choisir sur la carte">${I('pin', { size: 18 })}</button></div>
          <div class="sugg" id="base-sugg" hidden></div>`;
@@ -1274,6 +1308,7 @@
         ${tl.warns.map((w) => `<div class="day-warn">${I('info', { size: 14 })}<span>${esc(w)}</span></div>`).join('')}
         <div class="day-foot">
           <button type="button" class="linkbtn add-stop" data-i="${i}">${I('plus', { size: 14 })} Ajouter une étape</button>
+          ${d.stops.length ? `<button type="button" class="linkbtn zoom-day" data-i="${i}" title="Voir la journée sur la carte">${I('frame', { size: 14 })} Carte</button>` : ''}
           ${route.url ? `${tl.slots.some(Boolean) ? `<span class="tl">${I('clock', { size: 14 })} ${hm(tl.start)} → ${hm(tl.end)}</span>` : ''}<span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base && state.prefs.roundTrip ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
         </div></div>`;
     }).join('');
@@ -1291,6 +1326,7 @@
       <div class="row"><button type="button" class="btn ghost" id="trip-share" style="flex:1">Partager le séjour</button><button type="button" class="btn ghost" id="trip-clear" style="flex:1">Tout effacer</button></div>`;
     // hébergement
     $('#base-clear') && ($('#base-clear').onclick = () => { t.base = null; save(); renderTrip(); paintMarkers(); });
+    $('#base-zoom') && ($('#base-zoom').onclick = () => zoomTo({ base: t.base }));
     const q = $('#base-q');
     if (q) {
       q.oninput = () => {
@@ -1314,6 +1350,7 @@
     $('#trip-share').onclick = share;
     $('#trip-clear').onclick = async () => { if (await confirmDlg('Effacer hébergement et étapes ?', { ok: 'Tout effacer', danger: true })) { state.trip = { base: null, start: null, days: [], auto: false }; save(); renderTabs(); renderTrip(); paintMarkers(); } };
     el.querySelectorAll('.add-stop').forEach((b) => b.onclick = () => pickStop(+b.dataset.i));
+    el.querySelectorAll('.zoom-day').forEach((b) => b.onclick = () => zoomTo({ day: t.days[+b.dataset.i] }));
     el.querySelectorAll('.day-card').forEach((card) => {
       const i = +card.dataset.i, d = t.days[i];
       card.querySelectorAll('.menu-btn').forEach((b) => b.onclick = (e) => { e.stopPropagation(); stepMenu(i, +b.dataset.k); });
@@ -1676,7 +1713,7 @@
         ${gal.length > 1 ? `<div class="dots" id="dots">${gal.map((g, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div><span class="count" id="gcount">1 / ${gal.length}</span>
           <button type="button" class="nav l" id="gprev" aria-label="Photo précédente">${I('chevronL', { size: 24 })}</button><button type="button" class="nav r" id="gnext" aria-label="Photo suivante">${I('chevronR', { size: 24 })}</button>` : ''}
         <div class="tl"><button type="button" class="iconbtn" id="btn-close" aria-label="Retour à la liste">${I('back', { size: 20 })}</button></div>
-        <div class="tr"><button type="button" class="iconbtn" id="btn-share-spot" aria-label="Partager ce spot">${I('share', { size: 20 })}</button></div>
+        <div class="tr"><button type="button" class="iconbtn" id="btn-zoom-spot" title="Zoomer sur la plage" aria-label="Zoomer sur la plage">${I('frame', { size: 20 })}</button><button type="button" class="iconbtn" id="btn-share-spot" aria-label="Partager ce spot">${I('share', { size: 20 })}</button></div>
         <div class="cap">
           <div class="row"><h2>${esc(p.name)}</h2>${r ? `<div class="score c-${r.cls}"><b>${r.score ?? '—'}</b><small>${esc(r.label)}</small></div>` : ''}</div>
           <span class="sub">${esc(tags.join(' · '))}</span>
@@ -1707,6 +1744,7 @@
       </div>`;
     $('#btn-close').onclick = () => closeDetail();
     $('#btn-sat').onclick = () => showSatellite(s);
+    $('#btn-zoom-spot').onclick = () => zoomTo({ spot: s });
     $('#btn-3d-spot').onclick = () => open3d({ lat, lon, zoom: 14.5 });
     $('#btn-share-spot').onclick = () => shareSpot(s);
     $('#btn-trip-add').onclick = () => pickDayFor(p.id);
@@ -1962,6 +2000,7 @@
     if (state.filters.q) showSearch(true);
     $('#btn-share').onclick = share;
     $('#btn-locate').onclick = locate;
+    $('#btn-target').onclick = zoomContext;
     renderFiltersBtn();
   }
   function exportSelection() {

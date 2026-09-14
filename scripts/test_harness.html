@@ -58,6 +58,7 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     const first = $('#list .item'), firstId = first.dataset.id; first.click();
     await wait(() => vis('#panel-detail') && $('#btn-close'), 10000, 'fiche');
     check($('#sheet').classList.contains('full'), 'M2 · la fiche s\'ouvre en plein panneau depuis la liste');
+    check(!!$('#btn-zoom-spot') && !!$('#btn-target'), 'zoom · boutons cible dans la fiche et sur la carte');
     const tf = W().getComputedStyle($('#sheet')).transform, pf = parseFloat(W().getComputedStyle($('#panels')).paddingBottom);
     const ty = tf === 'none' ? 0 : Math.abs(parseFloat(tf.split(',').pop()));
     check(ty < 1 && pf === 0, `M5 · plein panneau : aucune translation (${Math.round(ty)} px), pas de marge basse`);
@@ -78,6 +79,7 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     check(W().history.state && W().history.state.poi && /^#poi=/.test(W().location.hash), 'B8 · la fiche de lieu entre dans l\'historique');
     check($('#poi-plan') && $('#poi-plan').getBoundingClientRect().height >= 44, 'M3 · actions de lieu ≥ 44 px');
     check(!!$('#poi-plan-other'), 'constructeur · « Rattacher à une autre plage » dans la fiche de lieu');
+    { const z0 = W().CCP.map.getZoom(); $('#poi-zoom').click(); await sleep(600); check(W().CCP.map.getZoom() >= 16 && $('#sheet').classList.contains('peek'), `zoom · sur le lieu (zoom ${z0} → ${W().CCP.map.getZoom()}), panneau replié`); $('#sheet').classList.remove('peek'); $('#sheet').classList.add('full'); }
     W().history.back(); await wait(() => !vis('#panel-poi') && vis('#panel-detail'), 5000, 'retour fiche');
     check(!!$('.hero .aerial.slide .scalebar') && /m$/.test($('.hero .aerial.slide .scalebar').textContent) && $$('.hero .aerial.slide img').length >= 2, `aérien · vue aérienne avec échelle « ${$('.hero .aerial.slide .scalebar') && $('.hero .aerial.slide .scalebar').textContent} » et ${$$('.hero .aerial.slide img').length} tuiles`);
     $('#btn-sat').click(); await wait(() => D().querySelector('.leaflet-tile-pane img[src*="arcgisonline"]'), 8000, 'fond satellite');
