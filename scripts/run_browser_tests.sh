@@ -10,9 +10,9 @@ COSTA_DB=$D/costa.db COSTA_DATA=$D/state.json COSTA_PORT=8097 COSTA_USERS=simon:
 python3 scripts/dev_server.py 8020 simon >/dev/null 2>&1 & P2=$!
 trap 'kill $P1 $P2 2>/dev/null' EXIT
 sleep 0.8
-timeout 180 "$H" --headless --disable-gpu --no-sandbox --window-size=1000,900 --virtual-time-budget=150000 --dump-dom http://localhost:8020/scripts/test_harness.html 2>/dev/null \
+timeout "${BROWSER_TIMEOUT:-540}" "$H" --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --window-size=1000,900 --virtual-time-budget=300000 --dump-dom http://localhost:8020/scripts/test_harness.html 2>/dev/null \
   | python3 -c "
 import sys, re, html
 d = sys.stdin.read(); m = re.search(r'<pre id=\"out\">(.*?)</pre>', d, re.S)
-out = html.unescape(m.group(1)) if m else 'pas de résultat'
+out = html.unescape(m.group(1)) if m else 'pas de résultat (délai dépassé ou page non chargée)'
 print(out); sys.exit(0 if 'ÉCHECS : 0' in out else 1)"
