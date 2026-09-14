@@ -423,11 +423,11 @@
   const wishedIds = () => [...new Set([...state.users.a.wish, ...state.users.b.wish])].filter(spotById);
   function planOf(id) { return state.plans[id] || (state.plans[id] = { notes: { a: '', b: '' }, items: [] }); }
   const hasPlan = (id) => { const pn = state.plans[id]; return !!(pn && (pn.items.length || pn.notes.a || pn.notes.b)); };
-  function planAdd(spotId, item) {
+  function planAdd(spotId, item, { wish = true } = {}) {
     const pn = planOf(spotId);
     if (pn.items.some((x) => (item.poi && x.poi === item.poi) || (item.text && x.text === item.text))) return false;
     pn.items.push({ ...item, by: state.me });
-    if (!state.users[state.me].wish.includes(spotId)) state.users[state.me].wish.push(spotId);
+    if (wish && !state.users[state.me].wish.includes(spotId)) state.users[state.me].wish.push(spotId);
     save(); return true;
   }
   function planRemove(spotId, idx) { const pn = planOf(spotId); pn.items.splice(idx, 1); save(); }
@@ -455,8 +455,8 @@
   /* Liste Explorer calée sur la carte : seule l'emprise laissée par un geste de l'utilisateur compte
      (glisser, pincer, molette). Les recadrages automatiques (fiche, envies, séjour, « Toute la côte »)
      ne la rétrécissent pas. Sur téléphone, l'emprise est la partie visible au-dessus du panneau. */
-  let viewBounds = null, movingProg = false;
-  const progMove = (fn) => { movingProg = true; fn(); };   // déplacement programmé : ignoré par le suivi
+  let viewBounds = null, progAt = 0;
+  const progMove = (fn) => { progAt = performance.now(); fn(); };   // déplacement programmé : les moveend qui suivent de près sont ignorés
   function liveBounds() {
     const size = map.getSize(); let h = size.y;
     if (isMobile() && !sheet.classList.contains('full')) h = Math.max(60, sheet.getBoundingClientRect().top - map.getContainer().getBoundingClientRect().top);
@@ -467,7 +467,7 @@
     return state.spots.every((s) => viewBounds.contains(latlng(s))) ? null : viewBounds;
   }
   function filtered({ ignoreScore = false, inView = false } = {}) {
-    const f = state.filters, q = f.q.trim().toLowerCase(), b = inView ? mapBounds() : null;
+    const f = state.filters, q = f.q.trim().toLowerCase(), b = inView && !q ? mapBounds() : null;   // une recherche par nom vise toute la côte
     return state.spots.filter((s) => {
       const p = s.properties;
       if (b && !b.contains(latlng(s))) return false;
@@ -574,8 +574,8 @@
     poiLayer = L.layerGroup().addTo(map);
     map.on('moveend zoomend', renderPois);
     let mvT = null;   // la liste Explorer suit l'emprise laissée par un geste
-    for (const ev of ['pointerdown', 'wheel', 'touchstart']) map.getContainer().addEventListener(ev, () => { movingProg = false; }, { passive: true });
-    map.on('moveend', () => { if (movingProg) { movingProg = false; return; } viewBounds = liveBounds(); clearTimeout(mvT); mvT = setTimeout(() => { if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList(); } }, 120); });
+    for (const ev of ['pointerdown', 'wheel', 'touchstart']) map.getContainer().addEventListener(ev, () => { progAt = 0; }, { passive: true });
+    map.on('moveend', () => { if (performance.now() - progAt < 700) return; clearTimeout(mvT); mvT = setTimeout(() => { viewBounds = liveBounds(); if (state.mapFilter && state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList({ keep: true }); } }, 150); });
     renderLayerChips(); renderPois();
   }
   let poiReturn = null, currentPoi = null;
@@ -658,8 +658,8 @@
     const row = (o) => { const sid = o.s.properties.id, w = wishOf(sid), has = (state.plans[sid]?.items || []).some((it) => it.poi === x.id);
       return `<button type="button" data-id="${esc(sid)}" ${has ? 'disabled style="opacity:.5"' : ''}>${I('wave', { size: 14 })}<span>${esc(o.s.properties.name)}${w.a || w.b ? ` <i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--${w.a && w.b ? 'both' : w.a ? 'a' : 'b'})"></i>` : ''}</span><span class="sub">${has ? 'déjà' : (o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km')}</span></button>`; };
     $('#pick-title').textContent = `${x.p.name} · au programme de quelle plage ?`;
-    $('#pick-list').innerHTML = (wished.length ? `<h4>Vos envies</h4>${wished.map(row).join('')}` : '') + (others.length ? `<h4>Plages proches</h4>${others.map(row).join('')}` : '') + (!near.length ? '<span class="hint">Aucune plage à moins de 10 km.</span>' : '');
-    $('#pick-list').querySelectorAll('button[data-id]').forEach((b) => b.onclick = () => { const sid = b.dataset.id; dlg.close(); if (planAdd(sid, { poi: x.id })) { toast(`Ajouté au programme de ${spotById(sid).properties.name}`); buzz(); } renderTabs(); paintMarkers(); if (after) after(); });
+    $('#pick-list').innerHTML = (wished.length ? `<h4>Plages en envie</h4>${wished.map(row).join('')}` : '') + (others.length ? `<h4>Plages proches</h4>${others.map(row).join('')}` : '') + (!near.length ? '<span class="hint">Aucune plage à moins de 10 km.</span>' : '');
+    $('#pick-list').querySelectorAll('button[data-id]').forEach((b) => b.onclick = () => { const sid = b.dataset.id; dlg.close(); if (planAdd(sid, { poi: x.id }, { wish: false })) { toast(`Ajouté au programme de ${spotById(sid).properties.name}`); buzz(); } renderTabs(); paintMarkers(); if (after) after(); });
     dlg.showModal();
   }
   function nearbyOf(s, km = C.nearbyKm) {
@@ -796,7 +796,7 @@
     $('#panel-list').hidden = v !== 'explore'; $('#panel-wishes').hidden = v !== 'wishes'; $('#panel-trip').hidden = v !== 'trip'; $('#panel-config').hidden = v !== 'config'; $('#panel-poi').hidden = true; currentPoi = null;
     if (/^#poi=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     renderTabs(); paintMarkers();
-    if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else if (v === 'config') { renderConfig(); } else { renderList(); }
+    if (v === 'wishes') { renderWishes(); fitWishes(); } else if (v === 'trip') { renderTrip(); fitTrip(); } else if (v === 'config') { renderConfig(); } else { renderDays(); renderList(); }
     if (v === 'config' && isMobile()) setSheet('full');
     if (v !== 'explore' && !state.pois.length) ensurePois().then(() => { if (state.view === v) { v === 'wishes' ? renderWishes() : renderTrip(); paintMarkers(); } });
   }
@@ -933,25 +933,27 @@
   /* Déroulé horaire estimé d'une journée : départ à l'heure choisie, trajets à 45 km/h sur la distance
      corrigée, durées par type d'étape ; le déjeuner attend 12 h 30 s'il arrive trop tôt. */
   const DUR = { playa: 150, cala: 90, restaurant: 75, beach_bar: 75, bar: 45, cafe: 30, culture: 60, tourism: 60, text: 45 };
-  const hm = (min) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, '0')}`;
+  const hm = (min) => { const m = Math.max(0, Math.round(min)); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
   const isMeal = (info) => info.kind === 'poi' && ['restaurant', 'beach_bar'].includes(info.poi.p.kind);
   function dayTimeline(day) {
     const start = (state.prefs.startHour || 10) * 60, base = state.trip.base ? { lat: state.trip.base.lat, lon: state.trip.base.lon } : null;
-    let t = start, prev = base; const slots = [], warns = [];
+    let t = start, prev = base, meals = 0; const slots = [], warns = [];
+    const unresolved = day.stops.some((st) => !stopInfo(st));   // lieux pas encore chargés : pas d'alerte hâtive
     day.stops.forEach((st) => {
       const info = stopInfo(st); if (!info) { slots.push(null); return; }
-      if (info.lat != null && prev && prev.lat != null) t += distKm([prev.lat, prev.lon], [info.lat, info.lon]) * 1.3 / 45 * 60;
+      let km = 0;
+      if (info.lat != null && prev && prev.lat != null) { km = distKm([prev.lat, prev.lon], [info.lat, info.lon]) * 1.3; t += km / 45 * 60; }
       let late = false;
-      if (isMeal(info)) { if (t < 12 * 60 + 30) t = 12 * 60 + 30; if (t > 14 * 60 + 30) { late = true; warns.push(`Déjeuner à ${hm(t)} chez ${info.name} : tard. Avancer l'étape ?`); } }
+      if (isMeal(info) && meals++ === 0) { if (t < 12 * 60 + 30) t = 12 * 60 + 30; if (t > 14 * 60 + 30) { late = true; warns.push(`Déjeuner à ${hm(t)} chez ${info.name} : tard. Avancer l'étape ?`); } }
       const d = info.kind === 'spot' ? DUR[info.spot.properties.type] || DUR.playa : info.kind === 'poi' ? DUR[info.poi.p.kind] || 60 : DUR.text;
-      slots.push({ start: t, end: t + d, late }); t += d;
+      slots.push({ start: t, end: t + d, late, km }); t += d;
       if (info.kind === 'spot' && info.spot.properties.tidal === 'yes') warns.push(`${info.name} dépend de la marée : vérifier l'heure de pleine mer dans sa fiche.`);
       if (info.lat != null) prev = info;
     });
     if (base && state.prefs.roundTrip && prev && prev.lat != null && prev !== base) t += distKm([prev.lat, prev.lon], [base.lat, base.lon]) * 1.3 / 45 * 60;
     if (slots.some(Boolean) && t > 19 * 60 + 30) warns.push(`Retour vers ${hm(t)} : journée chargée, retirer une étape ?`);
-    if (state.prefs.lunch && day.stops.length && !day.stops.map(stopInfo).some((x) => x && isMeal(x))) warns.push('Pas de déjeuner prévu : « Ajouter une étape » propose les restos possibles.');
-    return { slots, end: t, start, warns };
+    if (state.prefs.lunch && day.stops.length && !meals && !unresolved) warns.push('Pas de déjeuner prévu : « Ajouter une étape » propose les restos possibles.');
+    return { slots, end: t, start, warns: unresolved ? [] : warns };
   }
   function proposeTrip({ silent = false } = {}) {
     ensureTrip();
@@ -982,19 +984,20 @@
       picked[i].push({ t: 's', id: s.properties.id });
     }
     t.days.forEach((d, i) => {
-      const locked = d.stops.filter((st) => st.lock), lockedKeys = new Set(locked.map((st) => st.t + ':' + (st.id || st.text)));
-      const spots = picked[i].sort((x, y) => (spotById(x.id)?.geometry.coordinates[0] ?? 0) - (spotById(y.id)?.geometry.coordinates[0] ?? 0));
-      d.stops = locked.slice();   // les étapes verrouillées restent, dans leur ordre
-      spots.forEach((st) => { if (!lockedKeys.has('s:' + st.id)) addStop(i, st); });
-      const beaches = d.stops.filter((st) => st.t === 's');
-      if (state.prefs.lunch && beaches.length && !d.stops.some((x) => x.t === 'p' && ['restaurant', 'beach_bar'].includes(poiById(x.id)?.p.kind))) {
-        const c = latlng(spotById(beaches[0].id));   // resto retenu dans un programme du jour, sinon le plus proche de la première plage
+      const locked = d.stops.filter((st) => st.lock), lon = (st) => spotById(st.id)?.geometry.coordinates[0] ?? 0;
+      const beachesAll = [...locked.filter((st) => st.t === 's'), ...picked[i]].sort((x, y) => lon(x) - lon(y));   // d'ouest en est, verrous compris
+      d.stops = [...beachesAll.filter((st) => st.lock), ...locked.filter((st) => st.t !== 's')];
+      beachesAll.filter((st) => !st.lock).forEach((st) => addStop(i, st));
+      d.stops.sort((x, y) => (x.t === 's' && y.t === 's') ? lon(x) - lon(y) : 0);
+      const firstBeach = d.stops.findIndex((x) => x.t === 's');
+      if (state.prefs.lunch && firstBeach >= 0 && !d.stops.some((x) => x.t === 'p' && ['restaurant', 'beach_bar'].includes(poiById(x.id)?.p.kind))) {
+        const c = latlng(spotById(d.stops[firstBeach].id));   // resto retenu dans un programme du jour, sinon le plus proche de la première plage
         const r = state.pois.filter((x) => ['restaurant', 'beach_bar'].includes(x.p.kind)).map((x) => ({ x, dd: distKm(c, [x.lat, x.lon]) })).filter((o) => o.dd < 1.5).sort((a, b) => a.dd - b.dd)[0];
-        if (r) { addStop(i, { t: 'p', id: r.x.id }); const k = d.stops.findIndex((x) => x.t === 'p' && x.id === r.x.id); if (k > 1) { const [m] = d.stops.splice(k, 1); d.stops.splice(1, 0, m); } }
+        if (r) { addStop(i, { t: 'p', id: r.x.id }); const k = d.stops.findIndex((x) => x.t === 'p' && x.id === r.x.id); if (k > firstBeach + 1) { const [m] = d.stops.splice(k, 1); d.stops.splice(firstBeach + 1, 0, m); } }
       }
     });
     save(); renderTabs(); if (state.view === 'trip') { renderTrip(); paintMarkers(); if (!silent) fitTrip(); }
-    if (!silent) toast(wished ? 'Planning proposé à partir de vos envies' : 'Planning proposé avec les meilleures plages');
+    if (!silent) toast(!cands.length && lockedIds.size ? 'Toutes vos envies sont déjà verrouillées : rien à ajouter' : wished ? 'Planning proposé à partir de vos envies' : 'Planning proposé avec les meilleures plages');
   }
   /* Séjour dynamique : à chaque mise à jour des prévisions, le planning est recalculé (mode auto). */
   function autoReplan() {
@@ -1016,8 +1019,7 @@
       const stops = d.stops.map((st, k) => {
         const info = stopInfo(st); if (!info) return '';
         const slot = tl.slots[k], tm = slot ? `<em class="tm ${slot.late ? 'late' : ''}">${hm(slot.start)}</em>` : '';
-        const prev = k > 0 ? stopInfo(d.stops[k - 1]) : (t.base ? { lat: t.base.lat, lon: t.base.lon } : null);
-        const leg = info.lat != null && prev && prev.lat != null ? `${(distKm([prev.lat, prev.lon], [info.lat, info.lon]) * 1.3).toFixed(0)} km` : '';
+        const leg = slot && slot.km ? `${slot.km.toFixed(0)} km` : '';
         let sc = '';
         if (info.kind === 'spot' && fi >= 0) { const r = scoreOf(info.spot, fi); sc = `<span class="sc"><i style="background:var(--${r.cls})"></i>${r.score ?? '—'}</span>`; }
         const badge = info.kind === 'spot' ? `<span class="n">${k + 1}</span>` : info.kind === 'poi' ? `<span class="n poi" style="background:${info.color}">${I(info.icon, { size: 12 })}</span>` : `<span class="n poi">${I('compass', { size: 12 })}</span>`;
@@ -1032,7 +1034,7 @@
         ${tl.warns.map((w) => `<div class="day-warn">${I('info', { size: 14 })}<span>${esc(w)}</span></div>`).join('')}
         <div class="day-foot">
           <button type="button" class="linkbtn add-stop" data-i="${i}">${I('plus', { size: 14 })} Ajouter une étape</button>
-          ${route.url ? `<span class="tl">${I('clock', { size: 14 })} ${hm(tl.start)} → ${hm(tl.end)}</span><span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base && state.prefs.roundTrip ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
+          ${route.url ? `${tl.slots.some(Boolean) ? `<span class="tl">${I('clock', { size: 14 })} ${hm(tl.start)} → ${hm(tl.end)}</span>` : ''}<span>${I('car', { size: 14 })} ~${Math.round(route.km)} km${t.base && state.prefs.roundTrip ? ' A/R' : ''}</span><a href="${route.url}" target="_blank" rel="noopener">${I('route', { size: 14 })}Google Maps</a>` : ''}
         </div></div>`;
     }).join('');
     el.innerHTML = `
@@ -1127,16 +1129,17 @@
     const anchors = beaches.length ? beaches.map((s) => ({ name: s.properties.name, lat: latlng(s)[0], lon: latlng(s)[1] })) : (last ? [last] : []);
     const seen = new Set();
     // retenus : compléments des programmes des plages du jour (puis des autres programmes), pas encore dans la journée
-    const kept = [];
+    let kept = [];
     for (const s of [...beaches, ...wishedIds().map(spotById).filter((s) => s && !beaches.includes(s))]) for (const it of (state.plans[s.properties.id]?.items || [])) {
-      const x = it.poi && poiById(it.poi); if (!x || inDay.has('p:' + x.id) || seen.has(x.id)) continue;
-      seen.add(x.id); kept.push({ x, by: it.by, beach: s.properties.name, mine: beaches.includes(s) });
+      const x = it.poi && poiById(it.poi), key = x ? 'p:' + x.id : 'x:' + it.text; if ((it.poi && !x) || inDay.has(key) || seen.has(key)) continue;
+      seen.add(key); kept.push({ x, text: it.text, by: it.by, beach: s.properties.name, mine: beaches.includes(s) });
     }
+    kept = [...kept.filter((o) => o.mine), ...kept.filter((o) => !o.mine)].slice(0, 10);   // les programmes des plages du jour d'abord
     // possibles : restos et bars de plage à moins de 1,5 km, visites à moins de 3 km des plages du jour
-    const around = (kinds, km, n) => { const out = []; for (const a of anchors) for (const x of state.pois) { if (!kinds.includes(x.p.kind) || inDay.has('p:' + x.id) || seen.has(x.id)) continue; const d = distKm([a.lat, a.lon], [x.lat, x.lon]); if (d <= km) out.push({ x, d, beach: a.name }); } return out.sort((p, q) => p.d - q.d).filter((o) => !seen.has(o.x.id) && seen.add(o.x.id)).slice(0, n); };
+    const around = (kinds, km, n) => { const best = new Map(); for (const a of anchors) for (const x of state.pois) { if (!kinds.includes(x.p.kind) || inDay.has('p:' + x.id) || seen.has('p:' + x.id)) continue; const d = distKm([a.lat, a.lon], [x.lat, x.lon]); if (d <= km && (!best.has(x.id) || best.get(x.id).d > d)) best.set(x.id, { x, d, beach: a.name }); } const out = [...best.values()].sort((p, q) => p.d - q.d).slice(0, n); out.forEach((o) => seen.add('p:' + o.x.id)); return out; };
     const restos = around(['restaurant', 'beach_bar'], 1.5, 6), visits = around(['culture', 'tourism'], 3, 5);
     const row = (s) => `<button type="button" data-t="s" data-id="${esc(s.properties.id)}">${I('wave', { size: 14 })}<span>${esc(s.properties.name)}</span>${scoreTag(s)}</button>`;
-    const prow = (o, sub) => { const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism; return `<button type="button" data-t="p" data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color};width:22px;height:22px">${I(k.icon, { size: 12 })}</span><span>${esc(o.x.p.name)}</span><span class="sub ${o.by ? 'by' : ''}">${sub}</span></button>`; };
+    const prow = (o, sub) => { if (!o.x) return `<button type="button" data-t="x" data-text="${esc(o.text)}"><span class="poi-pin" style="background:var(--accent);width:22px;height:22px">${I('compass', { size: 12 })}</span><span>${esc(o.text)}</span><span class="sub by">${sub}</span></button>`; const k = C.poiKinds[o.x.p.kind] || C.poiKinds.tourism; return `<button type="button" data-t="p" data-id="${esc(o.x.id)}"><span class="poi-pin" style="background:${k.color};width:22px;height:22px">${I(k.icon, { size: 12 })}</span><span>${esc(o.x.p.name)}</span><span class="sub ${o.by ? 'by' : ''}">${sub}</span></button>`; };
     $('#pick-list').innerHTML = (kept.length ? `<h4>Retenus dans vos programmes</h4>${kept.map((o) => prow(o, `${esc(state.users[o.by === 'b' ? 'b' : 'a'].name)} · ${esc(o.beach)}`)).join('')}` : '') +
       (restos.length ? `<h4>Restos possibles ${anchors.length ? 'autour de ' + esc(anchors.map((a) => a.name).join(', ')) : ''}</h4>${restos.map((o) => prow(o, `${esc((C.poiKinds[o.x.p.kind] || C.poiKinds.tourism).label)} · ${Math.round(o.d * 1000)} m`)).join('')}` : '') +
       (visits.length ? `<h4>Visites possibles</h4>${visits.map((o) => prow(o, `${esc((C.poiKinds[o.x.p.kind] || C.poiKinds.tourism).label)} · ${o.d < 1 ? Math.round(o.d * 1000) + ' m' : o.d.toFixed(1) + ' km'}`)).join('')}` : '') +
@@ -1144,7 +1147,7 @@
       (best.length ? `<h4>Meilleures plages ce jour-là</h4>${best.map(row).join('')}` : '') +
       `<h4>Autre</h4><div class="plan-add"><input type="text" id="pick-text" maxlength="80" placeholder="Étape libre : marché, pause café…"><button type="button" id="pick-text-add" aria-label="Ajouter">${I('plus', { size: 18 })}</button></div>`;
     const done = () => { dlg.close(); save(); renderTabs(); renderTrip(); paintMarkers(); };
-    $('#pick-list').querySelectorAll('button[data-t]').forEach((b) => b.onclick = () => { manualEdit(); addStop(di, { t: b.dataset.t, id: b.dataset.id }); done(); });
+    $('#pick-list').querySelectorAll('button[data-t]').forEach((b) => b.onclick = () => { manualEdit(); addStop(di, b.dataset.t === 'x' ? { t: 'x', text: b.dataset.text } : { t: b.dataset.t, id: b.dataset.id }); done(); });
     $('#pick-text-add').onclick = () => { const v = $('#pick-text').value.trim(); if (v) { manualEdit(); addStop(di, { t: 'x', text: v }); done(); } };
     dlg.showModal();
   }
@@ -1301,7 +1304,7 @@
     $('#c-round').onclick = () => { pr.roundTrip = !pr.roundTrip; save(); renderConfig(); };
     $('#c-lunch').onclick = () => { pr.lunch = !pr.lunch; save(); renderConfig(); autoReplan(); };
     $('#c-perday').onchange = (e) => { pr.perDay = +e.target.value; save(); autoReplan(); };
-    $('#c-start-h').onchange = (e) => { pr.startHour = +e.target.value; save(); };
+    $('#c-start-h').onchange = (e) => { pr.startHour = +e.target.value; save(); renderConfig(); };
     $('#c-radius').onchange = (e) => { pr.radiusKm = +e.target.value; save(); autoReplan(); };
     $('#c-food').onclick = () => { state.poiOn.food = !state.poiOn.food; save(); renderLayerChips(); renderPois(); renderConfig(); };
     $('#c-visit').onclick = () => { state.poiOn.visit = !state.poiOn.visit; save(); renderLayerChips(); renderPois(); renderConfig(); };
@@ -1315,7 +1318,7 @@
   let listShown = LIST_CHUNK, listObserver = null;
   function renderList({ more = false, keep = false } = {}) {
     if (!more && !keep) listShown = LIST_CHUNK;
-    const ul = $('#list'), list = sorted(filtered({ inView: true })), inView = !!mapBounds();
+    const ul = $('#list'), list = sorted(filtered({ inView: true })), inView = !state.filters.q.trim() && !!mapBounds();
     let ideal = 0, good = 0;
     if (state.bulk) for (const s of list) { const c = scoreOf(s).cls; if (c === 'ideal') ideal++; else if (c === 'good') good++; }
     const fetched = state.bulk ? new Date(state.bulk.fetchedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
@@ -1323,7 +1326,7 @@
       `<span class="right"><button type="button" class="chip-mini ${state.mapFilter ? 'on' : ''}" id="sum-view" title="${state.mapFilter ? 'La liste suit la carte : touchez pour afficher toute la côte' : 'Caler la liste sur la carte'}" aria-pressed="${state.mapFilter}">${I('frame', { size: 13 })}Vue carte</button>` +
       (fetched ? `<button type="button" class="linkbtn" id="sum-refresh" title="Rafraîchir les prévisions (Open-Meteo)" style="min-height:28px;color:inherit;font-weight:500">${I('refresh', { size: 12 })}${fetched}</button>` : `<span class="warn">prévisions indisponibles</span>`) + '</span>';
     $('#sum-refresh') && ($('#sum-refresh').onclick = () => loadForecast(true));
-    $('#sum-view').onclick = () => { state.mapFilter = !state.mapFilter; save(); renderDays(); renderList(); toast(state.mapFilter ? 'Liste calée sur la carte' : 'Toute la côte'); };
+    $('#sum-view').onclick = () => { state.mapFilter = !state.mapFilter; persistLocal(); renderDays(); renderList(); toast(state.mapFilter ? 'Liste calée sur la carte' : 'Toute la côte'); };
     const frag = document.createDocumentFragment();
     for (const s of list.slice(0, listShown)) {
       const p = s.properties, r = state.bulk ? scoreOf(s) : null, d = state.bulk ? F.dayOf(state.bulk, s, state.day) : null, w = wishOf(p.id), ph = photoOf(p.id);
@@ -1390,7 +1393,7 @@
     state.selected = null; paintMarkers();
     if (location.hash && !fromHistory) history.replaceState(null, '', location.pathname + location.search);
     $('#panel-detail').hidden = true;
-    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else if (state.view === 'trip') { $('#panel-trip').hidden = false; renderTrip(); } else if (state.view === 'config') { $('#panel-config').hidden = false; renderConfig(); } else { $('#panel-list').hidden = false; renderList({ keep: true }); }
+    if (state.view === 'wishes') { $('#panel-wishes').hidden = false; renderWishes(); } else if (state.view === 'trip') { $('#panel-trip').hidden = false; renderTrip(); } else if (state.view === 'config') { $('#panel-config').hidden = false; renderConfig(); } else { $('#panel-list').hidden = false; renderDays(); renderList({ keep: true }); }
     $('#panels').scrollTop = listScroll;
   }
   function creditHtml(g, ph) {
@@ -1599,9 +1602,14 @@
 
   /* ------------------------------------------------------------------ panneau glissant */
   const sheetVisible = () => Math.max(0, window.innerHeight - sheet.getBoundingClientRect().top);   // hauteur visible (le panneau est translaté, pas redimensionné)
+  let sheetT = null;
   function setSheet(mode) {
+    const was = [...sheet.classList].find((c) => ['peek', 'half', 'full'].includes(c));
     sheet.classList.remove('peek', 'half', 'full'); sheet.classList.add(mode);
     document.documentElement.style.setProperty('--sheet-h', mode === 'peek' ? '30vh' : mode === 'half' ? '58vh' : '100vh');
+    if (was !== mode && viewBounds && state.mapFilter && isMobile()) {   // la surface de carte visible a changé : l'emprise suivie aussi
+      clearTimeout(sheetT); sheetT = setTimeout(() => { if (!map) return; viewBounds = liveBounds(); if (state.view === 'explore' && $('#panel-detail').hidden && $('#panel-poi').hidden) { renderDays(); renderList({ keep: true }); } }, 300);
+    }
   }
   function initSheet() {
     sheet = $('#sheet'); setSheet('half');
@@ -1688,7 +1696,7 @@
     document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
 
     let qTimer = null;
-    $('#q').oninput = (e) => { state.filters.q = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { renderList(); paintMarkers(); }, 150); };
+    $('#q').oninput = (e) => { state.filters.q = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { renderDays(); renderList(); paintMarkers(); }, 150); };
     $('#btn-search').innerHTML = I('search', { size: 20 });
     const showSearch = (on) => { $('#search-box').hidden = !on; $('#btn-search').classList.toggle('on', on); $('#btn-search').setAttribute('aria-expanded', String(on)); };
     $('#btn-search').onclick = () => { const on = $('#search-box').hidden; showSearch(on); if (on) $('#q').focus(); else if (state.filters.q) { state.filters.q = ''; $('#q').value = ''; renderList(); paintMarkers(); } };
@@ -1714,7 +1722,7 @@
       state.userPos = [pos.coords.latitude, pos.coords.longitude];
       if (!userMarker) userMarker = L.marker(state.userPos, { icon: L.divIcon({ className: '', html: '<div class="user-dot"></div>', iconSize: [16, 16] }) }).addTo(map);
       else userMarker.setLatLng(state.userPos);
-      progMove(() => map.setView(state.userPos, Math.max(map.getZoom(), 10), { animate: false })); viewBounds = liveBounds();
+      progMove(() => map.setView(state.userPos, Math.max(map.getZoom(), 10), { animate: false })); viewBounds = null;   // la liste reste complète, triée par distance
       state.sort = 'dist'; save(); renderDays(); renderList(); toast('Liste triée par distance');
     }, () => toast('Position introuvable'), { enableHighAccuracy: true, timeout: 10000 });
   }

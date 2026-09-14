@@ -131,7 +131,7 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
       check(Math.abs((W().innerHeight - r.top) - W().innerHeight * 0.58) < 3 && pad > 100 && Math.abs(r.height - (W().innerHeight - 56 - 6)) < 3, `M5 · mode intermédiaire : hauteur pleine, visible 58 % (${Math.round(W().innerHeight - r.top)} px), marge basse ${Math.round(pad)} px`); sh.style.transition = ''; }
     check(!$('#tabs button[data-v="wishes"] b.new'), 'C3 · marqueurs effacés en quittant l\'onglet Envies');
     $('.add-stop').click(); await wait(() => $('#dlg-pick').open && $('#pick-list button[data-t]'), 5000, 'choix d\'étape');
-    $('#pick-list button[data-t]').click(); await wait(() => $('.stops li'), 5000, 'étape ajoutée');
+    ($$('#pick-list button[data-t="s"]')[1] || $('#pick-list button[data-t="s"]')).click(); await wait(() => $('.stops li'), 5000, 'étape ajoutée');   // une plage sans programme : le programme de l'autre envie doit apparaître dans « Retenus »
     const ib = $('.stops .menu-btn').getBoundingClientRect(), grip = $('.stops .grip');
     check(ib.width >= 44 && ib.height >= 44 && !!grip, `B6/M8 · bouton d'actions ${Math.round(ib.width)}×${Math.round(ib.height)} px, poignée présente`);
     check(!!$('.stops .d .tm') && /^\d{1,2}:\d{2}$/.test($('.stops .d .tm').textContent) && !!$('.day-foot .tl'), `constructeur · horaire estimé « ${$('.stops .d .tm') && $('.stops .d .tm').textContent} » et déroulé de la journée`);
@@ -142,7 +142,7 @@ const fire = (el, type, init) => el.dispatchEvent(new (W().Event)(type, { bubble
     check(true, 'constructeur · verrou synchronisé');
     $('.add-stop').click(); await wait(() => $('#dlg-pick').open && $('#pick-list h4'), 5000, 'sélecteur');
     const heads = $$('#pick-list h4').map((h) => h.textContent);
-    check(heads.some((h) => /Restos possibles|Visites possibles|Retenus/.test(h)) || true, 'constructeur · sélecteur : ' + heads.join(' / '));
+    check(heads.some((h) => /^Retenus/.test(h)) && $('#pick-list button[data-t="x"][data-text="Kayak test"]'), 'constructeur · sélecteur : ' + heads.join(' / '));
     $('#dlg-pick').close();
     st = await waitState((s) => s.trip.days[0] && s.trip.days[0].stops.length >= 1, 25000, 'étape');
     check(st.trip.days[0] && st.trip.days[0].stops.length >= 1 && st.log.some((e) => /jour 1 du séjour/.test(e.text)), 'sync · étape envoyée, journal « jour 1 »');
