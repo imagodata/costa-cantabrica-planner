@@ -45,9 +45,9 @@ deux listes sur l'autre téléphone.
   panneau latéral sur tablette et en paysage.
 - **Photos** : galerie Wikimedia Commons par spot (jusqu'à 10 images : catégorie Commons,
   Wikidata, photos géolocalisées), repli Openverse, avec crédit et licence, en carrousel en tête
-  de fiche et en vignette dans la liste. Chaque galerie se termine par une **vue aérienne**
-  zoomée (tuiles satellite Esri) ; c'est l'image des plages sans photo, dans la liste, la fiche
-  et l'aperçu des pages de partage. Les vues aériennes sont nettes sur écran haute densité (tuiles
+  de fiche. Chaque galerie **s'ouvre sur la vue aérienne** zoomée (tuiles satellite Esri), qui
+  sert aussi de vignette à toutes les plages dans les listes et d'image aux plages sans photo
+  dans l'aperçu des pages de partage. Les vues aériennes sont nettes sur écran haute densité (tuiles
   demandées un niveau plus loin), zoomées selon la taille de la plage, avec une barre d'échelle ;
   le bouton « Satellite » de la fiche bascule la carte sur l'imagerie, centrée sur la plage.
 - **Restaurants, bars, bars de plage, cafés, sites culturels et à visiter** (~4 400 lieux OSM

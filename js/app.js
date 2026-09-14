@@ -867,7 +867,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="num c-${r ? r.cls : 'none'}">${i + 1}<small style="background:var(--${who})">${who === 'both' ? '2' : esc(state.users[who].name[0].toUpperCase())}</small></div>
-        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;></div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
+        ${aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}</div>
           <div class="meta">${esc([p.province, surfaceLbl(p)].filter(Boolean).join(' · '))}${r && r.score != null ? ` · <b style="color:var(--${r.cls})">${r.score}</b> ${esc(r.label)}` : ''}</div>
@@ -1361,7 +1361,7 @@
       const cond = d && d.tmax != null ? `<span>${wIcon(d.code, 14)}${n0(d.tmax, '°')}</span><span class="mu">${I('drop', { size: 14 })}${n0(d.pprob, ' %')}</span><span class="mu">${I('wind', { size: 14 })}${n0(d.wind)} ${compass(d.wdir)}</span><span class="sea">${I('wave', { size: 14 })}${n1(d.wave, ' m')}</span>` : '';
       li.innerHTML = `
         <div class="score c-${r ? r.cls : 'none'}"><b>${r && r.score != null ? r.score : '—'}</b><small>${r ? esc(r.label) : ''}</small></div>
-        ${ph ? `<img class="thumb" src="${esc(thumbAt(ph, 160))}" alt="" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=&quot;thumb empty&quot;>${I('wave', { size: 20 }).replace(/"/g, '&quot;')}</div>'">` : aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
+        ${aerialHtml(latlng(s)[0], latlng(s)[1], aerialZoom(s, 56, 15, 17), 56, 56, 'thumb')}
         <div class="body">
           <div class="name"><span>${esc(p.name)}</span><span class="tag">${p.type}</span>${state.fresh.has(p.id) ? '<span class="tag new">nouveau</span>' : ''}${p.lifeguard === 'yes' ? '<span class="tag">surveillée</span>' : ''}${p.nudism === 'yes' ? '<span class="tag">naturiste</span>' : ''}</div>
           <div class="meta">${esc(meta)}</div>
@@ -1435,7 +1435,7 @@
     const wiki = p.wikipedia ? `https://${p.wikipedia.split(':')[0]}.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':').slice(1).join(':'))}` : null;
     const commons = `https://commons.wikimedia.org/w/index.php?search=${encodeURIComponent(p.name)}&ns6=1`;
     const photosList = ph ? (ph.gallery && ph.gallery.length ? ph.gallery : [{ thumb: ph.thumb, page: ph.page, credit: ph.credit, license: ph.license }]) : [];
-    const gal = [...photosList, { aerial: true, credit: AERIAL_CREDIT, license: '', page: '' }];
+    const gal = [{ aerial: true, credit: AERIAL_CREDIT, license: '', page: '' }, ...photosList];   // la vue aérienne ouvre la galerie
     const heroW = isMobile() ? window.innerWidth : $('#sheet').clientWidth || 440;
     $('#detail-head').innerHTML = `
       <div class="hero ${ph ? '' : 'nophoto'}">
