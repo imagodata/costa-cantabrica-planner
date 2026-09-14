@@ -765,7 +765,7 @@
   const GL_IN = 12, GL_OUT = 11;   // seuils de zoom Leaflet (entrée en 3D, retour en 2D)
   const saveGlMode = (m) => { glMode = m; try { localStorage.setItem('ccp:3d', m); localStorage.setItem('ccp:3dv', '2'); } catch (e) { } };
   const is3d = () => glOn && !!gl && glLoaded;
-  CCP.is3d = () => glOn && !!gl;
+  CCP.is3d = () => glOn && !!gl; CCP.gl3d = () => gl;   // exposés pour le banc de test
   function loadMaplibre() {
     if (window.maplibregl) return Promise.resolve();
     if (glReady) return glReady;
@@ -824,7 +824,7 @@
       gl.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
       gl.touchZoomRotate.enableRotation(); gl.dragRotate.enable();
       gl.on('load', () => { glLoaded = true; paint3d(); paint3dPois(); });
-      gl.on('moveend', () => { paint3dPois(); if (glOn) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.max(3, Math.min(19, gl.getZoom() + 1)), { animate: false })); } });   // la 2D suit la 3D
+      gl.on('moveend', (e) => { paint3dPois(); if (glOn && e.originalEvent) { const c = gl.getCenter(); progMove(() => map.setView([c.lat, c.lng], Math.max(3, Math.min(19, gl.getZoom() + 1)), { animate: false })); } });   // la 2D suit les gestes faits en 3D (pas les recentrages dus au terrain)
       gl.on('click', 'pois', (e) => { const f = e.features && e.features[0]; const x = f && poiById(f.properties.id); if (x) showPoi(x, { pan: false }); });
       gl.on('mouseenter', 'pois', (e) => { gl.getCanvas().style.cursor = 'pointer'; const f = e.features && e.features[0]; if (f && !isMobile()) { glPopup.setLngLat(f.geometry.coordinates).setText(f.properties.name).addTo(gl); } });
       gl.on('mouseleave', 'pois', () => { gl.getCanvas().style.cursor = ''; glPopup.remove(); });
@@ -866,7 +866,7 @@
   async function open3d({ lat, lon, zoom = 14.5, bearing = C.coastBearing ?? 180 } = {}) {
     if (!(await set3d(true))) return;
     if (isMobile()) setSheet('peek');
-    const go = () => gl.flyTo({ center: [lon, lat], zoom, pitch: 65, bearing, offset: glOffset(), duration: 1200, essential: true });
+    const go = () => { gl.flyTo({ center: [lon, lat], zoom, pitch: 65, bearing, offset: glOffset(), duration: 1200, essential: true }); progMove(() => map.setView([lat, lon], zoom + 1, { animate: false })); };
     if (glLoaded) go(); else gl.once('load', go);
   }
   /* Plages, parcours et hébergement : reflet des couches Leaflet dans la scène 3D. */
@@ -933,6 +933,7 @@
     const bearing = prev ? bearingTo([prev.lat, prev.lon], [s.lat, s.lon]) : (C.coastBearing ?? 180);
     const zoom = s.kind === 'base' ? 14 : s.kind === 'spot' ? 14.3 : 15.3;
     progMove(() => gl.flyTo({ center: [s.lon, s.lat], zoom, pitch: 62, bearing, offset: glOffset(), duration: 1800, essential: true }));
+    progMove(() => map.setView([s.lat, s.lon], zoom + 1, { animate: false }));
     if (itin.playing) { clearTimeout(itin.timer); itin.timer = setTimeout(() => { if (itin.playing && itin.step < itin.steps.length - 1) itinGo(itin.step + 1); else { itin.playing = false; renderItin(); } }, 5200); }
   }
   function itinPlay(on) { itin.playing = on; clearTimeout(itin.timer); if (on) itinGo(itin.step < 0 ? 0 : (itin.step >= itin.steps.length - 1 ? 0 : itin.step + 1)); else renderItin(); }
